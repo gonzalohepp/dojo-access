@@ -34,7 +34,7 @@ export default function StatsCard({
       <div className="flex items-center justify-between mb-4">
         <div className="space-y-1">
           <p className="text-slate-400 text-xs font-bold tracking-widest uppercase">{title}</p>
-          <div className="text-3xl font-black text-slate-900 tracking-tight">
+          <div className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
             {loading ? (
               <div className="h-9 w-24 rounded-lg bg-slate-200 animate-pulse" />
             ) : (

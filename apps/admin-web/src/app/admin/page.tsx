@@ -147,15 +147,15 @@ export default function AdminDashboard() {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-        <div className="relative z-10 p-4 md:p-0">
+        <div className="relative z-10 p-6 md:p-8">
           <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 text-xs font-bold tracking-widest uppercase mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold tracking-widest uppercase mb-4">
                 <Activity className="w-3 h-3" />
                 CENTRO DE CONTROL
               </div>
-              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tight leading-none mb-3">
-                Dashboard general - <span className="text-blue-600">Beleza Dojo</span>
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-3">
+                Dashboard general - <span className="text-blue-600 dark:text-blue-400">Beleza Dojo</span>
               </h1>
               <p className="text-slate-500 text-lg font-medium flex items-center gap-2">
                 <Zap className="w-4 h-4 text-amber-500 fill-current" />
@@ -239,11 +239,11 @@ export default function AdminDashboard() {
               className="lg:col-span-2 space-y-6"
             >
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
                   <Activity className="w-5 h-5 text-blue-500" />
                   Pagos Recientes
                 </h2>
-                <Link href="/payments" className="text-sm font-bold text-blue-600 hover:underline flex items-center gap-1">
+                <Link href="/payments" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
                   Ver todos <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -258,7 +258,7 @@ export default function AdminDashboard() {
               transition={{ delay: 0.3 }}
               className="space-y-6"
             >
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2 text-red-500">
+              <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2 text-red-500">
                 <UserX className="w-5 h-5" />
                 Próximos Vencimientos
               </h2>
@@ -273,11 +273,11 @@ export default function AdminDashboard() {
             className="space-y-6"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black text-slate-900 uppercase tracking-tight flex items-center gap-2">
+              <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
                 <ClipboardCheck className="w-5 h-5 text-blue-500" />
                 Historial de Accesos
               </h2>
-              <Link href="/access-log" className="text-sm font-bold text-blue-600 hover:underline flex items-center gap-1">
+              <Link href="/access-log" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
                 Ver historial completo <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

@@ -49,7 +49,7 @@ export default function HomeLandingPage() {
   }
 
   // 🔹 Tracking
-  const trackEvent = async (eventType: string, metadata?: any) => {
+  const trackEvent = async (eventType: string, metadata?: Record<string, unknown>) => {
     try {
       // Import dinámico o usar el del contexto si fuera posible, 
       // pero aquí importamos directo para asegurar simplicidad.
@@ -63,7 +63,7 @@ export default function HomeLandingPage() {
         metadata
       })
     } catch (e) {
-      console.error('Error tracking', e)
+      // console.error('Error tracking', e)
     }
   }
 
@@ -321,15 +321,15 @@ export default function HomeLandingPage() {
                   </p>
 
                   <p>
-                    <span className="text-blue-400 font-semibold">"Beleza"</span> es una expresión
-                    muy usada en Brasil para decir que "está todo bien". Elegimos ese nombre para
+                    <span className="text-blue-400 font-semibold">&quot;Beleza&quot;</span> es una expresión
+                    muy usada en Brasil para decir que &quot;está todo bien&quot;. Elegimos ese nombre para
                     reflejar el ambiente relajado y de camaradería que queremos en cada
                     entrenamiento.
                   </p>
 
                   <p>
                     Como logo adoptamos el{" "}
-                    <span className="text-blue-400 font-semibold">"shaka"</span>, que representa
+                    <span className="text-blue-400 font-semibold">&quot;shaka&quot;</span>, que representa
                     amistad, comprensión, compasión y solidaridad; valores que queremos transmitir
                     como equipo dentro y fuera del tatami.
                   </p>

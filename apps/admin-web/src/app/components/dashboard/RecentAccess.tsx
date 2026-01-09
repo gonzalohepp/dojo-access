@@ -58,7 +58,7 @@ export default function RecentAccess({ rows, loading }: { rows: AccessRow[]; loa
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: i * 0.05 }}
-            className="flex items-center justify-between p-4 rounded-2xl border border-white/10 bg-white shadow-lg shadow-slate-200/50"
+            className="flex items-center justify-between p-4 rounded-2xl border border-white/10 bg-white dark:bg-slate-800/50 dark:backdrop-blur-xl dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-none"
           >
             <div className="flex items-center gap-4">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${ok ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'
@@ -70,7 +70,7 @@ export default function RecentAccess({ rows, loading }: { rows: AccessRow[]; loa
                 )}
               </div>
               <div>
-                <div className="font-bold text-slate-900">{name}</div>
+                <div className="font-bold text-slate-900 dark:text-white">{name}</div>
                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
                   <Clock className="w-3 h-3" />
                   {new Date(r.scanned_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -80,7 +80,7 @@ export default function RecentAccess({ rows, loading }: { rows: AccessRow[]; loa
               </div>
             </div>
 
-            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${ok ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
               }`}>
               {ok ? 'Valido' : 'No valido'}
             </div>

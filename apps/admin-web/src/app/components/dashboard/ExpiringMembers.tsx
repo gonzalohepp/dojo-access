@@ -29,14 +29,14 @@ export default function ExpiringMembers({ rows, loading }: { rows: Expiring[]; l
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: i * 0.05 }}
-          className="group flex items-center justify-between p-4 rounded-2xl bg-white border border-red-100 shadow-sm hover:shadow-md transition-all"
+          className="group flex items-center justify-between p-4 rounded-2xl bg-white dark:bg-slate-800/50 dark:backdrop-blur-xl border border-red-100 dark:border-red-900/30 shadow-sm hover:shadow-md transition-all"
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-colors">
               <AlertTriangle className="w-4 h-4" />
             </div>
             <div>
-              <div className="font-bold text-slate-800 text-sm">
+              <div className="font-bold text-slate-800 dark:text-slate-200 text-sm">
                 {[m.first_name, m.last_name].filter(Boolean).join(' ') || m.user_id.slice(0, 8)}
               </div>
               <div className="text-[10px] font-black text-slate-400 flex items-center gap-1 uppercase tracking-tighter">
@@ -45,7 +45,7 @@ export default function ExpiringMembers({ rows, loading }: { rows: Expiring[]; l
               </div>
             </div>
           </div>
-          <div className="text-[10px] font-black text-red-600 bg-red-50 px-2 py-1 rounded-lg uppercase tracking-widest">Urgente</div>
+          <div className="text-[10px] font-black text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-lg uppercase tracking-widest">Urgente</div>
         </motion.div>
       ))}
     </div>
