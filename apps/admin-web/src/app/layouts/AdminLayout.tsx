@@ -89,7 +89,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
           <div className="w-20 h-20 mx-auto mb-4">
             <img src="/logo.png" alt="Logo" className="w-20 h-20 object-contain animate-pulse" />
           </div>
-          <p className="text-muted-foreground animate-pulse font-medium tracking-widest uppercase text-[10px]">Cargando Sistema Management…</p>
+          <p className="text-muted-foreground animate-pulse font-medium tracking-widest uppercase text-[10px]">Cargando…</p>
         </div>
       </div>
     )

@@ -45,11 +45,16 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-slate-950 font-sans selection:bg-blue-500/30">
 
-      {/* Background Ambience */}
+      {/* Background Ambience / Image */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
-        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-soft-light" />
+        <Image
+          src="/beleza_fondo1.png"
+          alt="Background"
+          fill
+          priority
+          className="object-cover opacity-40 blur-[4px] scale-105"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/80 to-slate-950" />
       </div>
 
       <div className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-between p-6 md:p-12 relative z-10 gap-12 md:gap-0">
