@@ -24,6 +24,7 @@ export const metadata: Metadata = {
     shortcut: "/logo.png",
     apple: "/logo.png",
   },
+  manifest: "/manifest.json",
   metadataBase:
     typeof window === "undefined"
       ? new URL("http://localhost:3000")

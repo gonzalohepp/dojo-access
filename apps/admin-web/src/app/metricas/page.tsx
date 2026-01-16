@@ -109,7 +109,7 @@ export default function MetricasPage() {
       const { data: recentAcc } = await supabase
         .from('access_logs')
         .select('user_id,scanned_at,result')
-        .gte('scanned_at', tenDaysAgo)
+        .gte('scanned_at', addDays(today(), -30).toISOString()) // Fetch 30 days for rich analytics
       setRecentAccesses((recentAcc || []) as Access[])
 
       const { data: cls } = await supabase
@@ -186,6 +186,37 @@ export default function MetricasPage() {
     if (!activeMembers) return 0
     return revenueThisMonth / activeMembers
   }, [revenueThisMonth, activeMembers])
+
+  /* ================= Gráficos Avanzados ================= */
+
+  const peakHours = useMemo(() => {
+    const hours = Array(24).fill(0)
+    recentAccesses.forEach(a => {
+      const h = new Date(a.scanned_at).getHours()
+      hours[h]++
+    })
+    return hours.map((count, hour) => ({
+      hour: `${hour}:00`,
+      count
+    })).filter(h => h.count > 0)
+  }, [recentAccesses])
+
+  const topUsers = useMemo(() => {
+    const counts: Record<string, number> = {}
+    recentAccesses.forEach(a => {
+      if (a.user_id) counts[a.user_id] = (counts[a.user_id] || 0) + 1
+    })
+    return Object.entries(counts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([id, count]) => ({ id, count }))
+  }, [recentAccesses])
+
+  const rejectionRate = useMemo(() => {
+    if (!recentAccesses.length) return 0
+    const rejections = recentAccesses.filter(a => a.result !== 'autorizado').length
+    return ((rejections / recentAccesses.length) * 100).toFixed(1)
+  }, [recentAccesses])
 
   const membersAtRisk = useMemo(() => {
     const activeArr = Array.from(activeUserIds)
@@ -305,13 +336,79 @@ export default function MetricasPage() {
               trend={growth}
             />
             <KpiCard
-              label="Alumnos en Riesgo"
-              value={membersAtRisk}
+              label="Tasa de Rechazo"
+              value={`${rejectionRate}%`}
               icon={<AlertTriangle />}
               loading={loading}
-              color="rose"
-              description="Sin asistencia en 10 días"
+              color={Number(rejectionRate) > 10 ? 'rose' : 'emerald'}
+              description="Accesos denegados"
             />
+          </div>
+
+          {/* New Advanced Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            {/* Peak Hours Chart */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-8 rounded-[32px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl"
+            >
+              <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400">
+                  <Activity className="w-5 h-5" />
+                </span>
+                Horarios Pico (Histórico 30d)
+              </h3>
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={peakHours}>
+                    <defs>
+                      <linearGradient id="colorPeak" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f97316" stopOpacity={0.2} />
+                        <stop offset="95%" stopColor="#f97316" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" opacity={0.5} />
+                    <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700 }} />
+                    <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fontWeight: 700 }} />
+                    <Tooltip />
+                    <Area type="monotone" dataKey="count" stroke="#f97316" fillOpacity={1} fill="url(#colorPeak)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </motion.div>
+
+            {/* Top Users List */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="p-8 rounded-[32px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden"
+            >
+              <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400">
+                  <Users className="w-5 h-5" />
+                </span>
+                Top 5 Alumnos (Más Asistencia)
+              </h3>
+              <div className="space-y-4">
+                {topUsers.map((u, i) => (
+                  <div key={u.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-xs">
+                        #{i + 1}
+                      </div>
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate max-w-[150px]">
+                        {u.id.slice(0, 8)}...
+                      </span>
+                    </div>
+                    <div className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-black">
+                      {u.count} ingresos
+                    </div>
+                  </div>
+                ))}
+                {topUsers.length === 0 && <p className="text-center text-slate-400 text-sm">Sin datos suficientes</p>}
+              </div>
+            </motion.div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
