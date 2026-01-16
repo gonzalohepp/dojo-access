@@ -136,9 +136,25 @@ function ValidateContent() {
 
         if (m) {
           setMember(m)
+
           if (m.status === 'activo') {
-            ok = true;
-            reason = 'Acceso autorizado - ¡Bienvenido!'
+            // 3) COOLDOWN CHECK: Evitar re-escaneo inmediato (2 min)
+            const twoMinsAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+            const { data: recentEntries } = await supabase
+              .from('access_logs')
+              .select('id')
+              .eq('user_id', m.user_id)
+              .eq('result', 'autorizado')
+              .gt('scanned_at', twoMinsAgo)
+              .limit(1)
+
+            if (recentEntries && recentEntries.length > 0) {
+              ok = false
+              reason = 'Acceso ya registrado recientemente. Espera 2 minutos para volver a escanear.'
+            } else {
+              ok = true
+              reason = 'Acceso autorizado - ¡Bienvenido!'
+            }
           } else {
             ok = false
             if (m.status === 'suspendido') reason = 'Membresía suspendida'
@@ -291,7 +307,7 @@ function ValidateContent() {
 
           {/* Footer decorativo */}
           <div className="mt-auto pt-12 text-center opacity-40">
-            <p className="text-xs text-slate-500 font-medium tracking-widest uppercase">Beleza Dojo Access Protocol v2.0</p>
+            <p className="text-xs text-slate-500 font-medium tracking-widest uppercase">Beleza Dojo - Control de Acceso</p>
           </div>
         </div>
       </div>

@@ -12,7 +12,9 @@ import {
   CheckCircle2,
   AlertCircle,
   ShieldCheck,
-  Printer
+  Printer,
+  Maximize2,
+  Minimize2
 } from 'lucide-react'
 import AdminLayout from '../layouts/AdminLayout'
 import { supabase } from '@/lib/supabaseClient'
@@ -60,6 +62,7 @@ export default function QRAcceso() {
   // UI State for Guest Access
   const [showGuestConfirm, setShowGuestConfirm] = useState(false)
   const [showGuestSuccess, setShowGuestSuccess] = useState(false)
+  const [fullScreen, setFullScreen] = useState(false)
 
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -102,9 +105,6 @@ export default function QRAcceso() {
       }
     }, 1000)
 
-    return () => {
-      if (tickRef.current) clearInterval(tickRef.current)
-    }
     return () => {
       if (tickRef.current) clearInterval(tickRef.current)
     }
@@ -359,6 +359,14 @@ export default function QRAcceso() {
                       <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
                       <span className="text-[10px] font-black uppercase tracking-widest">Activo</span>
                     </div>
+
+                    {/* Fullscreen Toggle Button */}
+                    <button
+                      onClick={() => setFullScreen(true)}
+                      className="absolute -top-3 -right-3 p-3 rounded-2xl bg-slate-900 text-white shadow-xl hover:scale-110 active:scale-95 transition-all"
+                    >
+                      <Maximize2 className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
 
@@ -553,6 +561,45 @@ export default function QRAcceso() {
           </div>
         </DialogContent>
       </Dialog>
+      {/* Fullscreen QR Overlay */}
+      <AnimatePresence>
+        {fullScreen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center p-8"
+          >
+            <div className="absolute inset-0 opacity-20 overflow-hidden pointer-events-none">
+              <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600 rounded-full blur-[150px]" />
+              <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600 rounded-full blur-[150px]" />
+            </div>
+
+            <button
+              onClick={() => setFullScreen(false)}
+              className="absolute top-8 right-8 p-4 rounded-2xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+            >
+              <Minimize2 className="w-8 h-8" />
+            </button>
+
+            <div className="relative z-10 text-center space-y-8 max-w-2xl w-full">
+              <h2 className="text-4xl font-black text-white tracking-tight">ESCANEÁ PARA ENTRAR</h2>
+              <div className="relative aspect-square w-full max-w-lg mx-auto p-8 bg-white rounded-[3rem] shadow-2xl shadow-blue-500/20">
+                <img src={qrApiUrl} className="w-full h-full object-contain" alt="QR Fullscreen" />
+                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-8 py-3 rounded-2xl bg-emerald-500 text-white font-black text-lg shadow-xl">
+                  ACTIVO
+                </div>
+              </div>
+              <div className="pt-8">
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-sm mb-2">Renovación automática segura</p>
+                <div className="text-5xl font-black text-white tabular-nums">
+                  {formatTimeLeft(nextRefreshAt, now)}
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AdminLayout>
   )
 }
