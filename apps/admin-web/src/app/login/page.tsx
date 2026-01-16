@@ -1,14 +1,15 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
-import { Card, CardContent } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import { motion } from 'framer-motion'
+import { ArrowRight, Loader2 } from 'lucide-react'
 
 export default function LoginPage() {
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
 
   // Si ya está logueado, redirigir directo
   useEffect(() => {
@@ -24,6 +25,7 @@ export default function LoginPage() {
   }, [router])
 
   const handleLogin = useCallback(async () => {
+    setLoading(true)
     const base =
       (typeof window !== 'undefined' ? window.location.origin : '') ||
       process.env.NEXT_PUBLIC_SITE_URL;
@@ -41,41 +43,114 @@ export default function LoginPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-6">
-      <Card className="w-full max-w-xl shadow-2xl border-none">
-        <CardContent className="p-10">
-          <div className="flex flex-col items-center text-center">
-            <div className="w-24 h-24 mb-6 rounded-full bg-white shadow-md flex items-center justify-center">
-              <Image
-                src="/logo.png"
-                alt="Beleza Dojo"
-                width={96}
-                height={96}
-                className="rounded-full"
-              />
-            </div>
+    <div className="min-h-screen relative flex items-center justify-center overflow-hidden bg-slate-950 font-sans selection:bg-blue-500/30">
 
-            <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 leading-tight">
-              Bienvenidos al portal de profesores y alumnos de  –<br /> Beleza Dojo
-            </h1>
-            <p className="text-slate-600 mt-2 mb-8">Ingrese para continuar</p>
+      {/* Background Ambience */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+        <div className="absolute inset-0 bg-[url('/noise.png')] opacity-20 mix-blend-soft-light" />
+      </div>
 
-            <Button
-              onClick={handleLogin}
-              size="lg"
-              className="w-full max-w-sm bg-white hover:bg-gray-50 text-gray-800 border border-gray-300 rounded-lg shadow-sm flex items-center justify-center gap-3 transition-all"
-            >
-              <Image
-                src="/google-icon.svg" // 👈 descargá o usá un ícono oficial
-                alt="Google logo"
-                width={20}
-                height={20}
-              />
-              <span className="text-sm font-medium">Continuar con Google</span>
-            </Button>
+      <div className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-between p-6 md:p-12 relative z-10 gap-12 md:gap-0">
+
+        {/* Left Side: Brand & Copy */}
+        <motion.div
+          initial={{ opacity: 0, x: -30 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+          className="flex-1 text-center md:text-left space-y-8"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-blue-400 text-xs font-bold uppercase tracking-widest backdrop-blur-md">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            Portal de Miembros
           </div>
-        </CardContent>
-      </Card>
+
+          <div className="space-y-4">
+            <h1 className="text-5xl md:text-7xl font-black text-white tracking-tight leading-[1.1]">
+              Beleza <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">Dojo</span>
+            </h1>
+            <p className="text-lg md:text-xl text-slate-400 max-w-lg mx-auto md:mx-0 font-medium leading-relaxed">
+              Gestiona tu entrenamiento, revisa tus clases y accede al dojo con tu credencial digital.
+            </p>
+          </div>
+
+          <div className="flex items-center justify-center md:justify-start gap-4 pt-4">
+            <div className="flex -space-x-3">
+              {[...Array(4)].map((_, i) => (
+                <div key={i} className="w-10 h-10 rounded-full border-2 border-slate-950 bg-slate-800 flex items-center justify-center text-xs text-white overflow-hidden">
+                  <div className={`w-full h-full bg-gradient-to-br ${['from-blue-500 to-indigo-600', 'from-emerald-500 to-teal-600', 'from-orange-500 to-red-600', 'from-purple-500 to-pink-600'][i]}`} />
+                </div>
+              ))}
+            </div>
+            <div className="text-sm text-slate-500 font-medium">
+              <span className="text-white font-bold">150+</span> Alumnos entrenando hoy
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Right Side: Glass Login Card */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="w-full max-w-md"
+        >
+          <div className="relative group">
+            {/* Glow Effect */}
+            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-[32px] blur opacity-25 group-hover:opacity-50 transition duration-1000" />
+
+            <div className="relative bg-slate-900/80 backdrop-blur-2xl border border-white/10 rounded-[30px] p-8 md:p-10 shadow-2xl">
+
+              <div className="flex justify-center mb-8">
+                <div className="relative w-24 h-24">
+                  <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 animate-pulse" />
+                  <Image
+                    src="/logo.png"
+                    alt="Logo"
+                    width={96}
+                    height={96}
+                    className="relative z-10 w-full h-full object-contain drop-shadow-2xl"
+                  />
+                </div>
+              </div>
+
+              <div className="text-center mb-8">
+                <h2 className="text-2xl font-bold text-white mb-2">Bienvenido de nuevo</h2>
+                <p className="text-slate-400 text-sm">
+                  Inicia sesión con tu cuenta verificada
+                </p>
+              </div>
+
+              <button
+                onClick={handleLogin}
+                disabled={loading}
+                className="w-full group relative flex items-center justify-center gap-3 bg-white text-slate-900 py-4 px-6 rounded-2xl font-bold text-base hover:bg-slate-50 hover:shadow-lg hover:shadow-blue-500/10 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed overflow-hidden"
+              >
+                {loading ? (
+                  <Loader2 className="w-5 h-5 animate-spin text-slate-400" />
+                ) : (
+                  <>
+                    <Image src="/google-icon.svg" width={20} height={20} alt="Google" />
+                    <span>Continuar con Google</span>
+                    <ArrowRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 transition-transform" />
+                  </>
+                )}
+              </button>
+
+              <div className="mt-8 text-center">
+                <p className="text-xs text-slate-500">
+                  ¿Problemas para ingresar? <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Contacta soporte</a>
+                </p>
+              </div>
+
+              {/* Decorative bottom line */}
+              <div className="absolute bottom-0 left-10 right-10 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent" />
+            </div>
+          </div>
+        </motion.div>
+      </div>
+
     </div>
   )
 }

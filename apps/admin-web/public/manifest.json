@@ -1,8 +1,8 @@
 {
-    "name": "Beleza Dojo Access",
-    "short_name": "Dojo Access",
+    "name": "Beleza Dojo",
+    "short_name": "Beleza Dojo",
     "description": "Control de acceso para Beleza Dojo",
-    "start_url": "/qr",
+    "start_url": "/",
     "display": "standalone",
     "background_color": "#0f172a",
     "theme_color": "#0f172a",
