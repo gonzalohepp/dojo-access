@@ -16,6 +16,8 @@ import {
 } from 'lucide-react'
 import AdminLayout from '../layouts/AdminLayout'
 import { supabase } from '@/lib/supabaseClient'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
 
 /* ================= HELPERS ================= */
 
@@ -54,6 +56,10 @@ export default function QRAcceso() {
   const [token, setToken] = useState<string>('')
   const [nextRefreshAt, setNextRefreshAt] = useState<Date | null>(null)
   const [now, setNow] = useState(Date.now())
+
+  // UI State for Guest Access
+  const [showGuestConfirm, setShowGuestConfirm] = useState(false)
+  const [showGuestSuccess, setShowGuestSuccess] = useState(false)
 
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -351,20 +357,12 @@ export default function QRAcceso() {
                     </button>
                   </div>
 
+
                   <button
-                    onClick={async () => {
-                      if (!confirm('¿Registrar acceso de invitado manual?')) return
-                      const { error } = await supabase.from('access_logs').insert({
-                        user_id: null,
-                        result: 'autorizado',
-                        reason: 'Acceso invitado manual (Admin)',
-                        scanned_at: new Date().toISOString(),
-                      })
-                      if (error) alert('Error al registrar')
-                      else alert('Acceso de invitado registrado correctamente')
-                    }}
-                    className="w-full py-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all flex items-center justify-center gap-2"
+                    onClick={() => setShowGuestConfirm(true)}
+                    className="w-full py-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all flex items-center justify-center gap-2 relative overflow-hidden"
                   >
+                    <div className="absolute inset-0 bg-emerald-500/10 opacity-0 hover:opacity-100 transition-opacity" />
                     <CheckCircle2 className="w-4 h-4" />
                     Registrar Acceso Invitado
                   </button>
@@ -444,6 +442,83 @@ export default function QRAcceso() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Dialog */}
+      <Dialog open={showGuestConfirm} onOpenChange={setShowGuestConfirm}>
+        <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white rounded-3xl p-0 overflow-hidden">
+          <div className="p-8 text-center bg-gradient-to-b from-transparent to-black/40">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-black text-white text-center">
+                ¿Registrar Invitado?
+              </DialogTitle>
+              <DialogDescription className="text-slate-400 text-center text-base mt-2">
+                Se registrará un ingreso manual autorizado sin asignar a ningún miembro.
+                Úsalo solo para invitados o casos excepcionales.
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="py-8 flex justify-center">
+              <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 relative">
+                <div className="absolute inset-0 bg-emerald-500 blur-xl opacity-20 animate-pulse" />
+                <Smartphone className="w-10 h-10 text-emerald-500 relative z-10" />
+              </div>
+            </div>
+
+            <DialogFooter className="flex-col gap-3 sm:flex-col">
+              <Button
+                onClick={async () => {
+                  const { error } = await supabase.from('access_logs').insert({
+                    user_id: null,
+                    result: 'autorizado',
+                    reason: 'Acceso invitado manual (Admin)',
+                    scanned_at: new Date().toISOString(),
+                  })
+                  setShowGuestConfirm(false)
+                  if (!error) setShowGuestSuccess(true)
+                }}
+                className="w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold tracking-wide"
+              >
+                Confirmar Acceso
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setShowGuestConfirm(false)}
+                className="w-full h-12 rounded-xl text-slate-400 hover:text-white hover:bg-white/5"
+              >
+                Cancelar
+              </Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Success Dialog */}
+      <Dialog open={showGuestSuccess} onOpenChange={setShowGuestSuccess}>
+        <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white rounded-3xl p-0 overflow-hidden">
+          <div className="p-8 text-center bg-gradient-to-b from-transparent to-black/40">
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="space-y-4"
+            >
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-emerald-500/20 flex items-center justify-center border border-emerald-500/30 relative">
+                <div className="absolute inset-0 bg-emerald-500 blur-2xl opacity-20 animate-pulse" />
+                <CheckCircle2 className="w-14 h-14 text-emerald-500 relative z-10" />
+              </div>
+              <h2 className="text-3xl font-black text-white tracking-tight uppercase">Acceso Registrado</h2>
+              <p className="text-emerald-400 font-medium text-lg">El invitado puede ingresar.</p>
+              <div className="pt-6">
+                <Button
+                  onClick={() => setShowGuestSuccess(false)}
+                  className="w-full py-6 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 text-white font-bold"
+                >
+                  CERRAR
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   )
 }
