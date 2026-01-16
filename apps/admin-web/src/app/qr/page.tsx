@@ -49,9 +49,8 @@ type PersistedQR = {
 
 /* ================= COMPONENT ================= */
 
+/* ================= COMPONENT ================= */
 export default function QRAcceso() {
-  const [ttlHours, setTtlHours] = useState<number>(24)
-  const [autoRefresh, setAutoRefresh] = useState<boolean>(true)
   const [token, setToken] = useState<string>('')
   const [nextRefreshAt, setNextRefreshAt] = useState<Date | null>(null)
   const [now, setNow] = useState(Date.now())
@@ -72,18 +71,18 @@ export default function QRAcceso() {
     if (!accessUrl) return ''
     return `https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=${encodeURIComponent(
       accessUrl
-    )}&bgcolor=e2e8f0&color=0f172a` // Slate-200 bg, Slate-900 fg
+    )}&bgcolor=e2e8f0&color=0f172a`
   }, [accessUrl])
 
   // ================= EFFECTS =================
 
-  // Load / Init
+  // Init
   useEffect(() => {
-    regenerate(24, true)
+    regenerate()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Timer Ticker & Auto-Refresh
+  // Timer Ticker & Auto-Refresh loop
   useEffect(() => {
     if (tickRef.current) clearInterval(tickRef.current)
 
@@ -91,29 +90,26 @@ export default function QRAcceso() {
       const currentTime = Date.now()
       setNow(currentTime)
 
-      if (autoRefresh && nextRefreshAt && currentTime >= nextRefreshAt.getTime()) {
-        regenerate(ttlHours, autoRefresh)
+      // Auto refresh if expired
+      if (nextRefreshAt && currentTime >= nextRefreshAt.getTime()) {
+        regenerate()
       }
     }, 1000)
 
     return () => {
       if (tickRef.current) clearInterval(tickRef.current)
     }
-  }, [autoRefresh, nextRefreshAt, ttlHours])
+  }, [nextRefreshAt])
 
   // ================= ACTIONS =================
 
   // ================= ACTIONS =================
-  const regenerate = async (hours = ttlHours, auto = autoRefresh) => {
-    // 1. Generate local token string
+  const regenerate = async () => {
     const t = genToken()
-    // 2. Set expiry (e.g. 30 seconds for security, or custom hours if manual)
-    // For strict security, we force 30 seconds if auto-refresh is on.
-    // If manual (hours), we respect it but it's less secure.
-    const durationMs = auto ? 30 * 1000 : hours * 60 * 60 * 1000
+    // Hardcoded 30 seconds ttl
+    const durationMs = 30 * 1000
     const expiry = new Date(Date.now() + durationMs)
 
-    // 3. Insert into DB
     const { error } = await supabase.from('qr_tokens').insert({
       token: t,
       expires_at: expiry.toISOString()
@@ -124,15 +120,8 @@ export default function QRAcceso() {
       return
     }
 
-    // 4. Update State
     setToken(t)
     setNextRefreshAt(expiry)
-  }
-
-  const applyTtl = () => {
-    const h = Number(ttlHours)
-    if (!Number.isFinite(h) || h <= 0) return
-    regenerate(h, autoRefresh)
   }
 
   const downloadQR = async () => {
@@ -289,23 +278,12 @@ export default function QRAcceso() {
               animate={{ opacity: 1, scale: 1 }}
               className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm"
             >
-              <div className="pl-3 pr-2 flex items-center gap-2 border-r border-slate-200 dark:border-slate-800">
-                <Clock className="w-4 h-4 text-slate-400" />
-                <input
-                  type="number"
-                  min={1}
-                  className="w-12 bg-transparent text-sm font-bold text-slate-900 dark:text-white text-center focus:outline-none"
-                  value={ttlHours}
-                  onChange={(e) => setTtlHours(Number(e.target.value))}
-                />
-                <span className="text-xs font-bold text-slate-400 mr-2">HRS</span>
+              <div className="px-4 py-2 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-emerald-500 animate-pulse" />
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
+                  Auto-Renovación Activa (30s)
+                </span>
               </div>
-              <button
-                onClick={() => applyTtl()}
-                className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 transition-colors"
-              >
-                Aplicar
-              </button>
             </motion.div>
           </header>
 
@@ -354,25 +332,7 @@ export default function QRAcceso() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-center gap-3">
-                    <label className="flex items-center gap-3 p-3 pl-4 pr-5 rounded-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-blue-500 transition-colors">
-                      <div className="relative flex items-center">
-                        <input
-                          type="checkbox"
-                          className="peer sr-only"
-                          checked={autoRefresh}
-                          onChange={(e) => {
-                            setAutoRefresh(e.target.checked)
-                            regenerate(ttlHours, e.target.checked)
-                          }}
-                        />
-                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                      </div>
-                      <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-                        Auto-Renovar
-                      </span>
-                    </label>
-                  </div>
+
 
                   <div className="grid grid-cols-2 gap-3 w-full">
                     <button
@@ -390,6 +350,24 @@ export default function QRAcceso() {
                       Imprimir
                     </button>
                   </div>
+
+                  <button
+                    onClick={async () => {
+                      if (!confirm('¿Registrar acceso de invitado manual?')) return
+                      const { error } = await supabase.from('access_logs').insert({
+                        user_id: null,
+                        result: 'autorizado',
+                        reason: 'Acceso invitado manual (Admin)',
+                        scanned_at: new Date().toISOString(),
+                      })
+                      if (error) alert('Error al registrar')
+                      else alert('Acceso de invitado registrado correctamente')
+                    }}
+                    className="w-full py-4 rounded-2xl bg-emerald-50 dark:bg-emerald-900/10 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-bold text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/20 transition-all flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Registrar Acceso Invitado
+                  </button>
 
                   <button
                     onClick={() => regenerate()}
