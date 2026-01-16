@@ -350,7 +350,31 @@ function ValidateContent() {
                     </div>
                     <h2 className="text-3xl font-black text-white tracking-tight uppercase">Acceso Denegado</h2>
                     <p className="text-red-400 font-medium text-lg">{resultMsg || 'No autorizado'}</p>
-                    <div className="pt-6">
+
+                    <div className="pt-6 flex flex-col gap-3">
+                      {(member?.status === 'vencido' || resultMsg.includes('vencida')) && (
+                        <Button
+                          onClick={async () => {
+                            try {
+                              const res = await fetch('/api/payments/mp/preference', {
+                                method: 'POST',
+                                body: JSON.stringify({
+                                  items: [{ id: 'cuota_mensual', title: 'Cuota Mensual - Beleza Dojo', price: 15000 }], // Precio de ejemplo
+                                  payer_email: member?.email || userEmail
+                                })
+                              })
+                              const data = await res.json()
+                              if (data.init_point) window.location.href = data.init_point
+                            } catch (e) {
+                              console.error('Payment error', e)
+                            }
+                          }}
+                          className="w-full py-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold animate-shimmer"
+                        >
+                          PAGAR CUOTA AHORA
+                        </Button>
+                      )}
+
                       <Button
                         onClick={() => setOpenResult(false)}
                         className="w-full py-6 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 text-white font-bold"

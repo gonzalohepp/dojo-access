@@ -14,7 +14,11 @@ import {
   ChartLine,
   User as UserIcon,
   Building2,
+  Bell,
+  AlertTriangle,
+  ShieldAlert,
 } from 'lucide-react'
+import { Toaster, toast } from 'sonner'
 import ThemeToggle from '../components/ThemeToggle'
 
 type Role = 'admin' | 'member'
@@ -36,6 +40,7 @@ const adminNav = [
   { href: '/classes', label: 'Clases', icon: GraduationCap },
   { href: '/payments', label: 'Pagos', icon: DollarSign },
   { href: '/metricas', label: 'Metricas', icon: ChartLine },
+  { href: '/reportes', label: 'Reportes de Ausencia', icon: ClipboardList },
   { href: '/access-log', label: 'Historial de Accesos', icon: ClipboardList },
 ]
 
@@ -76,6 +81,73 @@ export default function AdminLayout({ children, active }: { children: React.Reac
     }
     load()
   }, [router])
+
+  // ========= Real-time Security Alerts =========
+  useEffect(() => {
+    if (!profile || profile.role !== 'admin') return
+
+    console.log('[AdminLayout] Subscribing to security alerts...')
+    const channel = supabase
+      .channel('security_alerts')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'access_logs' },
+        async (payload) => {
+          const newLog = payload.new
+          if (newLog.result === 'denegado') {
+            console.log('[Security] Access Denied detected:', newLog)
+
+            // Sonido de alerta (opcional, muy sutil)
+            try {
+              const audio = new Audio('/alert.mp3')
+              audio.volume = 0.3
+              audio.play().catch(() => { })
+            } catch { }
+
+            // Buscar nombre del alumno si es posible
+            let name = 'Usuario desconocido'
+            if (newLog.user_id) {
+              const { data: p } = await supabase
+                .from('profiles')
+                .select('first_name, last_name')
+                .eq('user_id', newLog.user_id)
+                .maybeSingle()
+              if (p) name = `${p.first_name} ${p.last_name}`
+            }
+
+            toast.error(`¡Alerta de Acceso!`, {
+              description: `${name}: ${newLog.reason}`,
+              duration: 8000,
+              icon: <ShieldAlert className="w-5 h-5 text-red-500" />
+            })
+
+            // Detección de fraude (múltiples intentos)
+            if (newLog.user_id) {
+              const fiveMinsAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString()
+              const { count } = await supabase
+                .from('access_logs')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', newLog.user_id)
+                .eq('result', 'denegado')
+                .gt('scanned_at', fiveMinsAgo)
+
+              if (count && count >= 3) {
+                toast.warning('Posible Intento de Fraude', {
+                  description: `${name} ha fallado ${count} intentos en 5 minutos.`,
+                  duration: 12000,
+                  icon: <AlertTriangle className="w-5 h-5 text-amber-500" />
+                })
+              }
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [profile])
 
   const logout = async () => {
     await supabase.auth.signOut()
@@ -249,6 +321,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
         <div className="flex-1 overflow-auto custom-scrollbar relative">
           {children}
         </div>
+        <Toaster position="top-right" richColors closeButton />
       </main>
     </div>
   )
