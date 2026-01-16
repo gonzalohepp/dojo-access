@@ -158,8 +158,8 @@ function ValidateContent() {
           } else {
             ok = false
             if (m.status === 'suspendido') reason = 'Membresía suspendida'
-            else if (m.status === 'vencido') reason = 'Cuota vencida'
-            else reason = 'Cuenta inactiva o pendiente de aprobación'
+            else if (m.status === 'vencido' || m.status === 'inactivo') reason = 'Cuota vencida o cuenta inactiva'
+            else reason = 'Cuenta pendiente de aprobación'
           }
         }
 
@@ -352,7 +352,7 @@ function ValidateContent() {
                     <p className="text-red-400 font-medium text-lg">{resultMsg || 'No autorizado'}</p>
 
                     <div className="pt-6 flex flex-col gap-3">
-                      {(member?.status === 'vencido' || resultMsg.includes('vencida')) && (
+                      {(member?.status === 'vencido' || member?.status === 'inactivo' || resultMsg.includes('vencida') || resultMsg.includes('inactive')) && (
                         <Button
                           onClick={async () => {
                             try {
