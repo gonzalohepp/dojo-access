@@ -15,6 +15,7 @@ import {
   Printer
 } from 'lucide-react'
 import AdminLayout from '../layouts/AdminLayout'
+import { supabase } from '@/lib/supabaseClient'
 
 /* ================= HELPERS ================= */
 
@@ -78,32 +79,8 @@ export default function QRAcceso() {
 
   // Load / Init
   useEffect(() => {
-    const load = (): PersistedQR | null => {
-      try {
-        const raw = localStorage.getItem('qr_settings')
-        if (!raw) return null
-        return JSON.parse(raw)
-      } catch {
-        return null
-      }
-    }
-
-    const saved = load()
-    if (saved) {
-      setTtlHours(saved.ttlHours ?? 24)
-      setAutoRefresh(saved.autoRefresh ?? true)
-      setToken(saved.token ?? '')
-
-      const expiry = saved.nextRefreshAt ? new Date(saved.nextRefreshAt) : null
-      setNextRefreshAt(expiry)
-
-      // If expired on load, regenerate immediately
-      if (expiry && Date.now() >= expiry.getTime()) {
-        regenerate(saved.ttlHours ?? 24, saved.autoRefresh ?? true)
-      }
-    } else {
-      regenerate(24, true)
-    }
+    regenerate(24, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Timer Ticker & Auto-Refresh
@@ -126,25 +103,30 @@ export default function QRAcceso() {
 
   // ================= ACTIONS =================
 
-  const persist = (data: PersistedQR) => {
-    try {
-      localStorage.setItem('qr_settings', JSON.stringify(data))
-    } catch { }
-  }
-
-  const regenerate = (hours = ttlHours, auto = autoRefresh) => {
+  // ================= ACTIONS =================
+  const regenerate = async (hours = ttlHours, auto = autoRefresh) => {
+    // 1. Generate local token string
     const t = genToken()
-    const expiry = new Date(Date.now() + hours * 60 * 60 * 1000)
+    // 2. Set expiry (e.g. 30 seconds for security, or custom hours if manual)
+    // For strict security, we force 30 seconds if auto-refresh is on.
+    // If manual (hours), we respect it but it's less secure.
+    const durationMs = auto ? 30 * 1000 : hours * 60 * 60 * 1000
+    const expiry = new Date(Date.now() + durationMs)
 
+    // 3. Insert into DB
+    const { error } = await supabase.from('qr_tokens').insert({
+      token: t,
+      expires_at: expiry.toISOString()
+    })
+
+    if (error) {
+      console.error('Error creating QR token:', error)
+      return
+    }
+
+    // 4. Update State
     setToken(t)
     setNextRefreshAt(expiry)
-
-    persist({
-      token: t,
-      nextRefreshAt: expiry.toISOString(),
-      ttlHours: hours,
-      autoRefresh: auto,
-    })
   }
 
   const applyTtl = () => {

@@ -24,37 +24,7 @@ type MemberRow = {
 const fullName = (m: MemberRow | null) =>
   m ? [m.first_name ?? '', m.last_name ?? ''].join(' ').trim() || 'Miembro' : 'Miembro'
 
-// 🔒 Política: sólo aceptamos QR de este sitio con ?t=<token>
-const ACCEPT_ONLY_SITE_TOKEN = true
 
-function getAllowedOrigins(): string[] {
-  const origins = new Set<string>()
-  if (typeof window !== 'undefined') origins.add(window.location.origin)
-  // Si definiste NEXT_PUBLIC_SITE_URL, se respeta también
-  if (process.env.NEXT_PUBLIC_SITE_URL) {
-    try {
-      const o = new URL(process.env.NEXT_PUBLIC_SITE_URL).origin
-      origins.add(o)
-    } catch { }
-  }
-  return Array.from(origins)
-}
-
-function parseSiteToken(raw: string): { ok: boolean; token?: string } {
-  try {
-    const u = new URL(raw)
-    const allowed = getAllowedOrigins()
-    const isOurOrigin = allowed.includes(u.origin)
-    const isValidatePath = u.pathname === '/validate' || u.pathname.startsWith('/validate/')
-    const token = u.searchParams.get('t') || undefined
-    if (isOurOrigin && isValidatePath && token) {
-      return { ok: true, token }
-    }
-    return { ok: false }
-  } catch {
-    return { ok: false }
-  }
-}
 
 function ValidateContent() {
   const router = useRouter()
@@ -106,26 +76,35 @@ function ValidateContent() {
       processingRef.current = true
 
       try {
-        // 1) Chequear que el QR sea válido según nuestra política
-        const site = parseSiteToken(rawText)
+        // 1) Validar TOKEN contra la base de datos (SEGURIDAD CRÍTICA)
+        // Extraemos 't' de la URL manualmente si viene en rawText
+        let token = ''
+        try {
+          const u = new URL(rawText)
+          token = u.searchParams.get('t') || ''
+        } catch { }
 
-        if (ACCEPT_ONLY_SITE_TOKEN) {
-          if (!site.ok) {
-            // QR de otro origen o sin ?t= => denegado sin consultar DB
-            setAllowed(false)
-            setResultMsg('QR inválido')
-            setOpenResult(true)
-            return
-          }
-          // (Opcional) acá podrías validar el token contra backend si más adelante lo guardás.
-        } else {
-          // (modo flexible, no lo usamos ahora)
-          if (!site.ok) {
-            setAllowed(false)
-            setResultMsg('QR inválido')
-            setOpenResult(true)
-            return
-          }
+        if (!token) {
+          setAllowed(false)
+          setResultMsg('QR inválido (Sin token)')
+          setOpenResult(true)
+          return
+        }
+
+        // Consultamos la DB para ver si el token existe y es válido (no expirado)
+        const { data: dbToken, error: tokenErr } = await supabase
+          .from('qr_tokens')
+          .select('*')
+          .eq('token', token)
+          .gt('expires_at', new Date().toISOString()) // Solo tokens que expiran en el futuro
+          .maybeSingle()
+
+        if (tokenErr || !dbToken) {
+          console.log('Token invalido o expirado:', token)
+          setAllowed(false)
+          setResultMsg('El código QR ha expirado o no es válido. Escanea el de la pantalla nuevamente.')
+          setOpenResult(true)
+          return
         }
 
         // 2) Verificación de membresía del usuario logueado
