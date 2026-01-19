@@ -420,7 +420,7 @@ export default function MetricasPage() {
                     onClick={() => setSelectedClass('general')}
                     className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selectedClass === 'general' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
                   >General</button>
-                  {classes.slice(0, 2).map(c => (
+                  {classes.map(c => (
                     <button
                       key={c.id}
                       onClick={() => setSelectedClass(c.id)}
