@@ -30,14 +30,14 @@ export default async function HomePage() {
   }
 
   // 🔹 Primero intentamos por user_id
-  let { data: profile } = await supabase
+  let { data: profile, error: profileErr } = await supabase
     .from('profiles')
     .select('user_id, role, email')
     .eq('user_id', user.id)
     .maybeSingle()
 
   // 🔹 Si no hay perfil con ese user_id, probamos por email
-  if (!profile) {
+  if (!profile && !profileErr) {
     const { data: byEmail } = await supabase
       .from('profiles')
       .select('user_id, role, email')
@@ -47,12 +47,34 @@ export default async function HomePage() {
     profile = byEmail
   }
 
+  // 🔹 Si sigue sin haber perfil, lo creamos como 'pending'
+  if (!profile && !profileErr) {
+    const { data: newProfile, error: createErr } = await supabase
+      .from('profiles')
+      .insert({
+        user_id: user.id,
+        email: user.email,
+        first_name: user.user_metadata?.first_name || '',
+        last_name: user.user_metadata?.last_name || '',
+        role: 'pending'
+      })
+      .select('user_id, role, email')
+      .single()
+
+    if (createErr) {
+      console.error('[app/page] Error creating pending profile:', createErr)
+    } else {
+      profile = newProfile
+    }
+  }
+
   // 🔹 Redirección por rol
-  const role = profile?.role ?? 'member'
+  const role = profile?.role ?? 'pending'
   if (role === 'admin') {
     redirect('/admin')
   } else {
-    // Si no tiene perfil o no es admin, va a validate
+    // Si es member o pending, va a validate
+    // (En validate ya se maneja el caso de que no sea activo)
     redirect('/validate')
   }
 

@@ -6,6 +6,9 @@ import AdminLayout from '../layouts/AdminLayout'
 import { Plus, Search, Check, Users, UserPlus, Filter, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
+import { useSearchParams } from 'next/navigation'
+import { Suspense } from 'react'
+
 import MemberFilters from '../components/members/MemberFilters'
 import MemberList from '../components/members/MemberList'
 import MemberModal from '../components/members/MemberModal'
@@ -36,7 +39,8 @@ function SuccessToast({ message, onClose }: { message: string, onClose: () => vo
   )
 }
 
-export default function MembersPage() {
+function MembersContent() {
+  const searchParams = useSearchParams()
   const [members, setMembers] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -65,6 +69,7 @@ export default function MembersPage() {
     setMembers((data ?? []) as Row[])
     setLoading(false)
   }
+
   useEffect(() => {
     load()
   }, [])
@@ -79,6 +84,38 @@ export default function MembersPage() {
     }
     loadClasses()
   }, [])
+
+  // --- DETECTAR REQUISICIÓN DE NUEVO MIEMBRO (desde Dashboard) ---
+  useEffect(() => {
+    const newId = searchParams.get('new_id')
+    const newEmail = searchParams.get('new_email')
+    const newName = searchParams.get('new_name')
+
+    if (newId && newEmail) {
+      const [first, ...rest] = (newName || '').split(' ')
+      const last = rest.join(' ')
+
+      setEditing(null)
+      // Pasamos un objeto que MemberModal pueda interpretar para pre-rellenar
+      // Aunque editing sea null, podemos pasar valores iniciales si quisiéramos, 
+      // pero el Modal usa `member` prop para rellenar campos.
+      // Si member es null, están vacíos.
+      // Mejor pasamos un objeto "mock" para que el modal lo tome como punto de partida.
+      setEditing({
+        user_id: newId,
+        email: newEmail,
+        first_name: first || null,
+        last_name: last || null,
+        phone: null,
+        emergency_phone: null,
+        notes: 'Registro pendiente desde login',
+        access_code: null,
+        membership_type: null,
+        next_payment_due: null
+      })
+      setOpen(true)
+    }
+  }, [searchParams])
 
   // --- FILTROS + SEARCH ---
   const filtered = useMemo(() => {
@@ -159,8 +196,11 @@ export default function MembersPage() {
     const access_code =
       payload.access_code?.trim() || (await generateAccessCode(payload.full_name))
 
-    // EDITAR
-    if (editing) {
+    // EDITAR (o actualizar usuario existente)
+    // Importante: si editing.status es undefined es que es un "nuevo" via pending
+    // Pero en el modal actual, si pasamos `editing` con datos, se comporta como editar.
+    // Usaremos el endpoint de creación para todo lo que no sea una edición de un Miembro ya Activo/Inactivo
+    if (editing && editing.status) {
       const userId = editing.user_id
 
       // perfiles
@@ -172,7 +212,8 @@ export default function MembersPage() {
           email: payload.email,
           phone: payload.phone ?? null,
           emergency_phone: payload.emergency_contact ?? null,
-          notes: payload.notes ?? null
+          notes: payload.notes ?? null,
+          role: 'member' // Aseguramos que sea member
         })
         .eq('user_id', userId)
       if (upErr) {
@@ -216,7 +257,7 @@ export default function MembersPage() {
       return
     }
 
-    // CREAR
+    // CREAR (incluyendo los que vienen de 'pending')
     try {
       const res = await fetch('/api/members/create', {
         method: 'POST',
@@ -251,7 +292,6 @@ export default function MembersPage() {
 
     setOpen(false)
     await load()
-    setSuccessMsg('Usuario creado correctamente')
   }
 
   return (
@@ -342,5 +382,13 @@ export default function MembersPage() {
         )}
       </AnimatePresence>
     </AdminLayout>
+  )
+}
+
+export default function MembersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center">Cargando...</div>}>
+      <MembersContent />
+    </Suspense>
   )
 }

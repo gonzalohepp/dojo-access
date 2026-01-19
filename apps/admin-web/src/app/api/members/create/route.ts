@@ -60,7 +60,7 @@ export async function POST(req: Request) {
         // 2. Create Profile
         const { error: profileError } = await supabase
             .from('profiles')
-            .insert({
+            .upsert({
                 user_id: userId,
                 role: 'member',
                 first_name,
@@ -70,7 +70,7 @@ export async function POST(req: Request) {
                 emergency_phone: emergency_phone ?? null,
                 notes: notes ?? null,
                 access_code: access_code
-            })
+            }, { onConflict: 'user_id' })
 
         if (profileError) {
             // If profile already exists (unique constraint), maybe update it? 
