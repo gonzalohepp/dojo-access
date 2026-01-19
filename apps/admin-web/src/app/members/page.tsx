@@ -240,6 +240,7 @@ function MembersContent() {
           phone: payload.phone ?? null,
           emergency_phone: payload.emergency_contact ?? null,
           notes: payload.notes ?? null,
+          access_code: payload.access_code?.trim() || null,
           role: 'member' // Aseguramos que sea member
         })
         .eq('user_id', userId)
