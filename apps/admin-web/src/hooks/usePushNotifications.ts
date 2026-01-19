@@ -33,10 +33,13 @@ export function usePushNotifications() {
 
             const { data: { user } } = await supabase.auth.getUser()
             if (user) {
-                await supabase.from('push_subscriptions').insert({
+                // Remove any old subscriptions for THIS same endpoint to keep it clean
+                // The DB unique constraint will also catch this, but upsert is better
+                await supabase.from('push_subscriptions').upsert({
                     user_id: user.id,
-                    subscription: sub.toJSON()
-                })
+                    subscription: sub.toJSON(),
+                    endpoint: sub.endpoint
+                }, { onConflict: 'endpoint' })
             }
 
             setSubscription(sub)
@@ -47,5 +50,20 @@ export function usePushNotifications() {
         }
     }
 
-    return { isSupported, subscription, subscribeUser }
+    const unsubscribeUser = async () => {
+        try {
+            if (subscription) {
+                await subscription.unsubscribe()
+                await supabase.from('push_subscriptions').delete().match({ endpoint: subscription.endpoint })
+                setSubscription(null)
+                return true
+            }
+            return false
+        } catch (err) {
+            console.error('Failed to unsubscribe:', err)
+            return false
+        }
+    }
+
+    return { isSupported, subscription, subscribeUser, unsubscribeUser }
 }

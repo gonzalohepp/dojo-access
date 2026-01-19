@@ -75,15 +75,20 @@ export default function AdminLayout({ children, active }: { children: React.Reac
   const router = useRouter()
   const pathname = usePathname()
 
-  const { isSupported, subscription, subscribeUser } = usePushNotifications()
+  const { isSupported, subscription, subscribeUser, unsubscribeUser } = usePushNotifications()
   const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BMXQvrbtBZdniuZrLMYD87T0E-742Lo72ktJWrjzB5mcbKYrrCh5X6cAo7z0d09QqOygrZsNFVEz_IBgTWqUp6o'
 
-  const handleSubscribe = async () => {
-    const sub = await subscribeUser(VAPID_PUBLIC_KEY)
-    if (sub) {
-      toast.success('¡Notificaciones activadas!')
+  const handleTogglePush = async () => {
+    if (subscription) {
+      const success = await unsubscribeUser()
+      if (success) toast.info('Notificaciones desactivadas')
     } else {
-      toast.error('No se pudo activar las notificaciones.')
+      const sub = await subscribeUser(VAPID_PUBLIC_KEY)
+      if (sub) {
+        toast.success('¡Notificaciones activadas!')
+      } else {
+        toast.error('No se pudo activar las notificaciones.')
+      }
     }
   }
 
@@ -449,7 +454,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
 
                 {profile?.role === 'admin' && isSupported && (
                   <button
-                    onClick={handleSubscribe}
+                    onClick={handleTogglePush}
                     className={`p-2.5 rounded-xl transition-colors relative group ${subscription
                       ? 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
                       : 'text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800'
