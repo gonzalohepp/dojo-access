@@ -69,7 +69,8 @@ export default function MemberForm({
       return
     }
 
-    const generateUnique = async () => {
+    let active = true
+    const timeout = setTimeout(async () => {
       const initial = parts[0][0]
       const lastname = parts.slice(1).join('')
       let suggested = (initial + lastname).replace(/[^a-z0-9]/g, '')
@@ -78,7 +79,7 @@ export default function MemberForm({
       let counter = 2
       let isUnique = false
 
-      while (!isUnique) {
+      while (!isUnique && active) {
         const { data } = await supabase
           .from('profiles')
           .select('user_id')
@@ -93,11 +94,16 @@ export default function MemberForm({
         }
       }
 
-      setForm(f => ({ ...f, access_code: unique }))
-    }
+      if (active) {
+        setForm(f => ({ ...f, access_code: unique }))
+      }
+    }, 600) // Debounce 600ms
 
-    generateUnique()
-  }, [form.full_name, manualCode, member])
+    return () => {
+      active = false
+      clearTimeout(timeout)
+    }
+  }, [form.full_name, manualCode, member?.user_id])
 
   const handleMembershipChange = (v: string) => {
     const months = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 }[v] ?? 1
