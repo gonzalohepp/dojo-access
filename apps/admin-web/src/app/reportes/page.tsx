@@ -10,17 +10,20 @@ import {
     MessageSquare,
     Search,
     ArrowRight,
-    TrendingDown
+    TrendingDown,
+    FileDown
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { exportToExcel } from '@/lib/excelExport'
 
 type Member = {
     user_id: string
     first_name: string
     last_name: string
     email: string
+    phone: string | null
     status: string
     last_access?: string
 }
@@ -37,7 +40,7 @@ export default function ReportesPage() {
             // 1. Obtener todos los miembros activos
             const { data: membersData } = await supabase
                 .from('members_with_status')
-                .select('user_id, first_name, last_name, email, status')
+                .select('user_id, first_name, last_name, email, phone, status')
                 .eq('status', 'activo')
 
             if (!membersData) return
@@ -104,15 +107,25 @@ export default function ReportesPage() {
                         <p className="text-slate-400 font-medium italic">Miembros activos que no han asistido en la última semana.</p>
                     </div>
 
-                    <div className="relative group min-w-[300px]">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
-                        <input
-                            type="text"
-                            placeholder="Buscar por nombre o email..."
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-slate-900 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all font-medium"
-                        />
+                    <div className="flex flex-wrap items-center gap-3">
+                        <Button
+                            onClick={() => exportToExcel(absentMembers, `Ausencias_${new Date().toISOString().slice(0, 10)}`)}
+                            className="bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-2xl px-6 py-6 font-bold text-xs uppercase tracking-widest transition-all gap-2"
+                        >
+                            <FileDown className="w-5 h-5 text-blue-500" />
+                            Exportar .xlsx
+                        </Button>
+
+                        <div className="relative group min-w-[300px]">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors" />
+                            <input
+                                type="text"
+                                placeholder="Buscar por nombre o email..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 bg-slate-900 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all font-medium"
+                            />
+                        </div>
                     </div>
                 </header>
 
@@ -227,8 +240,9 @@ export default function ReportesPage() {
                                                         variant="ghost"
                                                         className="bg-blue-500/10 hover:bg-blue-500 text-blue-500 hover:text-white border border-blue-500/20 rounded-xl px-6 py-5 font-bold text-xs uppercase tracking-widest transition-all gap-2"
                                                         onClick={() => {
-                                                            const msg = encodeURIComponent(`Hola ${m.first_name}, te extrañamos en Beleza Dojo! Notamos que hace unos días no vienes a entrenar. ¿Todo bien? 🥋`)
-                                                            window.open(`https://wa.me/?text=${msg}`, '_blank')
+                                                            const msg = encodeURIComponent(`Hola ${m.first_name}, te extrañamos en Beleza Dojo! 🥋 Notamos que hace unos días no vienes a entrenar. ¿Todo bien?`)
+                                                            const phone = m.phone?.replace(/\D/g, '') || ''
+                                                            window.open(`https://wa.me/${phone}?text=${msg}`, '_blank')
                                                         }}
                                                     >
                                                         <MessageSquare className="w-4 h-4" />

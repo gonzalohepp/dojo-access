@@ -32,7 +32,7 @@ SELECT
   (
     SELECT json_agg(expiring)
     FROM (
-      SELECT p.user_id, p.first_name, p.last_name, m.end_date
+      SELECT p.user_id, p.first_name, p.last_name, p.phone, m.end_date
       FROM profiles p
       JOIN memberships m ON p.user_id = m.member_id
       WHERE m.end_date >= CURRENT_DATE 

@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, Mail, Phone, Pencil, Trash2, User as UserIcon, Shield, Hash, Clock } from 'lucide-react'
+import { Calendar, Mail, Phone, Pencil, Trash2, User as UserIcon, Shield, Hash, Clock, MessageCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { MemberRow } from '@/types/member'
 
@@ -157,6 +157,17 @@ export default function MemberList({
                 >
                   <Pencil className="w-3 h-3" />
                   EDITAR
+                </button>
+                <button
+                  onClick={() => {
+                    const name = fullName || 'Alumno'
+                    const msg = `Hola ${name}! Te escribimos de Beleza Dojo. 🥋`
+                    const phone = m.phone?.replace(/\D/g, '') || ''
+                    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+                  }}
+                  className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-emerald-500 hover:border-emerald-200 hover:bg-emerald-50 transition-all"
+                >
+                  <MessageCircle className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => onDelete(m.user_id)}

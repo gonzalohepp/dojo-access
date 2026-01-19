@@ -10,8 +10,9 @@ import {
 } from 'recharts'
 import {
   TrendingUp, Users, DollarSign, Wallet, AlertTriangle,
-  Activity, Receipt, ArrowUpRight, ArrowDownRight, Info
+  Activity, Receipt, ArrowUpRight, ArrowDownRight, Info, FileDown, Download
 } from 'lucide-react'
+import { exportToExcel } from '@/lib/excelExport'
 
 /* =============== helpers fecha / número =============== */
 const tzDate = (v: string | Date) => new Date(v)
@@ -333,6 +334,22 @@ export default function MetricasPage() {
               animate={{ opacity: 1, scale: 1 }}
               className="flex items-center gap-3"
             >
+              <div className="flex gap-2">
+                <button
+                  onClick={() => exportToExcel(payments, `Pagos_${new Date().toISOString().slice(0, 10)}`)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all"
+                >
+                  <Download className="w-4 h-4" />
+                  Pagos
+                </button>
+                <button
+                  onClick={() => exportToExcel(recentAccesses, `Asistencia_${new Date().toISOString().slice(0, 10)}`)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-xs font-black uppercase tracking-widest text-slate-600 dark:text-slate-300 hover:bg-slate-50 transition-all"
+                >
+                  <FileDown className="w-4 h-4" />
+                  Asistencia
+                </button>
+              </div>
               <div className="px-4 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400">

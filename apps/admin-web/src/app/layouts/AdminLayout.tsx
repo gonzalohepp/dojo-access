@@ -20,10 +20,13 @@ import {
   UserPlus,
   ArrowRight,
   Check,
+  Wifi,
+  WifiOff
 } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import ThemeToggle from '../components/ThemeToggle'
 import { motion, AnimatePresence } from 'framer-motion'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 type Notification = {
   id: string
@@ -71,6 +74,18 @@ export default function AdminLayout({ children, active }: { children: React.Reac
   const [showNotifs, setShowNotifs] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
+
+  const { isSupported, subscription, subscribeUser } = usePushNotifications()
+  const VAPID_PUBLIC_KEY = 'BMXQvrbtBZdniuZrLMYD87T0E-742Lo72ktJWrjzB5mcbKYrrCh5X6cAo7z0d09QqOygrZsNFVEz_IBgTWqUp6o'
+
+  const handleSubscribe = async () => {
+    const sub = await subscribeUser(VAPID_PUBLIC_KEY)
+    if (sub) {
+      toast.success('¡Notificaciones activadas!')
+    } else {
+      toast.error('No se pudo activar las notificaciones.')
+    }
+  }
 
   const fetchInitialNotifs = async () => {
     const dismissed = JSON.parse(localStorage.getItem('dismissed_notifs') || '[]')
@@ -431,6 +446,19 @@ export default function AdminLayout({ children, active }: { children: React.Reac
                     <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-slate-900 animate-pulse" />
                   )}
                 </button>
+
+                {profile?.role === 'admin' && isSupported && (
+                  <button
+                    onClick={handleSubscribe}
+                    className={`p-2.5 rounded-xl transition-colors relative group ${subscription
+                      ? 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
+                      : 'text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800'
+                      }`}
+                    title={subscription ? 'Notificaciones activas' : 'Activar notificaciones push'}
+                  >
+                    {subscription ? <Wifi className="w-5 h-5" /> : <WifiOff className="w-5 h-5" />}
+                  </button>
+                )}
 
                 <AnimatePresence>
                   {showNotifs && (

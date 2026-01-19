@@ -1,7 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
-import { Calendar, AlertTriangle } from 'lucide-react'
-type Expiring = { user_id: string; first_name: string | null; last_name: string | null; end_date: string }
+import { Calendar, AlertTriangle, MessageCircle } from 'lucide-react'
+type Expiring = { user_id: string; first_name: string | null; last_name: string | null; end_date: string; phone?: string | null }
 export default function ExpiringMembers({ rows, loading }: { rows: Expiring[]; loading?: boolean }) {
   if (loading) {
     return (
@@ -19,6 +19,13 @@ export default function ExpiringMembers({ rows, loading }: { rows: Expiring[]; l
         <p className="text-slate-400 text-xs font-bold uppercase tracking-widest">Todo al día</p>
       </div>
     )
+  }
+
+  const handleWhatsApp = (m: Expiring) => {
+    const name = m.first_name || 'Alumno'
+    const msg = `Hola ${name}! Te escribimos de Beleza Dojo para recordarte que tu membresía vence el ${new Date(m.end_date).toLocaleDateString()}. ¡Te esperamos! 🥋`
+    const phone = m.phone?.replace(/\D/g, '') || ''
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
   }
 
   return (
@@ -45,7 +52,18 @@ export default function ExpiringMembers({ rows, loading }: { rows: Expiring[]; l
               </div>
             </div>
           </div>
-          <div className="text-[10px] font-black text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-lg uppercase tracking-widest">Urgente</div>
+          <div className="flex items-center gap-2">
+            {m.phone && (
+              <button
+                onClick={() => handleWhatsApp(m)}
+                className="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                title="Mensaje de WhatsApp"
+              >
+                <MessageCircle className="w-4 h-4" />
+              </button>
+            )}
+            <div className="text-[10px] font-black text-red-600 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded-lg uppercase tracking-widest">Urgente</div>
+          </div>
         </motion.div>
       ))}
     </div>
