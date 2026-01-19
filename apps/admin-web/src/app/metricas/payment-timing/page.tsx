@@ -231,8 +231,8 @@ export default function PaymentTimingPage() {
     )
 }
 
-function KpiCard({ title, count, icon, color, loading }: any) {
-    const colors = {
+function KpiCard({ title, count, icon, color, loading }: { title: string; count: number; icon: any; color: 'green' | 'yellow' | 'red'; loading: boolean }) {
+    const colors: Record<'green' | 'yellow' | 'red', string> = {
         green: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800',
         yellow: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
         red: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800'
