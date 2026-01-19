@@ -273,7 +273,7 @@ export default function ProfilePage() {
                         <span>{member.email}</span>
                         <span className="hidden md:inline">•</span>
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold uppercase tracking-wide">
-                          {member.membership_type === 'monthly' ? 'Miembro Mensual' : 'Socio VIP'}
+                          {member.membership_type === 'monthly' ? 'Miembro Mensual' : 'Miembro'}
                         </span>
                       </p>
                     </div>

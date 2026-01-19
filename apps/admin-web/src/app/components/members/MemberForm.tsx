@@ -59,7 +59,10 @@ export default function MemberForm({
 
   // Autocomplete Access Code
   useEffect(() => {
-    if (manualCode || member) return // Don't autocomplete if manual or editing
+    // Autocomplete if manualCode is false AND (it's a new member OR current code is empty/'X')
+    if (manualCode) return
+    const isPlaceholder = !form.access_code || form.access_code.toUpperCase() === 'X'
+    if (member && !isPlaceholder) return
     const parts = form.full_name.trim().toLowerCase().split(/\s+/).filter(Boolean)
     if (parts.length < 2) {
       if (form.full_name === '') setForm(f => ({ ...f, access_code: '' }))

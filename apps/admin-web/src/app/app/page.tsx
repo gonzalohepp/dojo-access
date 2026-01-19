@@ -56,7 +56,8 @@ export default async function HomePage() {
         email: user.email,
         first_name: user.user_metadata?.first_name || '',
         last_name: user.user_metadata?.last_name || '',
-        role: 'pending'
+        role: 'pending',
+        access_code: null
       })
       .select('user_id, role, email')
       .single()
