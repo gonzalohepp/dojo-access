@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminLayout from '../layouts/AdminLayout'
-import { Plus, Search, Check, Users, UserPlus, Filter, X } from 'lucide-react'
+import { Plus, Search, Check, Users, UserPlus, Filter, X, Trash2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { useSearchParams } from 'next/navigation'
@@ -56,6 +56,8 @@ function MembersContent() {
     className: 'todas' as 'todas' | string
   })
   const [q, setQ] = useState('')
+  const [confirmingId, setConfirmingId] = useState<string | null>(null)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   // --- CARGA ---
   const load = async () => {
@@ -156,9 +158,15 @@ function MembersContent() {
   /** Paso 4.1: eliminar con API */
   const onDelete = async (user_id: string) => {
     console.log('[Members] onDelete triggered for:', user_id)
-    if (!window.confirm('¿Eliminar este miembro?')) return
+    setConfirmingId(user_id)
+  }
+
+  const actuallyDelete = async () => {
+    if (!confirmingId) return
+    const user_id = confirmingId
 
     try {
+      setDeletingId(user_id)
       console.log('[Members] Calling delete API...')
       const res = await fetch('/api/members/delete', {
         method: 'POST',
@@ -173,11 +181,14 @@ function MembersContent() {
         throw new Error(data.error || 'Error desconocido')
       }
 
+      setConfirmingId(null)
       await load()
       setSuccessMsg('Miembro eliminado correctamente')
     } catch (error: any) {
       console.error('[Members] onDelete error:', error)
       alert('Error eliminando miembro: ' + error.message)
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -384,6 +395,58 @@ function MembersContent() {
           </motion.div>
         </div>
       </div>
+
+      {/* Custom Confirmation Modal */}
+      <AnimatePresence>
+        {confirmingId && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => !deletingId && setConfirmingId(null)}
+              className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm rounded-[32px] bg-white dark:bg-slate-900 p-8 shadow-2xl border border-slate-200 dark:border-slate-800 text-center"
+            >
+              <div className="w-16 h-16 rounded-2xl bg-red-100 dark:bg-red-500/10 flex items-center justify-center text-red-600 mx-auto mb-6">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2 uppercase">¿Estás seguro?</h3>
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-8">
+                Esta acción eliminará permanentemente al miembro, sus inscripciones y su historial. Esta acción no se puede deshacer.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={actuallyDelete}
+                  disabled={deletingId !== null}
+                  className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-red-600 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-red-500/30 hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {deletingId ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      ELIMINANDO...
+                    </>
+                  ) : (
+                    'SÍ, ELIMINAR MIEMBRO'
+                  )}
+                </button>
+                <button
+                  onClick={() => setConfirmingId(null)}
+                  disabled={deletingId !== null}
+                  className="w-full py-4 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-black uppercase tracking-widest text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-all disabled:opacity-50"
+                >
+                  CANCELAR
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <MemberModal
         open={open}
