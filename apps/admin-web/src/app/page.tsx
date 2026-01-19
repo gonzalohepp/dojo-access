@@ -78,9 +78,17 @@ export default function HomeLandingPage() {
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
       const _supabase = createClient(supabaseUrl, supabaseKey)
 
+      // Get Client IP
+      let ip = 'unknown'
+      try {
+        const ipRes = await fetch('https://api.ipify.org?format=json')
+        const ipData = await ipRes.json()
+        ip = ipData.ip
+      } catch (e) { /* ignore */ }
+
       await _supabase.from('landing_events').insert({
         event_type: eventType,
-        metadata
+        metadata: { ...metadata, ip }
       })
     } catch (e) {
       // ignore

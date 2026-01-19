@@ -650,16 +650,35 @@ function LandingMetricsCard({ events, loading }: any) {
     <div className="w-full h-40 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-[32px]" />
   )
 
-  const todayStr = new Date().toISOString().slice(0, 10)
+  // Fix timezone ART (UTC-3) for reset check
+  const getARTDate = (d = new Date()) => {
+    return new Date(d.toLocaleString('en-US', { timeZone: 'America/Argentina/Buenos_Aires' }))
+  }
+
+  const artNow = getARTDate()
+  const todayStr = artNow.toISOString().slice(0, 10)
+
+  const h24 = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  const d8 = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+  const startMonth = new Date(artNow.getFullYear(), artNow.getMonth(), 1)
 
   const visitorCount = events.filter((e: any) => e.event_type === 'page_view').length
   const clickCount = events.filter((e: any) => e.event_type === 'cta_click' || e.event_type === 'click_whatsapp' || e.event_type === 'click_instagram').length
   const conversionRate = visitorCount > 0 ? ((clickCount / visitorCount) * 100).toFixed(1) : 0
 
-  const visitsToday = events.filter((e: any) => e.event_type === 'page_view' && e.created_at.startsWith(todayStr)).length
-  const visitsTotal = visitorCount
+  const visitsToday = events.filter((e: any) => e.event_type === 'page_view' && getARTDate(new Date(e.created_at)).toISOString().startsWith(todayStr)).length
+  const visits24h = events.filter((e: any) => e.event_type === 'page_view' && new Date(e.created_at) >= h24).length
+  const visits8d = events.filter((e: any) => e.event_type === 'page_view' && new Date(e.created_at) >= d8).length
+  const visitsMonth = events.filter((e: any) => e.event_type === 'page_view' && new Date(e.created_at) >= startMonth).length
+
   const clicksWsp = events.filter((e: any) => e.event_type === 'click_whatsapp').length
   const clicksInsta = events.filter((e: any) => e.event_type === 'click_instagram').length
+
+  const recentIPs = Array.from(new Set(events
+    .filter((e: any) => e.metadata?.ip && e.event_type === 'page_view')
+    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .map((e: any) => e.metadata.ip)
+  )).slice(0, 5)
 
   return (
     <motion.div
@@ -678,30 +697,51 @@ function LandingMetricsCard({ events, loading }: any) {
           </span>
         </div>
         <h3 className="text-2xl font-black tracking-tight mb-1">Landing Page Performance</h3>
-        <p className="text-slate-400 font-medium text-sm mb-8">Métricas de conversión y tráfico web</p>
+        <p className="text-slate-400 font-medium text-sm mb-8">Métricas de conversión y tráfico web (ART)</p>
 
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-slate-50 rounded-2xl p-4">
-            <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Visitas Hoy</p>
-            <p className="text-2xl font-black text-slate-900">{visitsToday}</p>
+          <div className="bg-slate-50/5 rounded-2xl p-4 border border-white/5">
+            <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Hoy (Reset 00h ART)</p>
+            <p className="text-2xl font-black text-white">{visitsToday}</p>
           </div>
-          <div className="bg-slate-50 rounded-2xl p-4">
-            <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Total (90d)</p>
-            <p className="text-2xl font-black text-slate-900">{visitsTotal}</p>
+          <div className="bg-slate-50/5 rounded-2xl p-4 border border-white/5">
+            <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Últimas 24h</p>
+            <p className="text-2xl font-black text-white">{visits24h}</p>
           </div>
-          <div className="bg-green-50 rounded-2xl p-4">
-            <p className="text-[10px] uppercase font-black text-green-600 mb-1">Clicks WhatsApp</p>
-            <p className="text-2xl font-black text-green-700">{clicksWsp}</p>
+          <div className="bg-slate-50/5 rounded-2xl p-4 border border-white/5">
+            <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Últimos 8 días</p>
+            <p className="text-2xl font-black text-white">{visits8d}</p>
           </div>
-          <div className="bg-purple-50 rounded-2xl p-4">
-            <p className="text-[10px] uppercase font-black text-purple-600 mb-1">Clicks Instagram</p>
-            <p className="text-2xl font-black text-purple-700">{clicksInsta}</p>
+          <div className="bg-slate-50/5 rounded-2xl p-4 border border-white/5">
+            <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Este Mes</p>
+            <p className="text-2xl font-black text-white">{visitsMonth}</p>
+          </div>
+          <div className="bg-green-500/10 rounded-2xl p-4 border border-green-500/20">
+            <p className="text-[10px] uppercase font-black text-green-400 mb-1">IG Clicks</p>
+            <p className="text-2xl font-black text-green-500">{clicksInsta}</p>
+          </div>
+          <div className="bg-blue-500/10 rounded-2xl p-4 border border-blue-500/20">
+            <p className="text-[10px] uppercase font-black text-blue-400 mb-1">WSP Clicks</p>
+            <p className="text-2xl font-black text-blue-500">{clicksWsp}</p>
           </div>
         </div>
 
-        <div className="pt-4 border-t border-slate-100 flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-500">Tasa de Conversión</span>
-          <span className="text-xl font-black text-blue-600">{conversionRate}%</span>
+        {recentIPs.length > 0 && (
+          <div className="mb-8 p-4 bg-black/20 rounded-2xl border border-white/5">
+            <p className="text-[10px] uppercase font-black text-slate-500 mb-3">Últimas IPs detectadas</p>
+            <div className="flex flex-wrap gap-2">
+              {recentIPs.map((ip: any) => (
+                <span key={ip} className="px-2 py-1 bg-white/5 rounded-lg text-[10px] font-mono text-slate-400 border border-white/5">
+                  {ip}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-4 border-t border-white/10 flex items-center justify-between">
+          <span className="text-sm font-bold text-slate-400">Tasa de Conversión</span>
+          <span className="text-xl font-black text-blue-400">{conversionRate}%</span>
         </div>
       </div>
     </motion.div>
