@@ -244,14 +244,21 @@ function MembersContent() {
       }
 
       // membresía (upsert 1 por member_id)
+      // Fetch existing membership to preserve start_date
+      const { data: existingMem } = await supabase
+        .from('memberships')
+        .select('start_date')
+        .eq('member_id', userId)
+        .maybeSingle()
+
       const { error: memErr } = await supabase
         .from('memberships')
         .upsert(
           {
             member_id: userId,
             type: typeMap[payload.membership_type],
-            start_date:
-              payload.last_payment_date ?? new Date().toISOString().slice(0, 10),
+            start_date: existingMem?.start_date || payload.last_payment_date || new Date().toISOString().slice(0, 10),
+            last_payment_date: payload.last_payment_date || new Date().toISOString().slice(0, 10),
             end_date: payload.next_payment_due ?? null
           },
           { onConflict: 'member_id' }
