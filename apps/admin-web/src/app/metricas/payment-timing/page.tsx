@@ -40,7 +40,7 @@ export default function PaymentTimingPage() {
           )
         `)
                 .gte('paid_at', startOfMonth)
-                .order('paid_at', { descending: true })
+                .order('paid_at', { ascending: false })
 
             if (error) {
                 console.error('Error fetching payments:', error)
