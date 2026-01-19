@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AdminLayout from '../layouts/AdminLayout'
-import { Bell, Send, Users, Calendar, CheckCircle, AlertCircle, Smartphone, History, Info, Search, Trash2, Clock, Check } from 'lucide-react'
+import { Bell, Send, Users, Calendar, CheckCircle, AlertCircle, Smartphone, History, Info, Search, Trash2, Clock, Check, ChevronDown, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import UserSearch from '../components/notifications/UserSearch'
 
@@ -21,6 +21,7 @@ export default function NotificationsPage() {
     const [loading, setLoading] = useState(false)
     const [activeTab, setActiveTab] = useState<'send' | 'history' | 'config' | 'subscribed'>('send')
     const [selectedUser, setSelectedUser] = useState<any>(null)
+    const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
     const [form, setForm] = useState({
         target: 'all' as 'all' | 'active' | 'expiring' | 'custom',
         title: '',
@@ -55,11 +56,26 @@ export default function NotificationsPage() {
             // 2. Fetch Subscribed Users
             const { data: subsData } = await supabase
                 .from('push_subscriptions')
-                .select('user_id, profiles!inner(*)')
+                .select('id, user_id, subscription, profiles!inner(*)')
 
             if (subsData) {
-                // Deduplicate users as one user might have multiple device subscriptions
-                const uniqueUsers = Array.from(new Map(subsData.map(s => [s.user_id, s.profiles])).values())
+                // Group subscriptions by user_id
+                const userMap = new Map()
+                subsData.forEach(s => {
+                    const uid = s.user_id
+                    if (!userMap.has(uid)) {
+                        userMap.set(uid, {
+                            ...s.profiles,
+                            subscriptions: []
+                        })
+                    }
+                    userMap.get(uid).subscriptions.push({
+                        id: s.id,
+                        subscription: s.subscription
+                    })
+                })
+
+                const uniqueUsers = Array.from(userMap.values())
                 setSubscribedUsers(uniqueUsers)
                 setSubscribedCount(uniqueUsers.length)
             }
@@ -109,6 +125,36 @@ export default function NotificationsPage() {
             toast.success('Configuración guardada correctamente', { id: loadingToast })
         } catch (e) {
             toast.error('Error al guardar configuración', { id: loadingToast })
+        }
+    }
+
+    const deleteSubscription = async (id: string, userId: string) => {
+        const { supabase } = await import('@/lib/supabaseClient')
+        const loadingToast = toast.loading('Eliminando dispositivo...')
+
+        try {
+            const { error } = await supabase
+                .from('push_subscriptions')
+                .delete()
+                .eq('id', id)
+
+            if (error) throw error
+
+            toast.success('Dispositivo eliminado', { id: loadingToast })
+
+            // Update local state
+            setSubscribedUsers(prev => prev.map(u => {
+                if (u.user_id === userId) {
+                    return {
+                        ...u,
+                        subscriptions: u.subscriptions.filter((s: any) => s.id !== id)
+                    }
+                }
+                return u
+            }).filter(u => u.subscriptions.length > 0))
+
+        } catch (e) {
+            toast.error('Error al eliminar dispositivo', { id: loadingToast })
         }
     }
 
@@ -626,36 +672,90 @@ export default function NotificationsPage() {
                                         subscribedUsers.map((user) => (
                                             <div
                                                 key={user.user_id}
-                                                className="group flex items-center gap-4 p-5 rounded-[2.2rem] border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 transition-all cursor-pointer relative overflow-hidden"
-                                                onClick={() => {
-                                                    setSelectedUser(user)
-                                                    setForm({ ...form, target: 'custom' })
-                                                    setActiveTab('send')
-                                                    toast.success(`Elegido: ${user.first_name}`)
-                                                }}
+                                                className="flex flex-col gap-2"
                                             >
-                                                <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg">
-                                                        <Check className="w-3 h-3" />
+                                                <div
+                                                    className="group flex items-center gap-4 p-5 rounded-[2.2rem] border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 transition-all cursor-pointer relative overflow-hidden"
+                                                    onClick={() => {
+                                                        setSelectedUser(user)
+                                                        setForm({ ...form, target: 'custom' })
+                                                        setActiveTab('send')
+                                                        toast.success(`Elegido: ${user.first_name}`)
+                                                    }}
+                                                >
+                                                    <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                        <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg">
+                                                            <Check className="w-3 h-3" />
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center font-black text-blue-600 border border-slate-200 dark:border-slate-700 shadow-sm group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300">
+                                                        {(user.first_name?.[0] || '') + (user.last_name?.[0] || '')}
+                                                    </div>
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="flex items-center gap-2">
+                                                            <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                                                                {user.first_name} {user.last_name}
+                                                            </h4>
+                                                            {user.role === 'admin' && (
+                                                                <span className="text-[8px] font-black bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-widest leading-none">Admin</span>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-[10px] text-slate-500 font-bold truncate uppercase tracking-tighter mt-0.5">
+                                                            {user.email}
+                                                        </p>
                                                     </div>
                                                 </div>
 
-                                                <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center font-black text-blue-600 border border-slate-200 dark:border-slate-700 shadow-sm group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300">
-                                                    {(user.first_name?.[0] || '') + (user.last_name?.[0] || '')}
-                                                </div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">
-                                                            {user.first_name} {user.last_name}
-                                                        </h4>
-                                                        {user.role === 'admin' && (
-                                                            <span className="text-[8px] font-black bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-widest leading-none">Admin</span>
-                                                        )}
-                                                    </div>
-                                                    <p className="text-[10px] text-slate-500 font-bold truncate uppercase tracking-tighter mt-0.5">
-                                                        {user.email}
-                                                    </p>
-                                                </div>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        setExpandedUserId(expandedUserId === user.user_id ? null : user.user_id)
+                                                    }}
+                                                    className={`mx-6 flex items-center justify-center gap-2 py-1.5 rounded-b-2xl border-x border-b transition-all text-[10px] font-black uppercase tracking-widest ${expandedUserId === user.user_id
+                                                        ? 'bg-blue-600 border-blue-600 text-white'
+                                                        : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 text-slate-500 hover:text-blue-600'}`}
+                                                >
+                                                    {user.subscriptions?.length || 0} dispositivos {expandedUserId === user.user_id ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                                </button>
+
+                                                <AnimatePresence>
+                                                    {expandedUserId === user.user_id && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, height: 0 }}
+                                                            animate={{ opacity: 1, height: 'auto' }}
+                                                            exit={{ opacity: 0, height: 0 }}
+                                                            className="mx-6 overflow-hidden"
+                                                        >
+                                                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 space-y-3 mt-1 shadow-inner">
+                                                                {user.subscriptions?.map((sub: any, idx: number) => (
+                                                                    <div key={sub.id} className="flex items-center justify-between gap-3 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
+                                                                        <div className="flex items-center gap-3 min-w-0">
+                                                                            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                                                                                <Smartphone className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                                                            </div>
+                                                                            <div className="min-w-0">
+                                                                                <p className="text-[9px] font-black text-slate-900 dark:text-white uppercase tracking-tight truncate">
+                                                                                    Disp. #{idx + 1}
+                                                                                </p>
+                                                                                <p className="text-[8px] font-bold text-slate-500 truncate font-mono">
+                                                                                    {sub.subscription.endpoint.split('/').pop()?.substring(0, 20)}...
+                                                                                </p>
+                                                                            </div>
+                                                                        </div>
+                                                                        <button
+                                                                            onClick={() => deleteSubscription(sub.id, user.user_id)}
+                                                                            className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all"
+                                                                            title="Eliminar dispositivo"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </div>
                                         ))
                                     )}
