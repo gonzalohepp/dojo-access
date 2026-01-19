@@ -42,31 +42,28 @@ export async function POST(req: Request) {
         }
 
         // 2. Find Target Audience: Active Members who haven't paid this month
-        // logic: status != 'inactivo' (or specific check) AND (last_payment_date < FirstDayOfMonth OR last_payment_date IS NULL)
-
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
 
-        // Fetch candidates
+        // Fetch ALL active candidates
         const { data: candidates, error } = await supabase
-            .from('members_with_status') // Using view for active status convenience
+            .from('members_with_status')
             .select('user_id, first_name')
             .eq('status', 'activo')
 
         if (error) throw error
 
-        // We need to verify 'last_payment_date' from 'memberships' because view might not have it yet (unless updated)
-        // Ideally we JOIN or separate query. For simplicity and robustness:
+        // Get users who HAVE paid this month (from payments table directly)
+        const { data: paymentsThisMonth } = await supabase
+            .from('payments')
+            .select('user_id')
+            .gte('paid_at', startOfMonth)
 
-        const { data: paidMembers } = await supabase
-            .from('memberships')
-            .select('member_id')
-            .gte('last_payment_date', startOfMonth)
+        const paidIds = new Set((paymentsThisMonth || []).map(p => p.user_id))
 
-        const paidIds = new Set((paidMembers || []).map(m => m.member_id))
-
+        // Filter out users who already paid
         const targets = (candidates || []).filter(c => !paidIds.has(c.user_id))
 
-        console.log(`[Reminders] Found ${targets.length} unpaid active members.`)
+        console.log(`[Reminders] Found ${targets.length} unpaid active members out of ${candidates?.length || 0} total active.`)
 
         if (targets.length === 0) {
             return NextResponse.json({ message: 'Everyone is up to date!' })
