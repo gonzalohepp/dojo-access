@@ -232,23 +232,25 @@ export default function AdminLayout({ children, active }: { children: React.Reac
       )
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'profiles', filter: 'role=eq.pending' },
+        { event: 'INSERT', schema: 'public', table: 'profiles' },
         (payload) => {
-          const p = payload.new
-          const newNotif: Notification = {
-            id: p.user_id,
-            type: 'pending_user',
-            title: 'Solicitud de Registro',
-            description: `${p.first_name || ''} ${p.last_name || ''} pendiente de aprobación.`,
-            timestamp: p.created_at || new Date().toISOString(),
-            link: `/members?new_id=${p.user_id}&new_email=${p.email}&new_name=${encodeURIComponent(`${p.first_name || ''} ${p.last_name || ''}`.trim())}`,
-            read: false
+          const p = payload.new as any
+          if (p.role === 'pending') {
+            const newNotif: Notification = {
+              id: p.user_id,
+              type: 'pending_user',
+              title: 'Solicitud de Registro',
+              description: `${p.first_name || ''} ${p.last_name || ''} pendiente de aprobación.`,
+              timestamp: p.created_at || new Date().toISOString(),
+              link: `/members?new_id=${p.user_id}&new_email=${p.email}&new_name=${encodeURIComponent(`${p.first_name || ''} ${p.last_name || ''}`.trim())}`,
+              read: false
+            }
+            setNotifications(prev => [newNotif, ...prev].slice(0, 15))
+            toast.info('Nueva Solicitud', {
+              description: `${p.email} se ha logueado.`,
+              duration: 8000
+            })
           }
-          setNotifications(prev => [newNotif, ...prev].slice(0, 15))
-          toast.info('Nueva Solicitud', {
-            description: `${p.email} se ha logueado.`,
-            duration: 8000
-          })
         }
       )
       .subscribe()
