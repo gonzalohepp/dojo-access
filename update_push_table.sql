@@ -7,7 +7,12 @@ UPDATE public.push_subscriptions
 SET endpoint = subscription->>'endpoint'
 WHERE endpoint IS NULL;
 
--- Make it unique per user/device
+-- 3. Cleanup existing duplicates before adding constraint
+-- Keeps only the most recent subscription for each unique endpoint
+DELETE FROM public.push_subscriptions a USING public.push_subscriptions b
+WHERE a.id < b.id AND a.endpoint = b.endpoint;
+
+-- 4. Make it unique per user/device
 ALTER TABLE public.push_subscriptions 
 DROP CONSTRAINT IF EXISTS unique_subscription_endpoint;
 
