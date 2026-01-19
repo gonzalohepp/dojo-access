@@ -183,10 +183,19 @@ export default function PaymentModal({
     }
 
     // 4. Update Membership Status
+    // Fetch existing to preserve start_date (Join Date) if it exists
+    const { data: existingMem } = await supabase
+      .from('memberships')
+      .select('start_date')
+      .eq('member_id', userId)
+      .maybeSingle();
+
+    const finalStartDate = existingMem?.start_date || fromStr;
+
     await supabase.from('memberships').upsert({
       member_id: userId,
       type: selectedMember?.membership_type || 'monthly',
-      start_date: fromStr,
+      start_date: finalStartDate,
       end_date: toStr,
       notes: `Pago #${insertPay?.id}`,
     }, { onConflict: 'member_id' });

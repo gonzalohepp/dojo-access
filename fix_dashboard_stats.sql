@@ -1,4 +1,7 @@
--- 1. Mejorar el conteo del dashboard
+-- 1. Eliminar la vista si ya existe para evitar conflictos de reemplazo
+DROP VIEW IF EXISTS dashboard_stats;
+
+-- 2. Crear la vista dashboard_stats
 CREATE OR REPLACE VIEW dashboard_stats AS
 WITH counts AS (
   SELECT 
@@ -17,8 +20,8 @@ revenue AS (
 ),
 access_today AS (
   SELECT 
-    count(*) filter (where result = 'authorized') as success,
-    count(*) filter (where result = 'denied') as denied
+    count(*) filter (where result IN ('authorized', 'autorizado', 'success', 'ok')) as success,
+    count(*) filter (where result IN ('denied', 'denegado', 'rejected')) as denied
   FROM access_logs
   WHERE scanned_at >= CURRENT_DATE
 )
@@ -42,6 +45,7 @@ SELECT
   ) as expiring_next_7d
 FROM counts c, revenue r, access_today a;
 
--- 2. Asegurar que las políticas de RLS permitan leer esta vista (generalmente si no tiene RLS, es legible por roles con permiso en tablas base)
---GRANT SELECT ON dashboard_stats TO authenticated;
---GRANT SELECT ON dashboard_stats TO service_role;
+-- 3. Otorgar permisos (Esencial para que la API pueda leerla)
+GRANT SELECT ON dashboard_stats TO anon;
+GRANT SELECT ON dashboard_stats TO authenticated;
+GRANT SELECT ON dashboard_stats TO service_role;
