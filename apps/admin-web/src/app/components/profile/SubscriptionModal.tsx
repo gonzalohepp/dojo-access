@@ -27,6 +27,7 @@ export default function SubscriptionModal({
     const [additionalClasses, setAdditionalClasses] = useState<number[]>([])
     const [loading, setLoading] = useState(true)
     const [processing, setProcessing] = useState(false)
+    const [isNewMember, setIsNewMember] = useState(false)
 
     useEffect(() => {
         if (open) {
@@ -44,8 +45,22 @@ export default function SubscriptionModal({
                             if (initialData.additional) setAdditionalClasses(initialData.additional)
                         }
                     }
-                    setLoading(false)
                 })
+
+            // Check if is new member
+            supabase.auth.getUser().then(({ data: { user } }) => {
+                if (user) {
+                    supabase
+                        .from('members_with_status')
+                        .select('is_new_member')
+                        .eq('user_id', user.id)
+                        .maybeSingle()
+                        .then(({ data }) => {
+                            if (data) setIsNewMember(!!data.is_new_member)
+                        })
+                }
+                setLoading(false)
+            })
         }
     }, [open, initialData])
 
@@ -63,9 +78,10 @@ export default function SubscriptionModal({
     }
 
     const multiplier = useMemo(() => {
+        if (isNewMember) return 1.0
         const day = new Date().getDate()
         return day > 10 ? 1.2 : 1.0
-    }, [])
+    }, [isNewMember])
 
     const total = useMemo(() => {
         let sum = 0
@@ -285,9 +301,9 @@ export default function SubscriptionModal({
                                         <span className="text-xs font-bold text-slate-500 uppercase">ARS / Mes</span>
                                     </div>
                                     <div className="flex items-center gap-2 mt-2">
-                                        <div className={`w-2 h-2 rounded-full animate-pulse ${multiplier > 1 ? 'bg-orange-500' : 'bg-emerald-500'}`} />
-                                        <span className={`text-[10px] font-black uppercase tracking-widest ${multiplier > 1 ? 'text-orange-500' : 'text-emerald-500'}`}>
-                                            {multiplier > 1 ? 'Incluye 20% Recargo (Post día 10)' : 'Cálculo Automático'}
+                                        <div className={`w-2 h-2 rounded-full animate-pulse ${isNewMember ? 'bg-blue-400' : multiplier > 1 ? 'bg-orange-500' : 'bg-emerald-500'}`} />
+                                        <span className={`text-[10px] font-black uppercase tracking-widest ${isNewMember ? 'text-blue-400' : multiplier > 1 ? 'text-orange-500' : 'text-emerald-500'}`}>
+                                            {isNewMember ? '✨ Beneficio Alumno Nuevo (Precio Flat)' : multiplier > 1 ? 'Incluye 20% Recargo (Post día 10)' : 'Cálculo Automático'}
                                         </span>
                                     </div>
                                 </div>

@@ -20,6 +20,7 @@ type MemberRow = {
   access_code: string | null
   status?: string | null
   estimated_monthly_fee?: number | null
+  is_new_member?: boolean
 }
 
 const fullName = (m: MemberRow | null) =>
@@ -31,12 +32,16 @@ function ValidateContent() {
   const router = useRouter()
   const qp = useSearchParams()
 
+  // Datos usuario / miembro
+  const [member, setMember] = useState<MemberRow | null>(null)
+  const [userEmail, setUserEmail] = useState<string | null>(null)
+
   const multiplier = useMemo(() => {
+    if (member?.is_new_member) return 1.0
     const day = new Date().getDate()
     return day > 10 ? 1.2 : 1.0
-  }, [])
+  }, [member?.is_new_member])
 
-  // ... (rest of the state remains the same)
   const [paused, setPaused] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
 
@@ -44,10 +49,6 @@ function ValidateContent() {
   const [openResult, setOpenResult] = useState(false)
   const [allowed, setAllowed] = useState<boolean | null>(null)
   const [resultMsg, setResultMsg] = useState('')
-
-  // Datos usuario / miembro
-  const [member, setMember] = useState<MemberRow | null>(null)
-  const [userEmail, setUserEmail] = useState<string | null>(null)
 
   // Anti-loop
   const processingRef = useRef(false)
@@ -384,7 +385,7 @@ function ValidateContent() {
                           }}
                           className="w-full py-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold animate-shimmer"
                         >
-                          PAGAR CUOTA AHORA {multiplier > 1 && '(+20% Recargo)'}
+                          PAGAR CUOTA AHORA {member?.is_new_member ? '(Precio de Bienvenida)' : multiplier > 1 ? '(+20% Recargo)' : ''}
                         </Button>
                       )}
 

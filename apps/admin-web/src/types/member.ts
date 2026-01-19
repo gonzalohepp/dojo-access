@@ -14,6 +14,8 @@ export type MemberRow = {
     class_ids?: number[]
     class_names?: string[]
     avatar_url?: string | null
+    is_new_member?: boolean
+    estimated_monthly_fee?: number | null
 }
 
 export type ClassRow = {

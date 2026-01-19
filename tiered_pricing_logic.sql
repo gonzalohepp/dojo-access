@@ -51,6 +51,9 @@ SELECT
         JOIN classes c ON ce.class_id = c.id 
         WHERE ce.user_id = p.user_id
     ), 0) as estimated_monthly_fee,
+    NOT EXISTS (
+        SELECT 1 FROM payments pay WHERE pay.user_id = p.user_id
+    ) as is_new_member,
     CASE 
         WHEN p.role = 'admin' THEN 'activo'
         -- Si ya tiene un pago para este período/mes, está activo
