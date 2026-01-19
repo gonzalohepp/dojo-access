@@ -3,9 +3,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Save, User, DollarSign, Calendar, CreditCard, AlignLeft, Receipt, Clock } from 'lucide-react';
+import { lastDayOfMonth, addMonths, isAfter } from 'date-fns';
 import { supabase } from '@/lib/supabaseClient';
 
-type MemberOpt = { user_id: string; name: string };
+type MemberOpt = {
+  user_id: string;
+  name: string;
+  estimated_fee: number;
+  is_new_member: boolean;
+  membership_type: string;
+  next_payment_due: string | null;
+};
 
 export default function PaymentModal({
   open,
@@ -35,23 +43,68 @@ export default function PaymentModal({
   useEffect(() => {
     if (!open) return;
     (async () => {
+      // Fetch from view to get fee and new_member status
       const { data, error } = await supabase
-        .from('profiles')
-        .select('user_id, first_name, last_name')
+        .from('members_with_status')
+        .select('user_id, first_name, last_name, estimated_monthly_fee, is_new_member, membership_type, next_payment_due')
         .order('last_name', { ascending: true, nullsFirst: true });
 
       if (error) {
         console.error('Error cargando miembros:', error);
         setMembers([]);
       } else {
-        const opts = (data ?? []).map((p: { user_id: string; first_name?: string | null; last_name?: string | null }) => ({
+        const opts = (data ?? []).map((p: any) => ({
           user_id: p.user_id,
           name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim(),
+          estimated_fee: p.estimated_monthly_fee || 0,
+          is_new_member: p.is_new_member,
+          membership_type: p.membership_type || 'monthly',
+          next_payment_due: p.next_payment_due
         }));
         setMembers(opts);
       }
     })();
   }, [open]);
+
+  // Auto-calculate on member selection
+  useEffect(() => {
+    if (!userId) return;
+    const member = members.find(m => m.user_id === userId);
+    if (!member) return;
+
+    const today = new Date();
+    const day = today.getDate();
+    // Logic: Surcharge if day > 10 and NOT new member
+    const hasSurcharge = day > 10 && !member.is_new_member;
+    const base = member.estimated_fee;
+    const total = hasSurcharge ? base * 1.2 : base; // 20% surcharge
+
+    setAmount(total);
+    setMethod('efectivo');
+
+    // Dates
+    const fromDate = today; // Payment date = Start date usually? Or should we use next_payment_due + 1?
+    // User prefers simple: "Pago hoy" -> "Vence fin de mes" (for monthly)
+    // If calculating strictly by calendar month:
+    const durationMap = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 };
+    const months = durationMap[member.membership_type as keyof typeof durationMap] || 1;
+    // However, if paying late (e.g. 19th), do we cover rest of THIS month or NEXT month?
+    // Usually "Cuota Enero" -> Expires Jan 31.
+    // So if I pay Jan 19, it expires Jan 31.
+    const toDate = lastDayOfMonth(addMonths(fromDate, months - 1));
+
+    setPaidAt(fromDate.toISOString().slice(0, 10));
+    setFrom(fromDate.toISOString().slice(0, 10));
+    setTo(toDate.toISOString().slice(0, 10));
+
+    // Optional: Pre-fill notes if surcharge
+    if (hasSurcharge) {
+      setNotes(`Incluye recargo del 20% por pago fuera de término (día ${day}).`);
+    } else {
+      setNotes('');
+    }
+
+  }, [userId, members]);
 
   const canSave = useMemo(
     () => !!userId && !!amount && !!paidAt && !!from && !!to,
@@ -198,6 +251,19 @@ export default function PaymentModal({
                         onChange={e => setAmount(e.target.value ? Number(e.target.value) : '')}
                         min={0}
                       />
+                      {/* Price Breakdown Hint */}
+                      {userId && (() => {
+                        const m = members.find(x => x.user_id === userId);
+                        if (m) {
+                          const base = m.estimated_fee;
+                          const isSurcharge = (amount as number) > base;
+                          return (
+                            <div className="absolute top-full left-0 mt-1 text-[10px] uppercase font-bold text-slate-400">
+                              Base: ${base} {isSurcharge && <span className="text-emerald-500 font-black">+ Recargo (20%)</span>}
+                            </div>
+                          )
+                        }
+                      })()}
                     </div>
                   </div>
                   <div>
