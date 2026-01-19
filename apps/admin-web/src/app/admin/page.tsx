@@ -303,37 +303,6 @@ export default function AdminDashboard() {
             />
           </section>
 
-          {/* Métricas de Pagos (Desglose) */}
-          <section className="mb-10">
-            <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight mb-5 flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-emerald-500" />
-              Comportamiento de Pagos (Mes Actual)
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatsCard
-                title="A Término (Día 1-10)"
-                value={stats?.paid_on_time ?? 0}
-                icon={<CheckCircle className="w-5 h-5" />}
-                color="green"
-                loading={loading}
-              />
-              <StatsCard
-                title="Con Recargo (Día 11-20)"
-                value={stats?.paid_late_1 ?? 0}
-                icon={<AlertTriangle className="w-5 h-5" />}
-                color="yellow"
-                loading={loading}
-              />
-              <StatsCard
-                title="Fuera de Término (> Día 20)"
-                value={stats?.paid_late_2 ?? 0}
-                icon={<XCircle className="w-5 h-5" />}
-                color="red"
-                loading={loading}
-              />
-            </div>
-          </section>
-
           {/* Nuevos Registros */}
           <div className="mb-10">
             <RegistrationRequests
