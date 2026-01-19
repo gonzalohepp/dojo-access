@@ -9,11 +9,16 @@ import { supabase } from '@/lib/supabaseClient';
 type MemberOpt = {
   user_id: string;
   name: string;
-  estimated_fee: number;
   is_new_member: boolean;
   membership_type: string;
-  next_payment_due: string | null;
 };
+
+type ClassOpt = {
+  id: number
+  name: string
+  price_principal: number
+  price_additional: number
+}
 
 export default function PaymentModal({
   open,
@@ -25,7 +30,12 @@ export default function PaymentModal({
   onSaved: () => void;
 }) {
   const [members, setMembers] = useState<MemberOpt[]>([]);
+  const [classes, setClasses] = useState<ClassOpt[]>([])
   const [loading, setLoading] = useState(false);
+
+  // logic for class selection
+  const [principalClass, setPrincipalClass] = useState<number | null>(null)
+  const [additionalClasses, setAdditionalClasses] = useState<number[]>([])
 
   // form
   const [userId, setUserId] = useState('');
@@ -40,13 +50,18 @@ export default function PaymentModal({
   });
   const [notes, setNotes] = useState('');
 
+  // 1. Load Members and Classes
   useEffect(() => {
     if (!open) return;
     (async () => {
+      // Load classes
+      const { data: classData } = await supabase.from('classes').select('*').order('name')
+      if (classData) setClasses(classData)
+
       // Fetch from view to get fee and new_member status
       const { data, error } = await supabase
         .from('members_with_status')
-        .select('user_id, first_name, last_name, estimated_monthly_fee, is_new_member, membership_type, next_payment_due')
+        .select('user_id, first_name, last_name, is_new_member, membership_type')
         .order('last_name', { ascending: true, nullsFirst: true });
 
       if (error) {
@@ -56,55 +71,81 @@ export default function PaymentModal({
         const opts = (data ?? []).map((p: any) => ({
           user_id: p.user_id,
           name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim(),
-          estimated_fee: p.estimated_monthly_fee || 0,
           is_new_member: p.is_new_member,
-          membership_type: p.membership_type || 'monthly',
-          next_payment_due: p.next_payment_due
+          membership_type: p.membership_type || 'monthly'
         }));
         setMembers(opts);
       }
     })();
   }, [open]);
 
-  // Auto-calculate on member selection
+  // 2. When user is selected, load their CURRENT classes
+  useEffect(() => {
+    if (!userId) {
+      setPrincipalClass(null)
+      setAdditionalClasses([])
+      return
+    }
+
+    (async () => {
+      const { data } = await supabase
+        .from('class_enrollments')
+        .select('class_id, is_principal')
+        .eq('user_id', userId)
+
+      if (data) {
+        const p = data.find(d => d.is_principal)
+        const a = data.filter(d => !d.is_principal).map(d => d.class_id)
+        setPrincipalClass(p?.class_id || null)
+        setAdditionalClasses(a)
+      }
+    })()
+  }, [userId])
+
+  // 3. Auto-calculate on Selection Change (User OR Classes)
   useEffect(() => {
     if (!userId) return;
     const member = members.find(m => m.user_id === userId);
     if (!member) return;
 
+    // 1. Calculate Base Price
+    let base = 0
+    if (principalClass) {
+      const p = classes.find(c => c.id === principalClass)
+      base += Number(p?.price_principal || 0)
+    }
+    additionalClasses.forEach(id => {
+      const a = classes.find(c => c.id === id)
+      base += Number(a?.price_additional || a?.price_principal || 0)
+    })
+
     const today = new Date();
     const day = today.getDate();
     // Logic: Surcharge if day > 10 and NOT new member
     const hasSurcharge = day > 10 && !member.is_new_member;
-    const base = member.estimated_fee;
     const total = hasSurcharge ? base * 1.2 : base; // 20% surcharge
 
     setAmount(total);
     setMethod('efectivo');
 
-    // Dates
-    const fromDate = today; // Payment date = Start date usually? Or should we use next_payment_due + 1?
-    // User prefers simple: "Pago hoy" -> "Vence fin de mes" (for monthly)
-    // If calculating strictly by calendar month:
+    // Dates logic
+    const fromDate = today;
     const durationMap = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 };
     const months = durationMap[member.membership_type as keyof typeof durationMap] || 1;
-    // However, if paying late (e.g. 19th), do we cover rest of THIS month or NEXT month?
-    // Usually "Cuota Enero" -> Expires Jan 31.
-    // So if I pay Jan 19, it expires Jan 31.
     const toDate = lastDayOfMonth(addMonths(fromDate, months - 1));
 
     setPaidAt(fromDate.toISOString().slice(0, 10));
     setFrom(fromDate.toISOString().slice(0, 10));
     setTo(toDate.toISOString().slice(0, 10));
 
-    // Optional: Pre-fill notes if surcharge
+    // Optional: Notes
     if (hasSurcharge) {
       setNotes(`Incluye recargo del 20% por pago fuera de término (día ${day}).`);
     } else {
       setNotes('');
     }
 
-  }, [userId, members]);
+  }, [userId, members, principalClass, additionalClasses, classes]);
 
   const canSave = useMemo(
     () => !!userId && !!amount && !!paidAt && !!from && !!to,
@@ -122,11 +163,24 @@ export default function PaymentModal({
     dt.setMonth(dt.getMonth() + 1);
     setTo(dt.toISOString().slice(0, 10));
     setNotes('');
+    setPrincipalClass(null);
+    setAdditionalClasses([]);
   };
 
   const save = async () => {
     if (!canSave) return;
     setLoading(true);
+
+    // 0. Update Class Enrollments if changed
+    // We only update if userId is set
+    await supabase.from('class_enrollments').delete().eq('user_id', userId)
+    const newEnrollments: any[] = []
+    if (principalClass) newEnrollments.push({ user_id: userId, class_id: principalClass, is_principal: true })
+    additionalClasses.forEach(id => newEnrollments.push({ user_id: userId, class_id: id, is_principal: false }))
+
+    if (newEnrollments.length > 0) {
+      await supabase.from('class_enrollments').insert(newEnrollments)
+    }
 
     const { data: insertPay, error: payErr } = await supabase
       .from('payments')
@@ -148,13 +202,13 @@ export default function PaymentModal({
       return;
     }
 
-    const { error: membErr } = await supabase.from('memberships').insert({
+    const { error: membErr } = await supabase.from('memberships').upsert({
       member_id: userId,
-      type: 'monthly',
+      type: 'monthly', // Could also come from member.membership_type
       start_date: from,
       end_date: to,
       notes: `Pago ${insertPay?.id ?? ''}`.trim(),
-    });
+    }, { onConflict: 'member_id' });
 
     if (membErr) {
       console.warn('Pago creado pero falló actualizar membresía:', membErr.message);
@@ -184,10 +238,10 @@ export default function PaymentModal({
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-4xl overflow-hidden rounded-[32px] bg-white shadow-2xl"
+        className="relative w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-[32px] bg-white shadow-2xl custom-scrollbar"
       >
         {/* Header */}
-        <div className="bg-slate-900 px-10 py-8 flex items-center justify-between">
+        <div className="sticky top-0 z-[20] bg-slate-900 px-10 py-8 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-emerald-400 border border-white/10">
               <Receipt className="w-6 h-6" />
@@ -253,16 +307,26 @@ export default function PaymentModal({
                       />
                       {/* Price Breakdown Hint */}
                       {userId && (() => {
-                        const m = members.find(x => x.user_id === userId);
-                        if (m) {
-                          const base = m.estimated_fee;
-                          const isSurcharge = (amount as number) > base;
-                          return (
-                            <div className="absolute top-full left-0 mt-1 text-[10px] uppercase font-bold text-slate-400">
-                              Base: ${base} {isSurcharge && <span className="text-emerald-500 font-black">+ Recargo (20%)</span>}
-                            </div>
-                          )
+                        const member = members.find(m => m.user_id === userId);
+                        if (!member) return null
+
+                        // Calculate base from classes state, not member view
+                        let base = 0
+                        if (principalClass) {
+                          const p = classes.find(c => c.id === principalClass)
+                          base += Number(p?.price_principal || 0)
                         }
+                        additionalClasses.forEach(id => {
+                          const a = classes.find(c => c.id === id)
+                          base += Number(a?.price_additional || a?.price_principal || 0)
+                        })
+
+                        const isSurcharge = (amount as number) > base;
+                        return (
+                          <div className="absolute top-full left-0 mt-1 text-[10px] uppercase font-bold text-slate-400">
+                            Base: ${base} {isSurcharge && <span className="text-emerald-500 font-black">+ Recargo (20%)</span>}
+                          </div>
+                        )
                       })()}
                     </div>
                   </div>
@@ -301,6 +365,63 @@ export default function PaymentModal({
               </div>
             </section>
 
+            {/* Class Selection (Dynamic) */}
+            <section className="space-y-6 md:col-span-2">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600">
+                  <CreditCard className="w-4 h-4" />
+                </div>
+                <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Suscripción y Clases</h4>
+              </div>
+
+              <div className="p-6 bg-slate-50 rounded-[24px] border border-slate-100">
+                <p className="text-xs text-slate-500 font-medium mb-4">Selecciona las clases para este periodo. El precio se calculará automáticamente.</p>
+
+                <div className="flex flex-wrap gap-4">
+                  {classes.map(c => {
+                    const isPrincipal = principalClass === c.id
+                    const isAdditional = additionalClasses.includes(c.id)
+                    return (
+                      <div
+                        key={c.id}
+                        className={`relative p-4 rounded-2xl border-2 transition-all cursor-pointer select-none flex flex-col gap-2 min-w-[180px] ${isPrincipal
+                            ? 'bg-white border-blue-500 shadow-lg shadow-blue-500/10'
+                            : isAdditional
+                              ? 'bg-white border-emerald-500 shadow-lg shadow-emerald-500/10'
+                              : 'bg-white border-transparent hover:border-slate-200'
+                          }`}
+                        onClick={() => {
+                          // toggle logic:
+                          // if isPrincipal -> deselect (set null)
+                          // if isAdditional -> remove
+                          // if nothing -> set as Principal? Or add to additional?
+                          // Let's cycle: Nothing -> Principal -> Additional -> Nothing
+                          if (isPrincipal) {
+                            setPrincipalClass(null)
+                            setAdditionalClasses(prev => [...prev, c.id]) // Demote to additional
+                          } else if (isAdditional) {
+                            setAdditionalClasses(prev => prev.filter(x => x !== c.id))
+                          } else {
+                            if (!principalClass) setPrincipalClass(c.id)
+                            else setAdditionalClasses(prev => [...prev, c.id])
+                          }
+                        }}
+                      >
+                        <div className="flex justify-between items-start">
+                          <span className="text-sm font-bold text-slate-900">{c.name}</span>
+                          {isPrincipal && <span className="bg-blue-100 text-blue-600 text-[9px] font-black px-1.5 py-0.5 rounded">PRINCIPAL</span>}
+                          {isAdditional && <span className="bg-emerald-100 text-emerald-600 text-[9px] font-black px-1.5 py-0.5 rounded">ADICIONAL</span>}
+                        </div>
+                        <div className="text-[10px] uppercase font-black text-slate-400">
+                          ${isPrincipal ? c.price_principal : (c.price_additional || c.price_principal)}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </section>
+
             {/* Period Info */}
             <section className="space-y-6">
               <div className="flex items-center gap-3">
@@ -318,7 +439,8 @@ export default function PaymentModal({
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                       <input
                         type="date"
-                        className={inputClass.replace('emerald', 'blue')}
+                        readOnly
+                        className={`${inputClass.replace('emerald', 'blue')} bg-slate-100 text-slate-500 cursor-not-allowed`}
                         value={from}
                         onChange={e => setFrom(e.target.value)}
                       />
@@ -330,7 +452,8 @@ export default function PaymentModal({
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                       <input
                         type="date"
-                        className={inputClass.replace('emerald', 'blue')}
+                        readOnly
+                        className={`${inputClass.replace('emerald', 'blue')} bg-slate-100 text-slate-500 cursor-not-allowed`}
                         value={to}
                         onChange={e => setTo(e.target.value)}
                       />
