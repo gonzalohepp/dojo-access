@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState, Suspense } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import AdminLayout from '../layouts/AdminLayout'
 import { supabase } from '@/lib/supabaseClient'
@@ -19,6 +19,7 @@ type MemberRow = {
   email: string | null
   access_code: string | null
   status?: string | null
+  estimated_monthly_fee?: number | null
 }
 
 const fullName = (m: MemberRow | null) =>
@@ -30,7 +31,12 @@ function ValidateContent() {
   const router = useRouter()
   const qp = useSearchParams()
 
-  // Estado UI
+  const multiplier = useMemo(() => {
+    const day = new Date().getDate()
+    return day > 10 ? 1.2 : 1.0
+  }, [])
+
+  // ... (rest of the state remains the same)
   const [paused, setPaused] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
 
@@ -356,10 +362,17 @@ function ValidateContent() {
                         <Button
                           onClick={async () => {
                             try {
+                              const basePrice = member?.estimated_monthly_fee || 15000
+                              const finalPrice = Math.round(basePrice * multiplier)
+
                               const res = await fetch('/api/payments/mp/preference', {
                                 method: 'POST',
                                 body: JSON.stringify({
-                                  items: [{ id: 'cuota_mensual', title: 'Cuota Mensual - Beleza Dojo', price: 15000 }], // Precio de ejemplo
+                                  items: [{
+                                    id: 'cuota_mensual',
+                                    title: `Cuota Mensual - Beleza Dojo ${multiplier > 1 ? '(Recargo 20%)' : ''}`,
+                                    price: finalPrice
+                                  }],
                                   payer_email: member?.email || userEmail
                                 })
                               })
@@ -371,7 +384,7 @@ function ValidateContent() {
                           }}
                           className="w-full py-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold animate-shimmer"
                         >
-                          PAGAR CUOTA AHORA
+                          PAGAR CUOTA AHORA {multiplier > 1 && '(+20% Recargo)'}
                         </Button>
                       )}
 

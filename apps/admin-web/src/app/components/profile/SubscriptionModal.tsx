@@ -62,6 +62,11 @@ export default function SubscriptionModal({
         )
     }
 
+    const multiplier = useMemo(() => {
+        const day = new Date().getDate()
+        return day > 10 ? 1.2 : 1.0
+    }, [])
+
     const total = useMemo(() => {
         let sum = 0
         if (principalClass) {
@@ -70,12 +75,10 @@ export default function SubscriptionModal({
         }
         additionalClasses.forEach(id => {
             const a = classes.find(c => c.id === id)
-            // If it's additional, use price_additional if exists, else price_principal (or logic as per MemberForm)
-            // Actually MemberForm logic: total += Number(a?.price_additional || a?.price_principal || 0)
             sum += Number(a?.price_additional || a?.price_principal || 0)
         })
-        return sum
-    }, [principalClass, additionalClasses, classes])
+        return sum * multiplier
+    }, [principalClass, additionalClasses, classes, multiplier])
 
     const handlePayment = async () => {
         try {
@@ -89,8 +92,8 @@ export default function SubscriptionModal({
             if (p) {
                 items.push({
                     id: p.id,
-                    title: `Clase Principal: ${p.name}`,
-                    price: Number(p.price_principal || 0)
+                    title: `Clase Principal: ${p.name} ${multiplier > 1 ? '(Con Recargo)' : ''}`,
+                    price: Math.round(Number(p.price_principal || 0) * multiplier)
                 })
             }
 
@@ -100,8 +103,8 @@ export default function SubscriptionModal({
                 if (a) {
                     items.push({
                         id: a.id,
-                        title: `Adicional: ${a.name}`,
-                        price: Number(a.price_additional || a.price_principal || 0)
+                        title: `Adicional: ${a.name} ${multiplier > 1 ? '(Con Recargo)' : ''}`,
+                        price: Math.round(Number(a.price_additional || a.price_principal || 0) * multiplier)
                     })
                 }
             })
@@ -282,8 +285,10 @@ export default function SubscriptionModal({
                                         <span className="text-xs font-bold text-slate-500 uppercase">ARS / Mes</span>
                                     </div>
                                     <div className="flex items-center gap-2 mt-2">
-                                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Cálculo Automático</span>
+                                        <div className={`w-2 h-2 rounded-full animate-pulse ${multiplier > 1 ? 'bg-orange-500' : 'bg-emerald-500'}`} />
+                                        <span className={`text-[10px] font-black uppercase tracking-widest ${multiplier > 1 ? 'text-orange-500' : 'text-emerald-500'}`}>
+                                            {multiplier > 1 ? 'Incluye 20% Recargo (Post día 10)' : 'Cálculo Automático'}
+                                        </span>
                                     </div>
                                 </div>
 
