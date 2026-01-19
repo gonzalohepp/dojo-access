@@ -242,14 +242,6 @@ export default function AdminDashboard() {
                   Pago
                 </button>
               </Link>
-              <button
-                onClick={handleNotify}
-                className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white border border-slate-200 text-slate-900 font-bold hover:bg-slate-50 transition-all active:scale-95"
-                title="Verificar y enviar recordatorios automáticos (Días 8-10 y 18-20)"
-              >
-                <Bell className="w-4 h-4 text-slate-500" />
-                <span className="hidden md:inline">Recordatorios</span>
-              </button>
             </div>
           </header>
 

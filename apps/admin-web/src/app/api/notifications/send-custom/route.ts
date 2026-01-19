@@ -11,6 +11,8 @@ export async function POST(req: Request) {
         const body = await req.json()
         const { target, customUserId, title, message, url } = body
 
+        console.log('[Custom Notification] Request received:', { target, customUserId, title, url })
+
         if (!title || !message) {
             return NextResponse.json({ error: 'Title and message are required' }, { status: 400 })
         }
@@ -24,21 +26,21 @@ export async function POST(req: Request) {
             }
             targetUserIds = [customUserId]
         } else if (target === 'all') {
-            // Target all users who are NOT pending (includes members, admins if they subscribed, etc.)
-            // Or should we stick only to 'member'? User said "no manda a todos", 
-            // maybe they have members with role=null or other roles.
+            // Target only regular members for "TODOS" to avoid spamming admins/teachers
             const { data, error } = await supabase
                 .from('profiles')
                 .select('user_id')
-                .neq('role', 'pending')
+                .eq('role', 'member')
 
-            console.log('[Custom Notification] "all" query result:', { count: data?.length, error })
+            console.log('[Custom Notification] "all" query (members only) result:', { count: data?.length, error })
             targetUserIds = (data || []).map(p => p.user_id)
         } else if (target === 'active') {
+            // Get active members (exclude admins/teachers to avoid spamming them with member news)
             const { data } = await supabase
                 .from('members_with_status')
                 .select('user_id')
                 .eq('status', 'activo')
+                .eq('role', 'member')
             targetUserIds = (data || []).map(p => p.user_id)
         } else if (target === 'expiring') {
             const today = new Date().toISOString().slice(0, 10)

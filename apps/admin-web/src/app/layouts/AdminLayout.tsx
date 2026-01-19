@@ -152,23 +152,26 @@ export default function AdminLayout({ children, active }: { children: React.Reac
         .maybeSingle()
       if (data) {
         setProfile(data as Profile)
+        // Auto-sync push notification if already granted
+        if ('Notification' in window && Notification.permission === 'granted' && !subscription) {
+          console.log('[Push] Permission granted but no sub in state, syncing...')
+          subscribeUser(VAPID_PUBLIC_KEY).catch(console.error)
+        }
       } else {
         setProfile({
           user_id: user.id,
           email: user.email ?? null,
           first_name: null,
           last_name: null,
-          role: 'member',
-          avatar_url: user.user_metadata?.avatar_url ?? null
+          role: null,
+          avatar_url: null
         })
       }
       setLoading(false)
-      if (data?.role === 'admin') {
-        fetchInitialNotifs()
-      }
+      fetchInitialNotifs()
     }
     load()
-  }, [router])
+  }, [router, subscription, VAPID_PUBLIC_KEY])
 
   // ========= Real-time Security Alerts =========
   useEffect(() => {

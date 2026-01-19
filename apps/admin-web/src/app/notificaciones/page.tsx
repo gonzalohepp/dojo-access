@@ -19,7 +19,7 @@ interface NotificationHistoryItem {
 
 export default function NotificationsPage() {
     const [loading, setLoading] = useState(false)
-    const [activeTab, setActiveTab] = useState<'send' | 'history'>('send')
+    const [activeTab, setActiveTab] = useState<'send' | 'history' | 'config' | 'subscribed'>('send')
     const [selectedUser, setSelectedUser] = useState<any>(null)
     const [form, setForm] = useState({
         target: 'all' as 'all' | 'active' | 'expiring' | 'custom',
@@ -30,6 +30,7 @@ export default function NotificationsPage() {
 
     const [history, setHistory] = useState<NotificationHistoryItem[]>([])
     const [subscribedCount, setSubscribedCount] = useState(0)
+    const [subscribedUsers, setSubscribedUsers] = useState<any[]>([])
     const [settings, setSettings] = useState({
         day10Enabled: true,
         day10Days: '8, 9, 10',
@@ -51,11 +52,17 @@ export default function NotificationsPage() {
                 .limit(20)
             if (hist) setHistory(hist)
 
-            // 2. Fetch Subscribed Users Count
-            const { count } = await supabase
+            // 2. Fetch Subscribed Users
+            const { data: subsData } = await supabase
                 .from('push_subscriptions')
-                .select('user_id', { count: 'exact', head: true })
-            setSubscribedCount(count || 0)
+                .select('user_id, profiles!inner(*)')
+
+            if (subsData) {
+                // Deduplicate users as one user might have multiple device subscriptions
+                const uniqueUsers = Array.from(new Map(subsData.map(s => [s.user_id, s.profiles])).values())
+                setSubscribedUsers(uniqueUsers)
+                setSubscribedCount(uniqueUsers.length)
+            }
 
             // 3. Fetch Settings
             const { data: sett } = await supabase
@@ -221,8 +228,16 @@ export default function NotificationsPage() {
                                 Historial
                             </button>
                             <button
-                                onClick={() => setActiveTab('config' as any)}
-                                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === ('config' as any)
+                                onClick={() => setActiveTab('subscribed')}
+                                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'subscribed'
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+                            >
+                                Suscritos
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('config')}
+                                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'config'
                                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
                             >
@@ -260,10 +275,10 @@ export default function NotificationsPage() {
                                                     <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Segmento</label>
                                                     <div className="grid grid-cols-2 gap-3">
                                                         {[
-                                                            { id: 'all', label: 'Todos', icon: Users },
-                                                            { id: 'active', label: 'Activos', icon: CheckCircle },
-                                                            { id: 'expiring', label: 'Vencen pronto', icon: Clock },
-                                                            { id: 'custom', label: 'Manual', icon: Search }
+                                                            { id: 'all', label: 'Todos (Socios)', icon: Users },
+                                                            { id: 'active', label: 'Socios Activos', icon: CheckCircle },
+                                                            { id: 'expiring', label: 'Vencen Pronto', icon: Clock },
+                                                            { id: 'custom', label: 'Manual/Individual', icon: Search }
                                                         ].map((opt) => (
                                                             <button
                                                                 key={opt.id}
@@ -573,6 +588,73 @@ export default function NotificationsPage() {
                                             <CheckCircle className="w-4 h-4" /> Guardar Cambios
                                         </button>
                                     </div>
+                                </div>
+                            </motion.div>
+                        )}
+
+                        {activeTab === 'subscribed' && (
+                            <motion.div
+                                key="subscribed-tab"
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -20 }}
+                                className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden"
+                            >
+                                <div className="p-8 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/50">
+                                    <div>
+                                        <h3 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Usuarios Suscritos</h3>
+                                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest mt-1">Estos usuarios han habilitado las notificaciones en sus dispositivos</p>
+                                    </div>
+                                    <div className="bg-blue-50 dark:bg-blue-900/30 px-6 py-3 rounded-2xl border border-blue-100 dark:border-blue-800">
+                                        <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{subscribedUsers.length}</span>
+                                        <span className="ml-2 text-[10px] font-black uppercase text-blue-600 dark:text-blue-400 tracking-widest">Activos</span>
+                                    </div>
+                                </div>
+                                <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {subscribedUsers.length === 0 ? (
+                                        <div className="col-span-full py-20 text-center">
+                                            <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-[2rem] flex items-center justify-center mx-auto mb-6 shadow-inner">
+                                                <Smartphone className="w-10 h-10 text-slate-400" />
+                                            </div>
+                                            <p className="text-slate-500 font-black text-xs uppercase tracking-[0.2em]">No hay usuarios con suscripciones activas</p>
+                                        </div>
+                                    ) : (
+                                        subscribedUsers.map((user) => (
+                                            <div
+                                                key={user.user_id}
+                                                className="group flex items-center gap-4 p-5 rounded-[2.2rem] border border-slate-100 dark:border-slate-700 bg-white dark:bg-slate-800 hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/10 transition-all cursor-pointer relative overflow-hidden"
+                                                onClick={() => {
+                                                    setSelectedUser(user)
+                                                    setForm({ ...form, target: 'custom' })
+                                                    setActiveTab('send')
+                                                    toast.success(`Elegido: ${user.first_name}`)
+                                                }}
+                                            >
+                                                <div className="absolute top-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white shadow-lg">
+                                                        <Check className="w-3 h-3" />
+                                                    </div>
+                                                </div>
+
+                                                <div className="w-14 h-14 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center font-black text-blue-600 border border-slate-200 dark:border-slate-700 shadow-sm group-hover:bg-blue-600 group-hover:text-white group-hover:border-blue-600 transition-all duration-300">
+                                                    {(user.first_name?.[0] || '') + (user.last_name?.[0] || '')}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <h4 className="text-sm font-black text-slate-900 dark:text-white truncate">
+                                                            {user.first_name} {user.last_name}
+                                                        </h4>
+                                                        {user.role === 'admin' && (
+                                                            <span className="text-[8px] font-black bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-widest leading-none">Admin</span>
+                                                        )}
+                                                    </div>
+                                                    <p className="text-[10px] text-slate-500 font-bold truncate uppercase tracking-tighter mt-0.5">
+                                                        {user.email}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </motion.div>
                         )}

@@ -59,11 +59,12 @@ export async function POST(req: Request) {
         // 2. Find Target Audience: Active Members who haven't paid this month
         const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
 
-        // Fetch ALL active candidates
+        // Fetch ONLY active members (exclude admins/teachers from automatic debt reminders)
         const { data: candidates, error } = await supabase
             .from('members_with_status')
             .select('user_id, first_name')
             .eq('status', 'activo')
+            .eq('role', 'member')
 
         if (error) throw error
 
