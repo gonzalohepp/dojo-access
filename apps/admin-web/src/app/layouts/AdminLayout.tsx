@@ -76,7 +76,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
   const pathname = usePathname()
 
   const { isSupported, subscription, subscribeUser } = usePushNotifications()
-  const VAPID_PUBLIC_KEY = 'BMXQvrbtBZdniuZrLMYD87T0E-742Lo72ktJWrjzB5mcbKYrrCh5X6cAo7z0d09QqOygrZsNFVEz_IBgTWqUp6o'
+  const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || 'BMXQvrbtBZdniuZrLMYD87T0E-742Lo72ktJWrjzB5mcbKYrrCh5X6cAo7z0d09QqOygrZsNFVEz_IBgTWqUp6o'
 
   const handleSubscribe = async () => {
     const sub = await subscribeUser(VAPID_PUBLIC_KEY)

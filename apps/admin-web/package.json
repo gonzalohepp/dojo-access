@@ -24,6 +24,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "@yudiel/react-qr-scanner": "^2.4.1",
     "@zxing/browser": "^0.1.5",
     "@zxing/library": "^0.21.3",
@@ -47,6 +48,7 @@
     "tailwind-merge": "^3.3.1",
     "tailwindcss": "^4",
     "typescript": "^5",
+    "web-push": "^3.6.7",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
