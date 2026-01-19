@@ -8,12 +8,17 @@ export async function POST(req: Request) {
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
         const supabase = createClient(supabaseUrl, supabaseKey)
 
-        // 1. Get current date details
+        // 1. Get Settings from DB
+        const { data: settings } = await supabase
+            .from('notification_settings')
+            .select('*')
+            .eq('id', 'reminders')
+            .single()
+
+        // 2. Get current date details
         const now = new Date()
         const day = now.getDate() // 1-31
 
-        // For testing, we might want to accept an override date? 
-        // Let's stick to real date for safety, or check body for "force_day" if admin wants to test.
         const body = await req.json().catch(() => ({}))
         const checkDay = body.force_day || day
 
@@ -23,22 +28,32 @@ export async function POST(req: Request) {
         let message = ''
         let shouldSend = false
 
-        // Logic A: Days 8, 9, 10 (Surcharge Warning)
-        if ([8, 9, 10].includes(checkDay)) {
+        // Logic A: Day 10 Reminder (Surcharge Warning)
+        const day10Enabled = settings?.day_10_enabled ?? true
+        const day10Days = settings?.day_10_days ?? [8, 9, 10]
+
+        if (day10Enabled && day10Days.includes(checkDay)) {
             title = '📢 ¡Evita Recargos!'
             message = 'Recuerda abonar tu cuota antes del día 10 para evitar el 20% de recargo. ¡Te esperamos en el Dojo!'
-            shouldSend = true // Only filter active members unpaid
+            shouldSend = true
         }
 
-        // Logic B: Days 18, 19, 20 (Lock Warning)
-        if ([18, 19, 20].includes(checkDay)) {
+        // Logic B: Expiry Warning
+        const expiryEnabled = settings?.expiry_enabled ?? true
+        const expiryDays = settings?.expiry_days ?? [18, 19, 20]
+
+        if (expiryEnabled && expiryDays.includes(checkDay)) {
             title = '⚠️ Tu pase está por vencer'
             message = 'Últimos días para regularizar tu cuota. A partir del día 21 el acceso se bloqueará automáticamente.'
             shouldSend = true
         }
 
         if (!shouldSend) {
-            return NextResponse.json({ message: 'No reminders scheduled for today.' })
+            return NextResponse.json({
+                message: 'No reminders scheduled for today.',
+                day: checkDay,
+                settings: { day10Enabled, day10Days, expiryEnabled, expiryDays }
+            })
         }
 
         // 2. Find Target Audience: Active Members who haven't paid this month

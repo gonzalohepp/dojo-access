@@ -43,11 +43,23 @@ export default function UserSearch({ onSelect, selectedUser }: UserSearchProps) 
             }
 
             setLoading(true)
-            const { data, error } = await supabase
+
+            // Split query into terms for better multi-word matching
+            const terms = query.trim().split(/\s+/)
+            let queryBuilder = supabase
                 .from('profiles')
                 .select('user_id, first_name, last_name, email, avatar_url')
-                .or(`first_name.ilike.%${query}%,last_name.ilike.%${query}%,email.ilike.%${query}%`)
-                .limit(5)
+
+            if (terms.length === 1) {
+                // Single word search
+                queryBuilder = queryBuilder.or(`first_name.ilike.%${terms[0]}%,last_name.ilike.%${terms[0]}%,email.ilike.%${terms[0]}%`)
+            } else {
+                // Multi-word search (e.g. "Juan Perez")
+                // We'll try to match both first and last name combinations
+                queryBuilder = queryBuilder.or(`and(first_name.ilike.%${terms[0]}%,last_name.ilike.%${terms[1]}%),and(first_name.ilike.%${terms[1]}%,last_name.ilike.%${terms[0]}%)`)
+            }
+
+            const { data, error } = await queryBuilder.limit(8)
 
             if (!error && data) {
                 setResults(data)

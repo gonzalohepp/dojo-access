@@ -24,10 +24,13 @@ export async function POST(req: Request) {
             }
             targetUserIds = [customUserId]
         } else if (target === 'all') {
+            // Target all users who are NOT pending (includes members, admins if they subscribed, etc.)
+            // Or should we stick only to 'member'? User said "no manda a todos", 
+            // maybe they have members with role=null or other roles.
             const { data, error } = await supabase
                 .from('profiles')
                 .select('user_id')
-                .eq('role', 'member')
+                .neq('role', 'pending')
 
             console.log('[Custom Notification] "all" query result:', { count: data?.length, error })
             targetUserIds = (data || []).map(p => p.user_id)

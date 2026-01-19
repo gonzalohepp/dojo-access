@@ -28,26 +28,82 @@ export default function NotificationsPage() {
         url: '/'
     })
 
-    // Mock history - in a real app this would come from the DB
     const [history, setHistory] = useState<NotificationHistoryItem[]>([])
+    const [subscribedCount, setSubscribedCount] = useState(0)
+    const [settings, setSettings] = useState({
+        day10Enabled: true,
+        day10Days: '8, 9, 10',
+        day10Time: '10:00',
+        expiryEnabled: true,
+        expiryDays: '18, 19, 20',
+        expiryTime: '10:00'
+    })
 
     useEffect(() => {
-        const fetchHistory = async () => {
+        const fetchData = async () => {
             const { supabase } = await import('@/lib/supabaseClient')
-            const { data, error } = await supabase
+
+            // 1. Fetch History
+            const { data: hist } = await supabase
                 .from('notification_history')
                 .select('*')
                 .order('sent_at', { ascending: false })
                 .limit(20)
+            if (hist) setHistory(hist)
 
-            if (!error && data) {
-                setHistory(data)
+            // 2. Fetch Subscribed Users Count
+            const { count } = await supabase
+                .from('push_subscriptions')
+                .select('user_id', { count: 'exact', head: true })
+            setSubscribedCount(count || 0)
+
+            // 3. Fetch Settings
+            const { data: sett } = await supabase
+                .from('notification_settings')
+                .select('*')
+                .eq('id', 'reminders')
+                .single()
+            if (sett) {
+                setSettings({
+                    day10Enabled: sett.day_10_enabled,
+                    day10Days: sett.day_10_days.join(', '),
+                    day10Time: sett.day_10_time,
+                    expiryEnabled: sett.expiry_enabled,
+                    expiryDays: sett.expiry_days.join(', '),
+                    expiryTime: sett.expiry_time
+                })
             }
         }
-        if (activeTab === 'history') {
-            fetchHistory()
+        fetchData()
+    }, [])
+
+    const saveSettings = async () => {
+        const { supabase } = await import('@/lib/supabaseClient')
+        const loadingToast = toast.loading('Guardando configuración...')
+
+        try {
+            const day10Arr = settings.day10Days.split(',').map((d: string) => parseInt(d.trim())).filter((d: number) => !isNaN(d))
+            const expiryArr = settings.expiryDays.split(',').map((d: string) => parseInt(d.trim())).filter((d: number) => !isNaN(d))
+
+            const { error } = await supabase
+                .from('notification_settings')
+                .upsert({
+                    id: 'reminders',
+                    day_10_enabled: settings.day10Enabled,
+                    day_10_days: day10Arr,
+                    day_10_time: settings.day10Time,
+                    expiry_enabled: settings.expiryEnabled,
+                    expiry_days: expiryArr,
+                    expiry_time: settings.expiryTime,
+                    updated_at: new Date().toISOString()
+                })
+
+            if (error) throw error
+            toast.success('Configuración guardada correctamente', { id: loadingToast })
+        } catch (e) {
+            toast.error('Error al guardar configuración', { id: loadingToast })
         }
-    }, [activeTab])
+    }
 
     const handleSend = async () => {
         if (!form.title || !form.message) {
@@ -163,6 +219,14 @@ export default function NotificationsPage() {
                                     : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
                             >
                                 Historial
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('config' as any)}
+                                className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === ('config' as any)
+                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                    : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'}`}
+                            >
+                                Configuración
                             </button>
                         </div>
                     </header>
@@ -356,7 +420,7 @@ export default function NotificationsPage() {
                                     </p>
                                 </div>
                             </motion.div>
-                        ) : (
+                        ) : activeTab === 'history' ? (
                             <motion.div
                                 key="history-tab"
                                 initial={{ opacity: 0, scale: 0.95 }}
@@ -364,6 +428,7 @@ export default function NotificationsPage() {
                                 exit={{ opacity: 0, scale: 0.95 }}
                                 className="max-w-4xl"
                             >
+                                {/* ... existing history content ... */}
                                 <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden">
                                     <div className="p-8 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-between">
                                         <div className="flex items-center gap-4">
@@ -413,37 +478,119 @@ export default function NotificationsPage() {
                                     </div>
                                 </div>
                             </motion.div>
+                        ) : (
+                            <motion.div
+                                key="config-tab"
+                                initial={{ opacity: 0, scale: 0.95 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                exit={{ opacity: 0, scale: 0.95 }}
+                                className="max-w-4xl"
+                            >
+                                <div className="bg-white dark:bg-slate-800 rounded-[2.5rem] border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden p-8">
+                                    <div className="flex items-center gap-4 mb-8">
+                                        <div className="w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
+                                            <Calendar className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-black text-slate-900 dark:text-white">Configuración Automática</h3>
+                                            <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Define cuándo y cómo se envían los recordatorios</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                        {/* Day 10 Section */}
+                                        <div className="space-y-6 p-6 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="font-black text-slate-900 dark:text-white">Recordatorio Día 10</h4>
+                                                <button
+                                                    onClick={() => setSettings({ ...settings, day10Enabled: !settings.day10Enabled })}
+                                                    className={`w-12 h-6 rounded-full transition-colors relative ${settings.day10Enabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.day10Enabled ? 'right-1' : 'left-1'}`} />
+                                                </button>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black uppercase text-slate-500 mb-2">Días del mes (separados por coma)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={settings.day10Days}
+                                                        onChange={(e) => setSettings({ ...settings, day10Days: e.target.value })}
+                                                        className="w-full h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-bold"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-black uppercase text-slate-500 mb-2">Hora de envío</label>
+                                                    <input
+                                                        type="time"
+                                                        value={settings.day10Time}
+                                                        onChange={(e) => setSettings({ ...settings, day10Time: e.target.value })}
+                                                        className="w-full h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-bold"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Expiry Section */}
+                                        <div className="space-y-6 p-6 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-100 dark:border-slate-800">
+                                            <div className="flex items-center justify-between">
+                                                <h4 className="font-black text-slate-900 dark:text-white">Alerta Vencimiento</h4>
+                                                <button
+                                                    onClick={() => setSettings({ ...settings, expiryEnabled: !settings.expiryEnabled })}
+                                                    className={`w-12 h-6 rounded-full transition-colors relative ${settings.expiryEnabled ? 'bg-emerald-500' : 'bg-slate-300 dark:bg-slate-700'}`}
+                                                >
+                                                    <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.expiryEnabled ? 'right-1' : 'left-1'}`} />
+                                                </button>
+                                            </div>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <label className="block text-[10px] font-black uppercase text-slate-500 mb-2">Días del mes (separados por coma)</label>
+                                                    <input
+                                                        type="text"
+                                                        value={settings.expiryDays}
+                                                        onChange={(e) => setSettings({ ...settings, expiryDays: e.target.value })}
+                                                        className="w-full h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-bold"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-black uppercase text-slate-500 mb-2">Hora de envío</label>
+                                                    <input
+                                                        type="time"
+                                                        value={settings.expiryTime}
+                                                        onChange={(e) => setSettings({ ...settings, expiryTime: e.target.value })}
+                                                        className="w-full h-10 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 text-sm font-bold"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-8 flex justify-end">
+                                        <button
+                                            onClick={saveSettings}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-500/20 transition-all flex items-center gap-2"
+                                        >
+                                            <CheckCircle className="w-4 h-4" /> Guardar Cambios
+                                        </button>
+                                    </div>
+                                </div>
+                            </motion.div>
                         )}
                     </AnimatePresence>
 
                     {/* Footer Info Area */}
                     <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {/* Auto Rule Mock 1 */}
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                                <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex items-start gap-4 h-full">
+                            <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">
+                                <Smartphone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             </div>
                             <div>
-                                <h5 className="font-black text-slate-900 dark:text-white text-sm">Recordatorio Día 10</h5>
-                                <p className="text-xs text-slate-500 mt-1">Automatizado: Mensaje de "Evita recargo" los días 8, 9 y 10.</p>
+                                <h5 className="font-black text-slate-900 dark:text-white text-sm">Dispositivos Vinculados</h5>
+                                <p className="text-xs text-slate-500 mt-1">Hay **{subscribedCount}** usuarios que han autorizado notificaciones push en este momento.</p>
                                 <div className="mt-3 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Estado: Activo</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Auto Rule Mock 2 */}
-                        <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex items-start gap-4">
-                            <div className="w-10 h-10 rounded-xl bg-orange-50 dark:bg-orange-900/30 flex items-center justify-center shrink-0">
-                                <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                            </div>
-                            <div>
-                                <h5 className="font-black text-slate-900 dark:text-white text-sm">Alerta Vencimiento</h5>
-                                <p className="text-xs text-slate-500 mt-1">Automatizado: Mensaje de "Abono vencido" del 18 al 20.</p>
-                                <div className="mt-3 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                    <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Estado: Activo</span>
+                                    <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
+                                        Solo estos usuarios recibirán los mensajes.
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -451,14 +598,14 @@ export default function NotificationsPage() {
                         {/* Control Area */}
                         <button
                             onClick={handleTestReminders}
-                            className="bg-slate-900 dark:bg-slate-700 rounded-3xl p-6 text-white hover:bg-slate-800 transition-all text-left flex items-start gap-4 group"
+                            className="bg-slate-900 dark:bg-slate-700 rounded-3xl p-6 text-white hover:bg-slate-800 transition-all text-left flex items-start gap-4 group h-full"
                         >
                             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
                                 <Bell className="w-5 h-5 group-hover:animate-bounce" />
                             </div>
                             <div className="flex-1">
-                                <h5 className="font-black text-white text-sm">Diagnóstico Manual</h5>
-                                <p className="text-white/60 text-xs mt-1">Forzar verificación de reglas automáticas para hoy.</p>
+                                <h5 className="font-black text-white text-sm">Prueba de Recordatorios</h5>
+                                <p className="text-white/60 text-xs mt-1">Ejecutar el proceso de verificación de vencimientos y deudas ahora mismo.</p>
                                 <div className="mt-3 flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-blue-400">
                                     Ejecutar ahora <Send className="w-3 h-3 ml-1" />
                                 </div>
