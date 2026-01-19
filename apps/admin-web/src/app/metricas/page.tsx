@@ -68,11 +68,14 @@ export default function MetricasPage() {
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [totalMembers, setTotalMembers] = useState(0)
   const [accessLogsToday, setAccessLogsToday] = useState<number>(0)
-  const [recentAccesses, setRecentAccesses] = useState<Access[]>([])
-  const [landingEvents, setLandingEvents] = useState<LandingEvent[]>([])
+  const [recentAccesses, setRecentAccesses] = useState<any[]>([])
+  const [landingEvents, setLandingEvents] = useState<any[]>([])
 
   const [classes, setClasses] = useState<ClassRow[]>([])
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([])
+
+  const [selectedClass, setSelectedClass] = useState<number | 'general'>('general')
+  const [landingWindow, setLandingWindow] = useState<'24h' | '7d' | 'month'>('24h')
 
   useEffect(() => {
     const fetchData = async () => {
@@ -81,6 +84,7 @@ export default function MetricasPage() {
       const { count: profilesCount } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
+        .eq('role', 'member')
       setTotalMembers(profilesCount || 0)
 
       const sixMonthsAgo = startOfMonth(addDays(today(), -180))
@@ -105,12 +109,20 @@ export default function MetricasPage() {
         .gte('scanned_at', start)
       setAccessLogsToday(accCount || 0)
 
-      const tenDaysAgo = addDays(today(), -10).toISOString()
       const { data: recentAcc } = await supabase
         .from('access_logs')
-        .select('user_id,scanned_at,result')
-        .gte('scanned_at', addDays(today(), -30).toISOString()) // Fetch 30 days for rich analytics
-      setRecentAccesses((recentAcc || []) as Access[])
+        .select(`
+          user_id,
+          scanned_at,
+          result,
+          profiles:user_id (
+            first_name,
+            last_name,
+            avatar_url
+          )
+        `)
+        .gte('scanned_at', addDays(today(), -30).toISOString())
+      setRecentAccesses((recentAcc || []) as any[])
 
       const { data: cls } = await supabase
         .from('classes')
@@ -125,9 +137,9 @@ export default function MetricasPage() {
 
       const { data: lnd } = await supabase
         .from('landing_events')
-        .select('event_type,created_at')
-        .gte('created_at', ninetyDaysAgo.toISOString()) // Reusamos la fecha de 90 días
-      setLandingEvents((lnd ?? []) as LandingEvent[])
+        .select('event_type,created_at,metadata')
+        .gte('created_at', ninetyDaysAgo.toISOString())
+      setLandingEvents((lnd ?? []) as any[])
 
       setLoading(false)
     }
@@ -201,16 +213,28 @@ export default function MetricasPage() {
     })).filter(h => h.count > 0)
   }, [recentAccesses])
 
+  const filteredUsersForRanking = useMemo(() => {
+    if (selectedClass === 'general') return recentAccesses
+    const classStudentIds = new Set(enrollments.filter(e => e.class_id === selectedClass).map(e => e.user_id))
+    return recentAccesses.filter(a => classStudentIds.has(a.user_id))
+  }, [recentAccesses, enrollments, selectedClass])
+
   const topUsers = useMemo(() => {
-    const counts: Record<string, number> = {}
-    recentAccesses.forEach(a => {
-      if (a.user_id) counts[a.user_id] = (counts[a.user_id] || 0) + 1
+    const counts: Record<string, { count: number, name: string, avatar: string | null }> = {}
+    filteredUsersForRanking.forEach(a => {
+      if (!a.user_id) return
+      if (!counts[a.user_id]) {
+        const p = a.profiles
+        const name = p ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() : 'Ficticio'
+        counts[a.user_id] = { count: 0, name: name || a.user_id.slice(0, 8), avatar: p?.avatar_url }
+      }
+      counts[a.user_id].count++
     })
     return Object.entries(counts)
-      .sort(([, a], [, b]) => b - a)
+      .sort(([, a], [, b]) => b.count - a.count)
       .slice(0, 5)
-      .map(([id, count]) => ({ id, count }))
-  }, [recentAccesses])
+      .map(([id, data]) => ({ id, ...data }))
+  }, [filteredUsersForRanking])
 
   const rejectionRate = useMemo(() => {
     if (!recentAccesses.length) return 0
@@ -384,29 +408,48 @@ export default function MetricasPage() {
               animate={{ opacity: 1, y: 0 }}
               className="p-8 rounded-[32px] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl overflow-hidden"
             >
-              <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                <span className="p-2 rounded-xl bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400">
-                  <Users className="w-5 h-5" />
-                </span>
-                Top 5 Alumnos (Más Asistencia)
-              </h3>
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <span className="p-2 rounded-xl bg-pink-50 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400">
+                    <Users className="w-5 h-5" />
+                  </span>
+                  Top 5 Alumnos (Más Asistencia)
+                </h3>
+                <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl">
+                  <button
+                    onClick={() => setSelectedClass('general')}
+                    className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selectedClass === 'general' ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                  >General</button>
+                  {classes.slice(0, 2).map(c => (
+                    <button
+                      key={c.id}
+                      onClick={() => setSelectedClass(c.id)}
+                      className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${selectedClass === c.id ? 'bg-white dark:bg-slate-800 text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                    >{c.name.split(' ')[0]}</button>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-4">
                 {topUsers.map((u, i) => (
-                  <div key={u.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50">
+                  <div key={u.id} className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 dark:bg-slate-900/50 hover:bg-white dark:hover:bg-slate-800 transition-colors group">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center font-bold text-xs">
-                        #{i + 1}
+                        {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i + 1}`}
                       </div>
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300 truncate max-w-[150px]">
-                        {u.id.slice(0, 8)}...
-                      </span>
+                      <div className="flex flex-col">
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-200 truncate max-w-[150px]">
+                          {u.name}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-medium">#{u.id.slice(0, 5)}</span>
+                      </div>
                     </div>
                     <div className="px-3 py-1 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-black">
                       {u.count} ingresos
                     </div>
                   </div>
                 ))}
-                {topUsers.length === 0 && <p className="text-center text-slate-400 text-sm">Sin datos suficientes</p>}
+                {topUsers.length === 0 && <p className="text-center text-slate-400 text-sm py-10 italic">Sin datos suficientes en este periodo</p>}
               </div>
             </motion.div>
           </div>
@@ -545,7 +588,12 @@ export default function MetricasPage() {
         {/* Secondary Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Landing Metrics (Nuevo) */}
-          <LandingMetricsCard events={landingEvents} loading={loading} />
+          <LandingMetricsCard
+            events={landingEvents}
+            loading={loading}
+            activeWindow={landingWindow}
+            onWindowChange={setLandingWindow}
+          />
 
           {/* Quick Stats Summary */}
           <motion.div
@@ -645,7 +693,7 @@ function CustomTooltip({ active, payload, label }: any) {
   return null
 }
 
-function LandingMetricsCard({ events, loading }: any) {
+function LandingMetricsCard({ events, loading, activeWindow, onWindowChange }: any) {
   if (loading) return (
     <div className="w-full h-40 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-[32px]" />
   )
@@ -659,20 +707,24 @@ function LandingMetricsCard({ events, loading }: any) {
   const todayStr = artNow.toISOString().slice(0, 10)
 
   const h24 = new Date(Date.now() - 24 * 60 * 60 * 1000)
-  const d8 = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000)
+  const d7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
   const startMonth = new Date(artNow.getFullYear(), artNow.getMonth(), 1)
 
-  const visitorCount = events.filter((e: any) => e.event_type === 'page_view').length
-  const clickCount = events.filter((e: any) => e.event_type === 'cta_click' || e.event_type === 'click_whatsapp' || e.event_type === 'click_instagram').length
-  const conversionRate = visitorCount > 0 ? ((clickCount / visitorCount) * 100).toFixed(1) : 0
+  const getFilteredData = (window: string) => {
+    let cutoff = h24
+    if (window === '7d') cutoff = d7
+    if (window === 'month') cutoff = startMonth
 
-  const visitsToday = events.filter((e: any) => e.event_type === 'page_view' && getARTDate(new Date(e.created_at)).toISOString().startsWith(todayStr)).length
-  const visits24h = events.filter((e: any) => e.event_type === 'page_view' && new Date(e.created_at) >= h24).length
-  const visits8d = events.filter((e: any) => e.event_type === 'page_view' && new Date(e.created_at) >= d8).length
-  const visitsMonth = events.filter((e: any) => e.event_type === 'page_view' && new Date(e.created_at) >= startMonth).length
+    const filtered = events.filter((e: any) => new Date(e.created_at) >= cutoff)
+    const visits = filtered.filter((e: any) => e.event_type === 'page_view').length
+    const clicks = filtered.filter((e: any) => e.event_type !== 'page_view').length
+    return { visits, clicks, conversion: visits > 0 ? ((clicks / visits) * 100).toFixed(1) : 0 }
+  }
 
-  const clicksWsp = events.filter((e: any) => e.event_type === 'click_whatsapp').length
-  const clicksInsta = events.filter((e: any) => e.event_type === 'click_instagram').length
+  const currentData = getFilteredData(activeWindow || '24h')
+
+  const clicksWsp = events.filter((e: any) => e.event_type === 'click_whatsapp' && new Date(e.created_at) >= (activeWindow === '24h' ? h24 : activeWindow === '7d' ? d7 : startMonth)).length
+  const clicksInsta = events.filter((e: any) => e.event_type === 'click_instagram' && new Date(e.created_at) >= (activeWindow === '24h' ? h24 : activeWindow === '7d' ? d7 : startMonth)).length
 
   const recentIPs = Array.from(new Set(events
     .filter((e: any) => e.metadata?.ip && e.event_type === 'page_view')
@@ -684,50 +736,80 @@ function LandingMetricsCard({ events, loading }: any) {
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-slate-900 to-slate-800 p-8 text-white shadow-2xl"
+      className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 p-8 text-white shadow-2xl transition-all duration-500"
     >
       <div className="absolute top-0 right-0 p-3 opacity-10">
         <Activity className="w-64 h-64" />
       </div>
 
       <div className="relative z-10">
-        <div className="flex items-center gap-2 mb-2">
-          <span className="px-3 py-1 rounded-full bg-white/10 text-[10px] font-black uppercase tracking-widest border border-white/10">
-            Marketing
-          </span>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-3 py-1 rounded-full bg-white/10 text-[10px] font-black uppercase tracking-widest border border-white/10">
+                Marketing
+              </span>
+            </div>
+            <h3 className="text-2xl font-black tracking-tight mb-1">Landing Page Performance</h3>
+            <p className="text-slate-400 font-medium text-sm">Métricas de conversión y tráfico (ART)</p>
+          </div>
+
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 backdrop-blur-sm">
+            {[
+              { id: '24h', label: '24h' },
+              { id: '7d', label: '7d' },
+              { id: 'month', label: 'Mes' }
+            ].map((win) => (
+              <button
+                key={win.id}
+                onClick={() => onWindowChange(win.id)}
+                className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeWindow === win.id ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-400 hover:text-white'
+                  }`}
+              >
+                {win.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <h3 className="text-2xl font-black tracking-tight mb-1">Landing Page Performance</h3>
-        <p className="text-slate-400 font-medium text-sm mb-8">Métricas de conversión y tráfico web (ART)</p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white/5 rounded-[24px] p-6 border border-white/5">
+            <p className="text-[10px] uppercase font-black text-slate-400 mb-2">Visitas Únicas</p>
+            <p className="text-4xl font-black text-white">{currentData.visits}</p>
+          </div>
+          <div className="bg-white/5 rounded-[24px] p-6 border border-white/5">
+            <p className="text-[10px] uppercase font-black text-slate-400 mb-2">Total Clicks</p>
+            <p className="text-4xl font-black text-white">{currentData.clicks}</p>
+          </div>
+          <div className="bg-blue-500/20 rounded-[24px] p-6 border border-blue-500/30">
+            <p className="text-[10px] uppercase font-black text-blue-300 mb-2">Tasa de C.</p>
+            <p className="text-4xl font-black text-blue-400">{currentData.conversion}%</p>
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-slate-50/5 rounded-2xl p-4 border border-white/5">
-            <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Hoy (Reset 00h ART)</p>
-            <p className="text-2xl font-black text-white">{visitsToday}</p>
+          <div className="flex items-center gap-3 p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20">
+            <div className="p-2 bg-emerald-500/20 rounded-lg text-emerald-400">
+              <Activity className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase text-emerald-500/60">WhatsApp</p>
+              <p className="text-xl font-black">{clicksWsp}</p>
+            </div>
           </div>
-          <div className="bg-slate-50/5 rounded-2xl p-4 border border-white/5">
-            <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Últimas 24h</p>
-            <p className="text-2xl font-black text-white">{visits24h}</p>
-          </div>
-          <div className="bg-slate-50/5 rounded-2xl p-4 border border-white/5">
-            <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Últimos 8 días</p>
-            <p className="text-2xl font-black text-white">{visits8d}</p>
-          </div>
-          <div className="bg-slate-50/5 rounded-2xl p-4 border border-white/5">
-            <p className="text-[10px] uppercase font-black text-slate-400 mb-1">Este Mes</p>
-            <p className="text-2xl font-black text-white">{visitsMonth}</p>
-          </div>
-          <div className="bg-green-500/10 rounded-2xl p-4 border border-green-500/20">
-            <p className="text-[10px] uppercase font-black text-green-400 mb-1">IG Clicks</p>
-            <p className="text-2xl font-black text-green-500">{clicksInsta}</p>
-          </div>
-          <div className="bg-blue-500/10 rounded-2xl p-4 border border-blue-500/20">
-            <p className="text-[10px] uppercase font-black text-blue-400 mb-1">WSP Clicks</p>
-            <p className="text-2xl font-black text-blue-500">{clicksWsp}</p>
+          <div className="flex items-center gap-3 p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20">
+            <div className="p-2 bg-purple-500/20 rounded-lg text-purple-400">
+              <Activity className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase text-purple-500/60">Instagram</p>
+              <p className="text-xl font-black">{clicksInsta}</p>
+            </div>
           </div>
         </div>
 
-        {recentIPs.length > 0 && (
-          <div className="mb-8 p-4 bg-black/20 rounded-2xl border border-white/5">
+        {activeWindow === '24h' && recentIPs.length > 0 && (
+          <div className="p-4 bg-black/20 rounded-2xl border border-white/5">
             <p className="text-[10px] uppercase font-black text-slate-500 mb-3">Últimas IPs detectadas</p>
             <div className="flex flex-wrap gap-2">
               {recentIPs.map((ip: any) => (
@@ -738,11 +820,6 @@ function LandingMetricsCard({ events, loading }: any) {
             </div>
           </div>
         )}
-
-        <div className="pt-4 border-t border-white/10 flex items-center justify-between">
-          <span className="text-sm font-bold text-slate-400">Tasa de Conversión</span>
-          <span className="text-xl font-black text-blue-400">{conversionRate}%</span>
-        </div>
       </div>
     </motion.div>
   )

@@ -3,10 +3,10 @@ CREATE OR REPLACE VIEW dashboard_stats AS
 WITH counts AS (
   SELECT 
     (SELECT count(*) FROM profiles WHERE role = 'member') as total,
-    (SELECT count(*) FROM profiles p 
+    (SELECT count(DISTINCT p.user_id) FROM profiles p 
      JOIN memberships m ON p.user_id = m.member_id 
      WHERE p.role = 'member' AND m.end_date >= CURRENT_DATE) as actives,
-    (SELECT count(*) FROM profiles p 
+    (SELECT count(DISTINCT p.user_id) FROM profiles p 
      JOIN memberships m ON p.user_id = m.member_id 
      WHERE p.role = 'member' AND m.end_date < CURRENT_DATE) as inactives
 ),
