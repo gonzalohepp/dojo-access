@@ -38,7 +38,10 @@ export async function POST(req: Request) {
         }
 
         // Configure VAPID - Try both with and without NEXT_PUBLIC prefix
-        const rawPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY
+        // Fallback hardcoded to match the frontend key used in AdminLayout
+        const PUBLIC_KEY_FALLBACK = 'BMXQvrbtBZdniuZrLMYD87T0E-742Lo72ktJWrjzB5mcbKYrrCh5X6cAo7z0d09QqOygrZsNFVEz_IBgTWqUp6o'
+
+        const rawPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY || PUBLIC_KEY_FALLBACK
         const rawPrivateKey = process.env.VAPID_PRIVATE_KEY
         const subject = (process.env.VAPID_SUBJECT || 'mailto:admin@beleza-dojo.com').trim()
 
@@ -50,11 +53,13 @@ export async function POST(req: Request) {
             publicLength: publicKey?.length || 0,
             hasPrivate: !!privateKey,
             privateLength: privateKey?.length || 0,
+            isUsingFallback: rawPublicKey === PUBLIC_KEY_FALLBACK && !process.env.VAPID_PUBLIC_KEY && !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
             subject
         })
 
         if (!publicKey || !privateKey) {
-            return NextResponse.json({ error: 'Server VAPID configuration missing' }, { status: 500 })
+            console.error('[PushAPI] Missing critical configuration. Private Key is required.')
+            return NextResponse.json({ error: 'Server VAPID configuration missing (Private Key)' }, { status: 500 })
         }
 
         try {
