@@ -11,7 +11,7 @@ export default function StatsCard({
   title: string
   value: ReactNode
   icon: ReactNode
-  color?: 'blue' | 'green' | 'red' | 'purple'
+  color?: 'blue' | 'green' | 'red' | 'purple' | 'yellow'
   loading?: boolean
 }) {
   const colors = {
@@ -19,6 +19,7 @@ export default function StatsCard({
     green: 'from-green-500/20 to-green-600/5 text-green-500 border-green-500/20',
     red: 'from-red-500/20 to-red-600/5 text-red-500 border-red-500/20',
     purple: 'from-purple-500/20 to-purple-600/5 text-purple-500 border-purple-500/20',
+    yellow: 'from-yellow-500/20 to-yellow-600/5 text-yellow-500 border-yellow-500/20',
   }
 
   const hue = colors[color] || colors.blue

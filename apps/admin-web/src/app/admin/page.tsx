@@ -6,11 +6,12 @@ import StatsCard from '../components/dashboard/StatsCard'
 import RecentActivity from '../components/dashboard/RecentActivity'
 import ExpiringMembers from '../components/dashboard/ExpiringMembers'
 import RecentAccess from '../components/dashboard/RecentAccess'
-import { Users, UserCheck, UserX, DollarSign, ClipboardCheck, Plus, Clock, ArrowRight, Activity, UserPlus } from 'lucide-react'
+import { Users, UserCheck, UserX, DollarSign, ClipboardCheck, Plus, Clock, ArrowRight, Activity, UserPlus, CheckCircle, AlertTriangle, XCircle, Bell } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
 import RegistrationRequests from '../components/dashboard/RegistrationRequests'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 
 type Stats = {
@@ -23,6 +24,9 @@ type Stats = {
   expiring_next_7d:
   | { user_id: string; first_name: string | null; last_name: string | null; end_date: string }[]
   | null
+  paid_on_time: number
+  paid_late_1: number
+  paid_late_2: number
 }
 
 type PayRow = {
@@ -57,6 +61,25 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+
+  const handleNotify = async () => {
+    const loadingToast = toast.loading('Verificando recordatorios...')
+    try {
+      const res = await fetch('/api/notifications/reminders', { method: 'POST' })
+      const data = await res.json()
+      if (data.success) {
+        if (data.notifications_sent > 0) {
+          toast.success(`Se enviaron ${data.notifications_sent} notificaciones`, { id: loadingToast })
+        } else {
+          toast.info('No hay recordatorios pendientes para hoy', { id: loadingToast })
+        }
+      } else {
+        toast.info(data.message || 'Sin acciones para hoy', { id: loadingToast })
+      }
+    } catch (e) {
+      toast.error('Error al verificar recordatorios', { id: loadingToast })
+    }
+  }
 
   const fetchData = async () => {
     try {
@@ -219,6 +242,14 @@ export default function AdminDashboard() {
                   Pago
                 </button>
               </Link>
+              <button
+                onClick={handleNotify}
+                className="w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white border border-slate-200 text-slate-900 font-bold hover:bg-slate-50 transition-all active:scale-95"
+                title="Verificar y enviar recordatorios automáticos (Días 8-10 y 18-20)"
+              >
+                <Bell className="w-4 h-4 text-slate-500" />
+                <span className="hidden md:inline">Recordatorios</span>
+              </button>
             </div>
           </header>
 
@@ -270,6 +301,37 @@ export default function AdminDashboard() {
               color="blue"
               loading={loading}
             />
+          </section>
+
+          {/* Métricas de Pagos (Desglose) */}
+          <section className="mb-10">
+            <h3 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-tight mb-5 flex items-center gap-2">
+              <DollarSign className="w-5 h-5 text-emerald-500" />
+              Comportamiento de Pagos (Mes Actual)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <StatsCard
+                title="A Término (Día 1-10)"
+                value={stats?.paid_on_time ?? 0}
+                icon={<CheckCircle className="w-5 h-5" />}
+                color="green"
+                loading={loading}
+              />
+              <StatsCard
+                title="Con Recargo (Día 11-20)"
+                value={stats?.paid_late_1 ?? 0}
+                icon={<AlertTriangle className="w-5 h-5" />}
+                color="yellow"
+                loading={loading}
+              />
+              <StatsCard
+                title="Fuera de Término (> Día 20)"
+                value={stats?.paid_late_2 ?? 0}
+                icon={<XCircle className="w-5 h-5" />}
+                color="red"
+                loading={loading}
+              />
+            </div>
           </section>
 
           {/* Nuevos Registros */}
