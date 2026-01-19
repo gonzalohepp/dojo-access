@@ -1,6 +1,8 @@
 -- 1. Redifinir la vista members_with_status para lógica de bloqueo automático
 -- Bloquea (vencido) después del día 20 si no hay pago para el mes actual.
 
+DROP VIEW IF EXISTS public.members_with_status CASCADE;
+
 CREATE OR REPLACE VIEW members_with_status AS
 WITH current_month_payments AS (
     -- Buscamos pagos que cubran el día de hoy
