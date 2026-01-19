@@ -38,16 +38,31 @@ export async function POST(req: Request) {
         }
 
         // Configure VAPID - Try both with and without NEXT_PUBLIC prefix
-        const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY
-        const privateKey = process.env.VAPID_PRIVATE_KEY
-        const subject = process.env.VAPID_SUBJECT || 'mailto:admin@beleza-dojo.com'
+        const rawPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY
+        const rawPrivateKey = process.env.VAPID_PRIVATE_KEY
+        const subject = (process.env.VAPID_SUBJECT || 'mailto:admin@beleza-dojo.com').trim()
+
+        const publicKey = rawPublicKey?.trim()
+        const privateKey = rawPrivateKey?.trim()
+
+        console.log('[PushAPI] VAPID Debug:', {
+            hasPublic: !!publicKey,
+            publicLength: publicKey?.length || 0,
+            hasPrivate: !!privateKey,
+            privateLength: privateKey?.length || 0,
+            subject
+        })
 
         if (!publicKey || !privateKey) {
-            console.error('[PushAPI] Missing VAPID Keys:', { hasPublic: !!publicKey, hasPrivate: !!privateKey })
             return NextResponse.json({ error: 'Server VAPID configuration missing' }, { status: 500 })
         }
 
-        webpush.setVapidDetails(subject, publicKey, privateKey)
+        try {
+            webpush.setVapidDetails(subject, publicKey, privateKey)
+        } catch (setErr: any) {
+            console.error('[PushAPI] setVapidDetails failed:', setErr.message)
+            throw setErr
+        }
 
         const payload = JSON.stringify({
             title: title || 'Notificación',
