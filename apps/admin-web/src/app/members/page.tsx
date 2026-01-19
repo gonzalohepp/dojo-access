@@ -153,16 +153,28 @@ function MembersContent() {
     setOpen(true)
   }
 
-  /** Paso 4.1: eliminar con RPC admin_delete_member */
+  /** Paso 4.1: eliminar con API */
   const onDelete = async (user_id: string) => {
     if (!confirm('¿Eliminar este miembro?')) return
-    const { error } = await supabase.rpc('admin_delete_member', { p_user_id: user_id })
-    if (error) {
+
+    try {
+      const res = await fetch('/api/members/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Error desconocido')
+      }
+
+      await load()
+      setSuccessMsg('Miembro eliminado correctamente')
+    } catch (error: any) {
       alert('Error eliminando miembro: ' + error.message)
-      return
     }
-    await load()
-    setSuccessMsg('Miembro eliminado correctamente')
   }
 
   // genera access_code único

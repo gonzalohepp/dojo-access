@@ -7,7 +7,7 @@ type PendingUser = {
     first_name: string | null
     last_name: string | null
     email: string | null
-    created_at: string
+    created_at?: string
 }
 
 export default function RegistrationRequests({
@@ -61,10 +61,6 @@ export default function RegistrationRequests({
                                     <div className="flex items-center gap-1.5 text-xs text-slate-500 font-medium lowercase">
                                         <Mail className="w-3 h-3" />
                                         {u.email}
-                                    </div>
-                                    <div className="flex items-center gap-1.5 text-[10px] font-black text-blue-500/60 uppercase tracking-widest">
-                                        <Clock className="w-3 h-3" />
-                                        Ingresó: {new Date(u.created_at).toLocaleDateString()} {new Date(u.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                     </div>
                                 </div>
                             </div>

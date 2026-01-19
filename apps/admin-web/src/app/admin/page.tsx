@@ -79,9 +79,8 @@ export default function AdminDashboard() {
           .limit(10),
         supabase
           .from('profiles')
-          .select('user_id, first_name, last_name, email, created_at')
+          .select('user_id, first_name, last_name, email')
           .eq('role', 'pending')
-          .order('created_at', { ascending: false })
       ])
 
       if (se) throw se
