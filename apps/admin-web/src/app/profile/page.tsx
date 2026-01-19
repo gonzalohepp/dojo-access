@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SubscriptionModal from '../components/profile/SubscriptionModal'
+import { fmtARS, fmtDate, fmtSchedule } from '@/lib/format'
 
 
 type MemberRow = {
@@ -64,20 +65,7 @@ type AttendanceRow = {
   reason: string | null
 }
 
-function fmtDate(d?: string | null) {
-  if (!d) return '—'
-  const date = new Date(`${d}T00:00:00`)
-  if (Number.isNaN(date.getTime())) return '—'
-  return date.toLocaleDateString('es-AR', { day: '2-digit', month: 'long', year: 'numeric' })
-}
 function daysDiff(a: Date, b: Date) { a.setHours(0, 0, 0, 0); b.setHours(0, 0, 0, 0); return Math.round((b.getTime() - a.getTime()) / 86400000) }
-function money(v: number | string | null) { const n = typeof v === 'string' ? Number(v) : v ?? 0; return n.toLocaleString('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 }) }
-function scheduleStr(days: string[] | null, start?: string | null, end?: string | null) {
-  const dias = (days ?? []).map(d => en2es[d.toLowerCase().slice(0, 3)] ?? d)
-  const base = dias.length ? dias.join(', ') : '—'
-  const t = (v?: string | null) => v ? new Date(`1970-01-01T${v}`).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : ''
-  return (start || end) ? `${base} – ${t(start)}${end ? ` a ${t(end)}` : ''}` : base
-}
 const statusPill = (ok: boolean) => ok ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'
 const colorBadge: Record<string, string> = {
   blue: 'bg-blue-100 text-blue-800 border-blue-200', red: 'bg-red-100 text-red-800 border-red-200',
@@ -197,7 +185,7 @@ export default function ProfilePage() {
         <div className="text-right">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Costo mensual</p>
           <p className="text-lg font-black text-slate-900 dark:text-white">
-            {money(c.is_principal ? (c.price_principal ?? c.price) : (c.price_additional ?? c.price_principal ?? c.price))}
+            {fmtARS(c.is_principal ? (c.price_principal ?? c.price) : (c.price_additional ?? c.price_principal ?? c.price))}
           </p>
         </div>
       </div>
@@ -210,7 +198,7 @@ export default function ProfilePage() {
       )}
       <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center gap-2 text-blue-600 dark:text-blue-400 font-black text-[10px] uppercase tracking-widest">
         <Calendar className="w-3.5 h-3.5" />
-        {scheduleStr(c.days, c.start_time, c.end_time)}
+        {fmtSchedule(c.days, c.start_time, c.end_time)}
       </div>
     </motion.div>
   )

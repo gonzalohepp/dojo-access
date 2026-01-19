@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminLayout from '../layouts/AdminLayout'
+import { fmtDateTime } from '@/lib/format'
 
 const ITEMS_PER_PAGE = 10
 
@@ -118,7 +119,7 @@ export default function AccessLogPage() {
 
   const exportToCSV = () => {
     const rows = filteredLogs.map((log) => [
-      format(new Date(log.scanned_at), 'dd/MM/yyyy HH:mm:ss'),
+      fmtDateTime(log.scanned_at),
       log.member_name,
       log.result,
       log.reason ?? '',
@@ -130,7 +131,7 @@ export default function AccessLogPage() {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `accesos_${format(new Date(), 'yyyy-MM-dd')}.csv`
+    a.download = `accesos_${new Date().toISOString().slice(0, 10)}.csv`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -292,7 +293,7 @@ export default function AccessLogPage() {
                               <Calendar className="w-4 h-4" />
                             </div>
                             <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                              {format(new Date(log.scanned_at), "d 'de' MMMM, HH:mm", { locale: es })}
+                              {fmtDateTime(log.scanned_at)}
                             </span>
                           </div>
                         </td>

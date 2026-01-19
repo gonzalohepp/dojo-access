@@ -8,25 +8,9 @@ import { Plus, Download, Check, Receipt, CreditCard, ChevronLeft, ChevronRight, 
 
 import PaymentFilters from '../components/payments/PaymentFilters';
 import PaymentModal from '../components/payments/PaymentModal';
+import { fmtARS, fmtDateShort } from '@/lib/format';
 
-// ===================== Helpers =====================
-const fmtARS = (v: number) =>
-  v.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
-
-const fmtDate = (v?: string | Date | null) => {
-  if (!v) return '—';
-  if (typeof v === 'string') {
-    const iso = v.includes('T') ? v : `${v}T00:00:00`;
-    const d = new Date(iso);
-    return isNaN(d.getTime())
-      ? '—'
-      : d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
-  }
-  const d = new Date(v);
-  return isNaN(d.getTime())
-    ? '—'
-    : d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' });
-};
+const fmtDate = fmtDateShort;
 
 type PaymentRow = {
   id: number;
@@ -72,7 +56,7 @@ export default function PaymentsPage() {
 
     const { data: pays, error: payErr } = await supabase
       .from('payments')
-      .select('id,user_id,amount,method,paid_at,period_from,period_to,notes')
+      .select('id,user_id,amount,method,paid_at,period_from,period_to,notes, profiles(first_name, last_name)')
       .order('paid_at', { ascending: false });
 
     if (payErr) {
@@ -82,34 +66,26 @@ export default function PaymentsPage() {
       return;
     }
 
-    const ids = Array.from(new Set((pays ?? []).map((p: any) => p.user_id)));
-    const nameById: Record<string, string> = {};
-    if (ids.length) {
-      const { data: profs } = await supabase
-        .from('profiles')
-        .select('user_id, first_name, last_name')
-        .in('user_id', ids);
-
-      (profs ?? []).forEach((p: any) => {
-        nameById[p.user_id] = [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
-      });
-    }
-
-    const mapped: PaymentRow[] = (pays ?? []).map((r: any) => ({
-      id: r.id,
-      user_id: r.user_id,
-      amount: Number(r.amount),
-      method: r.method,
-      paid_at: r.paid_at ?? r.payment_date ?? r.created_at ?? null,
-      period_from: r.period_from,
-      period_to: r.period_to,
-      notes: r.notes ?? null,
-      member_name: nameById[r.user_id] || '—',
-    }));
+    const nameMap: Record<string, string> = {};
+    const mapped: PaymentRow[] = (pays ?? []).map((r: any) => {
+      const name = [r.profiles?.first_name, r.profiles?.last_name].filter(Boolean).join(' ').trim() || '—';
+      if (r.user_id) nameMap[r.user_id] = name;
+      return {
+        id: r.id,
+        user_id: r.user_id,
+        amount: Number(r.amount),
+        method: r.method,
+        paid_at: r.paid_at ?? r.payment_date ?? r.created_at ?? null,
+        period_from: r.period_from,
+        period_to: r.period_to,
+        notes: r.notes ?? null,
+        member_name: name,
+      };
+    });
     setRows(mapped);
 
     setMemberOpts(
-      Object.entries(nameById)
+      Object.entries(nameMap)
         .map(([value, label]) => ({ value, label }))
         .sort((a, b) => a.label.localeCompare(b.label, 'es'))
     );

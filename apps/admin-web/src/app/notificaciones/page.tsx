@@ -3,7 +3,27 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AdminLayout from '../layouts/AdminLayout'
-import { Bell, Send, Users, Calendar, CheckCircle, AlertCircle, Smartphone, History, Info, Search, Trash2, Clock, Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { fmtDate, fmtDateTime } from '@/lib/format'
+import {
+    Bell,
+    Send,
+    Users,
+    Calendar,
+    CheckCircle,
+    AlertCircle,
+    Smartphone,
+    History as HistoryIcon, // Renamed to avoid conflict with state variable
+    Info,
+    Search,
+    Trash2,
+    Clock,
+    Check,
+    ChevronDown,
+    ChevronUp,
+    Settings, // Added from instruction
+    ChevronRight, // Added from instruction
+    Trash // Added from instruction
+} from 'lucide-react'
 import { toast } from 'sonner'
 import UserSearch from '../components/notifications/UserSearch'
 
@@ -498,7 +518,7 @@ export default function NotificationsPage() {
                                     <div className="p-8 border-b border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/10 flex items-center justify-between">
                                         <div className="flex items-center gap-4">
                                             <div className="w-12 h-12 rounded-2xl bg-amber-50 dark:bg-amber-900/30 flex items-center justify-center">
-                                                <History className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                                                <HistoryIcon className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                                             </div>
                                             <div>
                                                 <h3 className="text-xl font-black text-slate-900 dark:text-white">Registro de Envíos</h3>
@@ -525,7 +545,7 @@ export default function NotificationsPage() {
                                                                     Para: {item.target}
                                                                 </span>
                                                                 <span className="text-[10px] font-bold text-slate-400">
-                                                                    {new Date(item.sent_at).toLocaleDateString()} {new Date(item.sent_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                    {fmtDateTime(item.sent_at)}
                                                                 </span>
                                                             </div>
                                                             <h4 className="font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition-colors">{item.title}</h4>
