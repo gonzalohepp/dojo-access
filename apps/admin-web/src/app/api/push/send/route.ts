@@ -41,12 +41,18 @@ export async function POST(req: Request) {
         // Fallback hardcoded to match the frontend key used in AdminLayout
         const PUBLIC_KEY_FALLBACK = 'BMXQvrbtBZdniuZrLMYD87T0E-742Lo72ktJWrjzB5mcbKYrrCh5X6cAo7z0d09QqOygrZsNFVEz_IBgTWqUp6o'
 
+        // Check all possible names for keys
         const rawPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY || PUBLIC_KEY_FALLBACK
-        const rawPrivateKey = process.env.VAPID_PRIVATE_KEY
-        const subject = (process.env.VAPID_SUBJECT || 'mailto:admin@beleza-dojo.com').trim()
+        const rawPrivateKey = process.env.VAPID_PRIVATE_KEY || process.env.NEXT_PUBLIC_VAPID_PRIVATE_KEY
+        const rawSubject = process.env.VAPID_SUBJECT || process.env.NEXT_PUBLIC_VAPID_SUBJECT || 'mailto:admin@beleza-dojo.com'
 
         const publicKey = rawPublicKey?.trim()
         const privateKey = rawPrivateKey?.trim()
+        const subject = rawSubject?.trim()
+
+        // Diagnostic: List all env var names starting with VAPID or NEXT_PUBLIC_VAPID
+        const availableKeys = Object.keys(process.env).filter(k => k.includes('VAPID'))
+        console.log('[PushAPI] Environment Check (Keys only):', availableKeys)
 
         console.log('[PushAPI] VAPID Debug:', {
             hasPublic: !!publicKey,
@@ -59,7 +65,10 @@ export async function POST(req: Request) {
 
         if (!publicKey || !privateKey) {
             console.error('[PushAPI] Missing critical configuration. Private Key is required.')
-            return NextResponse.json({ error: 'Server VAPID configuration missing (Private Key)' }, { status: 500 })
+            return NextResponse.json({
+                error: 'Server VAPID configuration missing (Private Key)',
+                detectedVapidKeys: availableKeys
+            }, { status: 500 })
         }
 
         try {
