@@ -4,13 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabaseClient'
 import AdminLayout from '../layouts/AdminLayout'
+import Link from 'next/link'
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, AreaChart, Area, Legend, BarChart, Bar
 } from 'recharts'
 import {
   TrendingUp, Users, DollarSign, Wallet, AlertTriangle,
-  Activity, Receipt, ArrowUpRight, ArrowDownRight, Info, FileDown, Download
+  Activity, Receipt, ArrowUpRight, ArrowDownRight, Info, FileDown, Download, ArrowRight
 } from 'lucide-react'
 import { exportToExcel } from '@/lib/excelExport'
 
@@ -385,6 +386,29 @@ export default function MetricasPage() {
               description="Accesos denegados"
             />
           </div>
+
+          {/* Payment Timing Link Card */}
+          <Link href="/metricas/payment-timing">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              whileHover={{ scale: 1.02, y: -4 }}
+              className="mb-10 p-8 rounded-[32px] bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-2xl cursor-pointer border-2 border-emerald-400/50 relative overflow-hidden group"
+            >
+              <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32" />
+              <div className="relative z-10 flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="w-6 h-6" />
+                    <span className="text-xs font-black uppercase tracking-widest bg-white/20 px-3 py-1 rounded-full">Nuevo</span>
+                  </div>
+                  <h3 className="text-2xl font-black mb-2">Análisis de Puntualidad de Pagos</h3>
+                  <p className="text-emerald-50 font-medium">Ver usuarios por categoría: A Término, Con Recargo, Fuera de Término</p>
+                </div>
+                <ArrowRight className="w-12 h-12 opacity-70 group-hover:opacity-100 group-hover:translate-x-2 transition-all" />
+              </div>
+            </motion.div>
+          </Link>
 
           {/* New Advanced Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
