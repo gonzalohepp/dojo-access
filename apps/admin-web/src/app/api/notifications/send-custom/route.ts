@@ -24,10 +24,12 @@ export async function POST(req: Request) {
             }
             targetUserIds = [customUserId]
         } else if (target === 'all') {
-            const { data } = await supabase
+            const { data, error } = await supabase
                 .from('profiles')
                 .select('user_id')
                 .eq('role', 'member')
+
+            console.log('[Custom Notification] "all" query result:', { count: data?.length, error })
             targetUserIds = (data || []).map(p => p.user_id)
         } else if (target === 'active') {
             const { data } = await supabase
@@ -48,10 +50,15 @@ export async function POST(req: Request) {
             targetUserIds = (data || []).map(m => m.member_id)
         }
 
-        console.log(`[Custom Notification] Targeting ${targetUserIds.length} users`)
+        console.log(`[Custom Notification] Targeting ${targetUserIds.length} users for target="${target}"`)
 
         if (targetUserIds.length === 0) {
-            return NextResponse.json({ message: 'No users found for this target', count: 0 })
+            return NextResponse.json({
+                message: 'No users found for this target',
+                count: 0,
+                target,
+                debug: target === 'all' ? 'Try checking if users have role="member" in profiles table' : ''
+            })
         }
 
         // 2. Setup VAPID
