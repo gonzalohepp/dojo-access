@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabaseClient'
-import AdminLayout from '../layouts/AdminLayout'
+import AdminLayout from '../../layouts/AdminLayout'
 import { CheckCircle, AlertTriangle, XCircle, DollarSign, Filter, Users } from 'lucide-react'
 
 type PaymentUser = {
