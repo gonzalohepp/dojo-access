@@ -10,7 +10,7 @@ export type MemberRow = {
     membership_type: 'monthly' | 'quarterly' | 'semiannual' | 'annual' | null
     next_payment_due: string | null
     end_date?: string | null
-    status?: 'activo' | 'inactivo'
+    status?: 'activo' | 'inactivo' | 'vencido' | 'suspendido'
     class_ids?: number[]
     class_names?: string[]
     avatar_url?: string | null

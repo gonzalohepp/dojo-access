@@ -1,7 +1,7 @@
 'use client'
 
 type Filters = {
-  status: 'todos' | 'activo' | 'inactivo'
+  status: 'todos' | 'activo' | 'vencido'
   membership: 'todos' | 'monthly' | 'quarterly' | 'semiannual' | 'annual'
   className: 'todas' | string
 }
@@ -27,7 +27,7 @@ export default function MemberFilters({
       >
         <option value="todos">Todos los Estados</option>
         <option value="activo">Activos</option>
-        <option value="inactivo">Vencidos</option>
+        <option value="vencido">Vencidos</option>
       </select>
 
       {/* Membresía */}

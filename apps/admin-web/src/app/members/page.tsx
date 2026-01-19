@@ -51,7 +51,7 @@ function MembersContent() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   const [filters, setFilters] = useState({
-    status: 'todos' as 'todos' | 'activo' | 'inactivo',
+    status: 'todos' as 'todos' | 'activo' | 'vencido',
     membership: 'todos' as 'todos' | 'monthly' | 'quarterly' | 'semiannual' | 'annual',
     className: 'todas' as 'todas' | string
   })
@@ -121,14 +121,9 @@ function MembersContent() {
 
   // --- FILTROS + SEARCH ---
   const filtered = useMemo(() => {
-    const today = new Date(new Date().toDateString())
     return members.filter((m) => {
       const full = [m.first_name, m.last_name].filter(Boolean).join(' ').trim()
-      const derived =
-        m.status ??
-        (m.next_payment_due && new Date(m.next_payment_due) >= today
-          ? 'activo'
-          : 'inactivo')
+      const derived = m.status || 'vencido'
       const statusOk = filters.status === 'todos' || filters.status === derived
       const membOk =
         filters.membership === 'todos' || m.membership_type === filters.membership

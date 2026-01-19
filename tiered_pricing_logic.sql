@@ -4,7 +4,16 @@
 DROP VIEW IF EXISTS public.members_with_status CASCADE;
 
 CREATE OR REPLACE VIEW members_with_status AS
-WITH current_month_payments AS (
+WITH latest_memberships AS (
+    -- Obtenemos solo la membresía más reciente por cada miembro
+    SELECT DISTINCT ON (member_id)
+        member_id,
+        type,
+        end_date
+    FROM memberships
+    ORDER BY member_id, end_date DESC
+),
+current_month_payments AS (
     -- Buscamos pagos que cubran el día de hoy
     SELECT DISTINCT user_id
     FROM payments
@@ -44,24 +53,67 @@ SELECT
     ), 0) as estimated_monthly_fee,
     CASE 
         WHEN p.role = 'admin' THEN 'activo'
-        -- Si ya tiene un pago para este mes, está activo pase lo que pase
+        -- Si ya tiene un pago para este período/mes, está activo
         WHEN cp.user_id IS NOT NULL THEN 'activo'
-        -- Si hoy es entre 1 y 20, sigue activo por gracia (si tiene una membresía previa aceptable)
-        WHEN EXTRACT(DAY FROM CURRENT_DATE) <= 20 THEN 'activo'
-        -- Día 21 en adelante sin pago = Vencido
+        -- Si su membresía aún no vence, está activo
+        WHEN m.end_date >= CURRENT_DATE THEN 'activo'
+        -- Gracia: Si venció este mes y hoy es <= 20, sigue activo
+        WHEN EXTRACT(DAY FROM CURRENT_DATE) <= 20 
+             AND EXTRACT(MONTH FROM m.end_date) = EXTRACT(MONTH FROM CURRENT_DATE)
+             AND EXTRACT(YEAR FROM m.end_date) = EXTRACT(YEAR FROM CURRENT_DATE)
+             THEN 'activo'
+        -- Día 21 en adelante sin pago o vencido de meses anteriores = Vencido
         ELSE 'vencido'
     END as status
 FROM profiles p
-LEFT JOIN memberships m ON p.user_id = m.member_id
+LEFT JOIN latest_memberships m ON p.user_id = m.member_id
 LEFT JOIN current_month_payments cp ON p.user_id = cp.user_id
 LEFT JOIN enrolled_classes ec ON p.user_id = ec.user_id
-WHERE p.role = 'member';
+WHERE p.role = 'member' OR p.role = 'admin';
 
--- 2. Función auxiliar para obtener el multiplicador de precio actual
--- 1 al 10: 1.0x
--- 11 al 20: 1.2x (20% recargo)
--- 21+: 1.2x (Sigue con recargo si se llega a habilitar el pago manualmente)
+-- 2. Sincronizar dashboard_stats para que use la misma lógica
+CREATE OR REPLACE VIEW dashboard_stats AS
+WITH stats AS (
+  SELECT 
+    count(*) as total,
+    count(*) filter (where status = 'activo') as actives,
+    count(*) filter (where status = 'vencido') as inactives
+  FROM members_with_status
+  WHERE role = 'member'
+),
+revenue AS (
+  SELECT COALESCE(SUM(amount), 0) as total_month
+  FROM payments
+  WHERE date_trunc('month', paid_at) = date_trunc('month', CURRENT_DATE)
+),
+access_today AS (
+  SELECT 
+    count(*) filter (where result = 'authorized') as success,
+    count(*) filter (where result = 'denied') as denied
+  FROM access_logs
+  WHERE scanned_at >= CURRENT_DATE
+)
+SELECT 
+  s.total as members_total,
+  s.actives as members_active,
+  s.inactives as members_inactive,
+  a.success as accesses_success_today,
+  a.denied as accesses_denied_today,
+  r.total_month as revenue_this_month,
+  (
+    SELECT json_agg(expiring)
+    FROM (
+      SELECT user_id, first_name, last_name, phone, next_payment_due as end_date
+      FROM members_with_status
+      WHERE status = 'activo'
+        AND next_payment_due >= CURRENT_DATE 
+        AND next_payment_due <= (CURRENT_DATE + interval '7 days')
+      ORDER BY next_payment_due ASC
+    ) expiring
+  ) as expiring_next_7d
+FROM stats s, revenue r, access_today a;
 
+-- 3. Función auxiliar para el multiplicador de precio
 CREATE OR REPLACE FUNCTION get_current_pricing_multiplier() 
 RETURNS NUMERIC AS $$
 BEGIN

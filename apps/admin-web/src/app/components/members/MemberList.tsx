@@ -46,9 +46,7 @@ export default function MemberList({
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
       {members.map((m, idx) => {
         const fullName = [m.first_name, m.last_name].filter(Boolean).join(' ').trim()
-        const today = new Date(new Date().toDateString())
-        const derived = m.status ?? (m.next_payment_due && new Date(m.next_payment_due) >= today ? 'activo' : 'inactivo')
-        const isActive = derived === 'activo'
+        const isActive = m.status === 'activo'
 
         return (
           <motion.div
