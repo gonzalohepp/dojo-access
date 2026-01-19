@@ -62,7 +62,7 @@ export async function POST(req: Request) {
             .from('profiles')
             .upsert({
                 user_id: userId,
-                role: 'member',
+                // role: 'member', // Remove hardcoded role to prevent overwrite on upsert
                 first_name,
                 last_name,
                 email,

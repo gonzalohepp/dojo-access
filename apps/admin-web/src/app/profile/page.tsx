@@ -328,7 +328,9 @@ export default function ProfilePage() {
                         </p>
                         <div>
                           <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter mb-4">
-                            {fmtDate(member.next_payment_due)}
+                            {member.next_payment_due && new Date(member.next_payment_due + 'T12:00:00') < new Date()
+                              ? `Venció el ${fmtDate(member.next_payment_due)}`
+                              : fmtDate(member.next_payment_due)}
                           </p>
                           {daysLeft !== null && (
                             <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -340,9 +342,22 @@ export default function ProfilePage() {
                             </div>
                           )}
                           <p className="text-xs font-bold text-slate-400 mt-2">
-                            {daysLeft !== null ? (
-                              daysLeft > 0 ? `Quedan ${daysLeft} días de entrenamiento` : 'Tu tiempo ha expirado'
-                            ) : 'Sin fecha definida'}
+                            {(() => {
+                              if (daysLeft !== null && daysLeft > 0) return `Quedan ${daysLeft} días de entrenamiento`
+
+                              // Logic for expired/grace period messaging
+                              if (member.next_payment_due) {
+                                const today = new Date()
+                                const due = new Date(member.next_payment_due + 'T12:00:00')
+                                if (due < today) {
+                                  const day = today.getDate()
+                                  if (day <= 10) return '¡Aprovechá! Pagá sin interés hasta el día 10.'
+                                  if (day <= 20) return 'Atención: Tu pago tendrá un 20% de recargo.'
+                                  return 'Acceso Bloqueado. Regularizá tu situación.'
+                                }
+                              }
+                              return 'Tu tiempo ha expirado'
+                            })()}
                           </p>
                           <div className="mt-6">
                             <button
