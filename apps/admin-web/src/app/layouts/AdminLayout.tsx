@@ -152,10 +152,12 @@ export default function AdminLayout({ children, active }: { children: React.Reac
         .maybeSingle()
       if (data) {
         setProfile(data as Profile)
-        // Auto-sync push notification if already granted
-        if ('Notification' in window && Notification.permission === 'granted' && !subscription) {
-          console.log('[Push] Permission granted but no sub in state, syncing...')
-          subscribeUser(VAPID_PUBLIC_KEY).catch(console.error)
+        // Ensure push sync happens for the current user session
+        if ('Notification' in window && Notification.permission === 'granted') {
+          console.log('[Push] Syncing subscription for session:', user.id)
+          subscribeUser(VAPID_PUBLIC_KEY).catch(err =>
+            console.error('[Push] Silent sync failed:', err)
+          )
         }
       } else {
         setProfile({

@@ -142,7 +142,11 @@ export default function NotificationsPage() {
             const data = await res.json()
 
             if (res.ok) {
-                toast.success(`Notificación enviada a ${data.count || 0} usuarios`, { id: loadingToast })
+                const toastMsg = data.userCount
+                    ? `Notificación enviada a ${data.userCount} usuario${data.userCount > 1 ? 's' : ''} (${data.deviceCount} dispositivo${data.deviceCount > 1 ? 's' : ''})`
+                    : `Notificación enviada`
+
+                toast.success(toastMsg, { id: loadingToast })
 
                 // Add to local history for visual feedback
                 const newHistoryItem: NotificationHistoryItem = {

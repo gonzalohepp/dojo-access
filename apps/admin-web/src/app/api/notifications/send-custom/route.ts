@@ -66,70 +66,69 @@ export async function POST(req: Request) {
             })
         }
 
-        // 2. Setup VAPID
+        // 3. Send Notifications using Web-Push
         const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY
         const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
         const SUBS_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@beleza-dojo.com'
 
         if (!PUBLIC_KEY || !PRIVATE_KEY) {
-            return NextResponse.json({ error: 'VAPID keys missing' }, { status: 500 })
+            return NextResponse.json({ error: 'Push service not configured' }, { status: 500 })
         }
 
         webpush.setVapidDetails(SUBS_SUBJECT, PUBLIC_KEY, PRIVATE_KEY)
 
-        // 3. Send to all target users
-        let sentCount = 0
+        let devicesReached = 0
+        const usersReached = new Set<string>()
 
-        const results = await Promise.all(targetUserIds.map(async (userId) => {
+        const results = await Promise.all(targetUserIds.map(async (uid) => {
             const { data: subs } = await supabase
                 .from('push_subscriptions')
                 .select('subscription')
-                .eq('user_id', userId)
+                .eq('user_id', uid)
 
             if (!subs || subs.length === 0) return 0
 
+            let userDevices = 0
             const payload = JSON.stringify({
                 title,
                 body: message,
                 url: url || '/'
             })
 
-            let userSent = 0
             for (const s of subs) {
                 try {
                     await webpush.sendNotification(s.subscription as any, payload)
-                    userSent++
+                    userDevices++
+                    devicesReached++
+                    usersReached.add(uid)
                 } catch (e: any) {
-                    console.error(`Failed to send to ${userId}:`, e)
+                    console.error(`Error sending to ${uid}:`, e)
                     if (e.statusCode === 410 || e.statusCode === 404) {
                         await supabase.from('push_subscriptions').delete().match({ subscription: s.subscription })
                     }
                 }
             }
-            return userSent
+            return userDevices
         }))
 
-        const totalSent = results.reduce((a, b) => a + b, 0)
-
-        // 4. Record in history (graceful fail if table doesn't exist)
+        // Save to History
         try {
             await supabase.from('notification_history').insert({
                 title,
                 message,
                 target,
-                url: url || '/',
-                count: totalSent,
-                status: 'sent'
+                status: 'sent',
+                count: usersReached.size // We log unique users in history
             })
-        } catch (e) {
-            console.error('[Custom Notification] Could not save to history:', e)
+        } catch (err) {
+            console.error('Error saving history:', err)
         }
 
         return NextResponse.json({
             success: true,
-            target,
-            target_users: targetUserIds.length,
-            count: totalSent
+            userCount: usersReached.size,
+            deviceCount: devicesReached,
+            count: usersReached.size // fallback for existing UI
         })
 
     } catch (e: any) {
