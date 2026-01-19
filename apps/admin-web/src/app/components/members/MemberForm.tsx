@@ -59,17 +59,44 @@ export default function MemberForm({
 
   // Autocomplete Access Code
   useEffect(() => {
-    // Autocomplete if manualCode is false AND (it's a new member OR current code is empty/'X')
     if (manualCode) return
     const isPlaceholder = !form.access_code || form.access_code.toUpperCase() === 'X'
     if (member && !isPlaceholder) return
+
     const parts = form.full_name.trim().toLowerCase().split(/\s+/).filter(Boolean)
     if (parts.length < 2) {
       if (form.full_name === '') setForm(f => ({ ...f, access_code: '' }))
       return
     }
-    const suggested = (parts[0][0] + parts.slice(1).join('')).replace(/[^a-z0-9]/g, '')
-    setForm(f => ({ ...f, access_code: suggested }))
+
+    const generateUnique = async () => {
+      const initial = parts[0][0]
+      const lastname = parts.slice(1).join('')
+      let suggested = (initial + lastname).replace(/[^a-z0-9]/g, '')
+
+      let unique = suggested
+      let counter = 2
+      let isUnique = false
+
+      while (!isUnique) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('user_id')
+          .eq('access_code', unique)
+          .maybeSingle()
+
+        if (!data || (member && data.user_id === member.user_id)) {
+          isUnique = true
+        } else {
+          unique = suggested + counter
+          counter++
+        }
+      }
+
+      setForm(f => ({ ...f, access_code: unique }))
+    }
+
+    generateUnique()
   }, [form.full_name, manualCode, member])
 
   const handleMembershipChange = (v: string) => {

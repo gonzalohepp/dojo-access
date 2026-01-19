@@ -73,13 +73,15 @@ export default function AdminLayout({ children, active }: { children: React.Reac
   const pathname = usePathname()
 
   const fetchInitialNotifs = async () => {
+    const dismissed = JSON.parse(localStorage.getItem('dismissed_notifs') || '[]')
+
     // 1. Fetch Denied Access Logs
     const { data: logs } = await supabase
       .from('access_logs')
       .select('id, result, reason, scanned_at, profiles(first_name, last_name)')
       .eq('result', 'denegado')
       .order('scanned_at', { ascending: false })
-      .limit(10)
+      .limit(20) // Fetch more to account for dismissed
 
     // 2. Fetch Pending Users
     const { data: pending } = await supabase
@@ -87,26 +89,30 @@ export default function AdminLayout({ children, active }: { children: React.Reac
       .select('user_id, first_name, last_name, email, created_at')
       .eq('role', 'pending')
       .order('created_at', { ascending: false })
-      .limit(5)
+      .limit(10)
 
-    const mappedLogs: Notification[] = (logs || []).map(l => ({
-      id: l.id.toString(),
-      type: 'access_denied',
-      title: 'Acceso Denegado',
-      description: `${(l.profiles as any)?.first_name || 'Usuario'} ${(l.profiles as any)?.last_name || ''}: ${l.reason || ''}`,
-      timestamp: l.scanned_at,
-      read: true
-    }))
+    const mappedLogs: Notification[] = (logs || [])
+      .filter(l => !dismissed.includes(l.id.toString()))
+      .map(l => ({
+        id: l.id.toString(),
+        type: 'access_denied',
+        title: 'Acceso Denegado',
+        description: `${(l.profiles as any)?.first_name || 'Usuario'} ${(l.profiles as any)?.last_name || ''}: ${l.reason || ''}`,
+        timestamp: l.scanned_at,
+        read: true
+      }))
 
-    const mappedPending: Notification[] = (pending || []).map(p => ({
-      id: p.user_id,
-      type: 'pending_user',
-      title: 'Nuevo Registro',
-      description: `${p.first_name || ''} ${p.last_name || ''} (${p.email}) pendiente de aprobación.`,
-      timestamp: p.created_at || new Date().toISOString(),
-      link: `/members?new_id=${p.user_id}&new_email=${p.email}&new_name=${encodeURIComponent(`${p.first_name || ''} ${p.last_name || ''}`.trim())}`,
-      read: true
-    }))
+    const mappedPending: Notification[] = (pending || [])
+      .filter(p => !dismissed.includes(p.user_id))
+      .map(p => ({
+        id: p.user_id,
+        type: 'pending_user',
+        title: 'Nuevo Registro',
+        description: `${p.first_name || ''} ${p.last_name || ''} (${p.email}) pendiente de aprobación.`,
+        timestamp: p.created_at || new Date().toISOString(),
+        link: `/members?new_id=${p.user_id}&new_email=${p.email}&new_name=${encodeURIComponent(`${p.first_name || ''} ${p.last_name || ''}`.trim())}`,
+        read: true
+      }))
 
     const combined = [...mappedLogs, ...mappedPending]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -454,8 +460,8 @@ export default function AdminLayout({ children, active }: { children: React.Reac
                                 <div key={n.id} className="p-5 hover:bg-slate-50 dark:hover:bg-white/5 transition-colors group cursor-default">
                                   <div className="flex gap-4">
                                     <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 border transition-transform group-hover:scale-110 ${n.type === 'access_denied' ? 'bg-red-50 text-red-600 border-red-100 dark:bg-red-500/10 dark:border-red-500/20' :
-                                        n.type === 'fraud' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:border-amber-500/20' :
-                                          'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-500/10 dark:border-blue-500/20'
+                                      n.type === 'fraud' ? 'bg-amber-50 text-amber-600 border-amber-100 dark:bg-amber-500/10 dark:border-amber-500/20' :
+                                        'bg-blue-50 text-blue-600 border-blue-100 dark:bg-blue-500/10 dark:border-blue-500/20'
                                       }`}>
                                       {n.type === 'access_denied' ? <ShieldAlert className="w-5 h-5" /> :
                                         n.type === 'fraud' ? <AlertTriangle className="w-5 h-5" /> :
@@ -490,7 +496,12 @@ export default function AdminLayout({ children, active }: { children: React.Reac
                         {notifications.length > 0 && (
                           <div className="p-4 bg-slate-50/50 dark:bg-white/2 border-t border-slate-100 dark:border-slate-800">
                             <button
-                              onClick={() => setNotifications([])}
+                              onClick={() => {
+                                const dismissed = JSON.parse(localStorage.getItem('dismissed_notifs') || '[]')
+                                const newDismissed = [...new Set([...dismissed, ...notifications.map(n => n.id)])]
+                                localStorage.setItem('dismissed_notifs', JSON.stringify(newDismissed))
+                                setNotifications([])
+                              }}
                               className="w-full py-2.5 text-[10px] font-black text-slate-400 hover:text-rose-500 uppercase tracking-[0.2em] transition-colors flex items-center justify-center gap-2"
                             >
                               Limpiar Panel
