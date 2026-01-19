@@ -35,7 +35,8 @@ type MemberRow = {
   access_code: string | null
   membership_type: 'monthly' | 'quarterly' | 'semiannual' | 'annual' | null
   next_payment_due: string | null
-  status?: 'activo' | 'inactivo'
+  expires_at?: string | null
+  status?: string | null
   avatar_url?: string | null
 }
 
@@ -178,7 +179,7 @@ export default function ProfilePage() {
   }
 
   const fullName = useMemo(() => [member?.first_name, member?.last_name].filter(Boolean).join(' ').trim(), [member])
-  const isActive = useMemo(() => member?.next_payment_due ? new Date(`${member.next_payment_due}T00:00:00`) >= new Date(new Date().toDateString()) : false, [member])
+  const isActive = useMemo(() => member?.status === 'activo', [member?.status])
   const daysLeft = useMemo(() => member?.next_payment_due ? daysDiff(new Date(), new Date(`${member.next_payment_due}T00:00:00`)) : null, [member])
 
   const ClassItem = ({ c, idx }: { c: ClassRow, idx: number }) => (
