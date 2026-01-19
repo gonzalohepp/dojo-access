@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { addMonths } from 'date-fns'
+import { addMonths, lastDayOfMonth } from 'date-fns'
 import { motion } from 'framer-motion'
 import { User, Mail, Phone, Hash, Shield, Calendar, BookOpen, AlertCircle, Save, Plus } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
@@ -27,7 +27,7 @@ export default function MemberForm({
     additional_classes: [] as number[],
     membership_type: 'mensual',
     last_payment_date: new Date().toISOString().slice(0, 10),
-    next_payment_due: new Date(addMonths(new Date(), 1)).toISOString().slice(0, 10),
+    next_payment_due: lastDayOfMonth(new Date()).toISOString().slice(0, 10),
     emergency_contact: '',
     notes: '',
   })
@@ -107,13 +107,25 @@ export default function MemberForm({
 
   const handleMembershipChange = (v: string) => {
     const months = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 }[v] ?? 1
-    const baseDate = form.last_payment_date ? new Date(form.last_payment_date) : new Date()
+    const baseDate = form.last_payment_date ? new Date(form.last_payment_date + 'T12:00:00') : new Date()
+    const expiration = lastDayOfMonth(addMonths(baseDate, months - 1))
     setForm(s => ({
       ...s,
       membership_type: v,
-      next_payment_due: new Date(addMonths(baseDate, months)).toISOString().slice(0, 10)
+      next_payment_due: expiration.toISOString().slice(0, 10)
     }))
   }
+
+  // Auto-calculate expiration when last_payment_date changes
+  useEffect(() => {
+    const months = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 }[form.membership_type] ?? 1
+    const baseDate = new Date(form.last_payment_date + 'T12:00:00')
+    const expiration = lastDayOfMonth(addMonths(baseDate, months - 1))
+    setForm(s => ({
+      ...s,
+      next_payment_due: expiration.toISOString().slice(0, 10)
+    }))
+  }, [form.last_payment_date, form.membership_type])
 
   const setPrincipalClass = (id: number) => {
     setForm(s => ({
@@ -263,7 +275,7 @@ export default function MemberForm({
             </select>
           </div>
 
-          <div className="relative group">
+          <div className="relative group col-span-1 md:col-span-1">
             <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
             <input
               className={`${inputClass} focus:ring-emerald-500/10 focus:border-emerald-500/50`}
@@ -272,17 +284,17 @@ export default function MemberForm({
               value={form.last_payment_date}
               onChange={(e) => setForm({ ...form, last_payment_date: e.target.value })}
             />
+            <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha de Pago / Inicio</div>
           </div>
 
-          <div className="relative group">
-            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-            <input
-              className={`${inputClass} focus:ring-emerald-500/10 focus:border-emerald-500/50`}
-              type="date"
-              lang="es"
-              value={form.next_payment_due}
-              onChange={(e) => setForm({ ...form, next_payment_due: e.target.value })}
-            />
+          <div className="relative group col-span-1 md:col-span-1 opacity-60">
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400">
+              <Calendar className="w-5 h-5" />
+            </div>
+            <div className={`${inputClass} flex items-center bg-slate-100 cursor-not-allowed`}>
+              {new Date(form.next_payment_due + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+            </div>
+            <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vence Automáticamente</div>
           </div>
         </div>
       </section>

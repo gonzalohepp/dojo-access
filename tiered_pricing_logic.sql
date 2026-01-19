@@ -60,10 +60,10 @@ SELECT
         WHEN cp.user_id IS NOT NULL THEN 'activo'
         -- Si su membresía aún no vence, está activo
         WHEN m.end_date >= CURRENT_DATE THEN 'activo'
-        -- Gracia: Si venció este mes y hoy es <= 20, sigue activo
+        -- REGLA DE GRACIA: Si estamos entre el 1 y el 20, permitimos el acceso
+        -- siempre que haya vencido como máximo el mes pasado.
         WHEN EXTRACT(DAY FROM CURRENT_DATE) <= 20 
-             AND EXTRACT(MONTH FROM m.end_date) = EXTRACT(MONTH FROM CURRENT_DATE)
-             AND EXTRACT(YEAR FROM m.end_date) = EXTRACT(YEAR FROM CURRENT_DATE)
+             AND m.end_date >= (date_trunc('month', CURRENT_DATE) - interval '1 month')
              THEN 'activo'
         -- Día 21 en adelante sin pago o vencido de meses anteriores = Vencido
         ELSE 'vencido'
