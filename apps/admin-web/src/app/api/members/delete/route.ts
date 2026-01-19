@@ -10,9 +10,15 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'user_id is required' }, { status: 400 })
     }
 
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!serviceRoleKey) {
+      console.error('[Delete API] SUPABASE_SERVICE_ROLE_KEY is missing')
+      return NextResponse.json({ error: 'Configuración incompleta: SUPABASE_SERVICE_ROLE_KEY no encontrada en el servidor.' }, { status: 500 })
+    }
+
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
+      serviceRoleKey
     )
 
     // 1. Borrar inscripciones a clases

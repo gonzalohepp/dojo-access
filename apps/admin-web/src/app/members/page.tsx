@@ -155,9 +155,11 @@ function MembersContent() {
 
   /** Paso 4.1: eliminar con API */
   const onDelete = async (user_id: string) => {
-    if (!confirm('¿Eliminar este miembro?')) return
+    console.log('[Members] onDelete triggered for:', user_id)
+    if (!window.confirm('¿Eliminar este miembro?')) return
 
     try {
+      console.log('[Members] Calling delete API...')
       const res = await fetch('/api/members/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -165,6 +167,7 @@ function MembersContent() {
       })
 
       const data = await res.json()
+      console.log('[Members] Delete API response:', data)
 
       if (!res.ok) {
         throw new Error(data.error || 'Error desconocido')
@@ -173,6 +176,7 @@ function MembersContent() {
       await load()
       setSuccessMsg('Miembro eliminado correctamente')
     } catch (error: any) {
+      console.error('[Members] onDelete error:', error)
       alert('Error eliminando miembro: ' + error.message)
     }
   }

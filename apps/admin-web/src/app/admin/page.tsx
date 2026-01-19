@@ -86,7 +86,14 @@ export default function AdminDashboard() {
       if (se) throw se
       if (pe) throw pe
       if (ae) throw ae
-      if (ue) throw ue
+
+      if (ue) {
+        if (ue.code === '22P02') {
+          console.warn('[Dashboard] Enum mismatch for "pending" role. Registrations list will be hidden until SQL is run.')
+        } else {
+          throw ue
+        }
+      }
 
       setStats(s as Stats)
       setPendingUsers(u || [])
