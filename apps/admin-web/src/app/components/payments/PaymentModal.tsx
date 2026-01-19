@@ -196,6 +196,7 @@ export default function PaymentModal({
       member_id: userId,
       type: selectedMember?.membership_type || 'monthly',
       start_date: finalStartDate,
+      last_payment_date: fromStr, // New field for renewal logic
       end_date: toStr,
       notes: `Pago #${insertPay?.id}`,
     }, { onConflict: 'member_id' });

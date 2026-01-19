@@ -27,6 +27,7 @@ export default function MemberForm({
     additional_classes: [] as number[],
     membership_type: 'mensual',
     last_payment_date: new Date().toISOString().slice(0, 10),
+    start_date: '', // Join Date
     next_payment_due: lastDayOfMonth(new Date()).toISOString().slice(0, 10),
     emergency_contact: '',
     notes: '',
@@ -54,6 +55,21 @@ export default function MemberForm({
         emergency_contact: member.emergency_phone ?? '',
         notes: member.notes ?? '',
       }))
+
+      // Fetch exact membership dates (start_date vs last_payment_date)
+      supabase.from('memberships')
+        .select('start_date, last_payment_date')
+        .eq('member_id', member.user_id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setForm(prev => ({
+              ...prev,
+              start_date: data.start_date || '',
+              last_payment_date: data.last_payment_date || new Date().toISOString().slice(0, 10)
+            }))
+          }
+        })
     }
   }, [member])
 
@@ -284,7 +300,19 @@ export default function MemberForm({
               value={form.last_payment_date}
               onChange={(e) => setForm({ ...form, last_payment_date: e.target.value })}
             />
-            <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha de Pago / Inicio</div>
+            <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Último Pago / Renovación</div>
+          </div>
+
+          <div className="relative group col-span-1 md:col-span-1">
+            <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+            <input
+              className={`${inputClass} bg-slate-100 text-slate-500 cursor-not-allowed`}
+              type="date"
+              lang="es"
+              value={form.start_date}
+              readOnly
+            />
+            <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Fecha de Alta (Antigüedad)</div>
           </div>
 
           <div className="relative group col-span-1 md:col-span-1 opacity-60">

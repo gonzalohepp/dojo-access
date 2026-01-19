@@ -9,6 +9,8 @@ export type MemberRow = {
     access_code: string | null
     membership_type: 'monthly' | 'quarterly' | 'semiannual' | 'annual' | null
     next_payment_due: string | null
+    start_date?: string | null // Original Join Date
+    last_payment_date?: string | null // Last Payment / Renewal Date
     end_date?: string | null
     status?: 'activo' | 'inactivo' | 'vencido' | 'suspendido'
     class_ids?: number[]
