@@ -106,6 +106,20 @@ export async function POST(req: Request) {
 
         const totalSent = results.reduce((a, b) => a + b, 0)
 
+        // 4. Record in history (graceful fail if table doesn't exist)
+        try {
+            await supabase.from('notification_history').insert({
+                title,
+                message,
+                target,
+                url: url || '/',
+                count: totalSent,
+                status: 'sent'
+            })
+        } catch (e) {
+            console.error('[Custom Notification] Could not save to history:', e)
+        }
+
         return NextResponse.json({
             success: true,
             target,

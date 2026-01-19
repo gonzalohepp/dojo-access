@@ -174,9 +174,11 @@ export default function AdminLayout({ children, active }: { children: React.Reac
   useEffect(() => {
     if (!profile || profile.role !== 'admin') return
 
-    console.log('[AdminLayout] Subscribing to security alerts...')
+    const userId = profile.user_id
+    console.log('[AdminLayout] Subscribing to security alerts for admin:', userId)
+
     const channel = supabase
-      .channel('security_alerts')
+      .channel(`security_alerts_${userId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'access_logs' },
@@ -206,7 +208,6 @@ export default function AdminLayout({ children, active }: { children: React.Reac
 
             setNotifications(prev => [newNotif, ...prev].slice(0, 15))
 
-            // Sonido de alerta (opcional, muy sutil)
             try {
               const audio = new Audio('/alert.mp3')
               audio.volume = 0.3
@@ -276,9 +277,10 @@ export default function AdminLayout({ children, active }: { children: React.Reac
       .subscribe()
 
     return () => {
+      console.log('[AdminLayout] Cleaning up security alerts for admin:', userId)
       supabase.removeChannel(channel)
     }
-  }, [profile])
+  }, [profile?.user_id, profile?.role])
 
   const logout = async () => {
     await supabase.auth.signOut()
