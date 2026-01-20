@@ -528,53 +528,46 @@ export default function HomeLandingPage() {
 
       </section>
 
-      {/* CTA FINAL */}
-      <section className="relative py-32 overflow-hidden bg-blue-900">
-        <div className="absolute inset-0 opacity-20">
-          <div className="absolute inset-0 bg-[url('/beleza_fondo3.png')] bg-cover bg-center mix-blend-overlay" />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900 via-blue-800 to-slate-900 opacity-90" />
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 text-center">
-          <h2 className="text-4xl md:text-6xl font-black text-white mb-8 leading-tight">
-            TU PRIMERA CLASE <br />ES GRATIS
-          </h2>
-          <p className="text-xl text-blue-100/80 mb-10 max-w-2xl mx-auto">
-            No esperes más. Vení a conocer nuestra comunidad y viví la experiencia Beleza desde adentro.
-          </p>
-          <Button
-            asChild
-            className="bg-white text-blue-900 hover:bg-slate-100 text-xl font-black px-10 py-8 rounded-2xl shadow-2xl transition-transform hover:scale-105"
-          >
-            <a href="https://www.instagram.com/belezadojo" target="_blank" rel="noopener noreferrer">
-              QUIERO EMPEZAR HOY
-            </a>
-          </Button>
-        </div>
-      </section>
 
       {/* FOOTER */}
-      <footer className="bg-slate-950 border-t border-slate-900 py-12">
+      <footer className="bg-slate-950 border-t border-slate-900 pt-16 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex flex-col items-center md:items-start gap-4">
-              <div className="flex items-center gap-3">
-                <img src="/logo.png" alt="Beleza Logo" className="w-12 h-12 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500" />
-                <div className="text-left">
-                  <span className="block text-lg font-black text-slate-500 uppercase tracking-widest">Beleza Dojo – Quilmes</span>
-                  <span className="text-xs text-slate-600 block">Evolución constante</span>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-10 md:gap-0">
+            {/* Brand & Address */}
+            <div className="flex flex-col items-center md:items-start gap-6 text-center md:text-left">
+              <div className="flex items-center gap-4">
+                <img src="/logo.png" alt="Beleza Logo" className="w-16 h-16 object-contain" />
+                <div>
+                  <span className="block text-2xl font-black text-white uppercase tracking-widest">Beleza Dojo</span>
+                  <span className="text-sm text-blue-500 font-bold tracking-widest uppercase block mt-1">Quilmes</span>
                 </div>
               </div>
-              <p className="text-slate-500 text-sm">Av. Calchaquí 4335, Quilmes Oeste</p>
+
+              <div className="flex flex-col gap-1">
+                <p className="text-slate-400 font-medium text-lg">Av. Calchaquí 4335, Quilmes Oeste</p>
+                <p className="text-slate-500 text-sm">Buenos Aires, Argentina</p>
+              </div>
             </div>
 
-            <div className="flex flex-col items-center md:items-end gap-2">
-              <div className="flex items-center gap-4">
-                <a href="https://wa.me/5491124041132" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-[#25D366] transition-colors">
-                  <MessageCircle className="w-6 h-6" />
+            {/* Social Icons */}
+            <div className="flex flex-col items-center md:items-end gap-6">
+              <div className="flex items-center gap-6">
+                <a
+                  href="https://wa.me/5491124041132"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-slate-900 hover:bg-[#25D366] text-white p-4 rounded-2xl transition-all hover:scale-110 hover:shadow-lg hover:shadow-green-900/20 group"
+                >
+                  <MessageCircle className="w-8 h-8 group-hover:fill-white" />
                 </a>
-                <a href="https://www.instagram.com/belezadojo" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-[#E1306C] transition-colors">
-                  <Instagram className="w-6 h-6" />
+                <a
+                  href="https://www.instagram.com/belezadojo"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-slate-900 hover:bg-[#E1306C] text-white p-4 rounded-2xl transition-all hover:scale-110 hover:shadow-lg hover:shadow-pink-900/20 group"
+                >
+                  <Instagram className="w-8 h-8 group-hover:fill-white" />
                 </a>
               </div>
               <p className="text-slate-600 text-sm font-medium">

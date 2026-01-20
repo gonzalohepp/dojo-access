@@ -12,20 +12,20 @@ const instructors = [
     name: "Cristian Hein",
     role: "Prof. Ed. Física · Lic. Alto Rendimiento",
     photo: "/cristian1.png",
-    position: "center top",
+    position: "center bottom",
     description:
       "Profesor de BJJ, MMA y preparación física. Bicampeón del Mundo CBJJE en faixa preta. Más de una década formando practicantes y competidores, con enfoque en el desarrollo técnico, físico y mental. Fundador y head coach de Beleza Dojo.",
-    specialties: ["BJJ", "MMA", "Alto Rendimiento"],
+    specialties: ["Brazilian Jiu Jitsu", "Preparacion fisica"],
   },
   {
     id: 2,
     name: "Florencia Bussolo",
     role: "Prof. Ed. Física · Instructora BJJ",
     photo: "/florencia.png",
-    position: "center top",
+    position: "center bottom",
     description:
       "Bicampeona del Mundo CBJJE en faixa roxa. Instructora a cargo de los grupos infantiles, con amplia experiencia en el trabajo con niños y adolescentes. También dicta preparación física en el dojo.",
-    specialties: ["BJJ Infantil", "Prep. Física", "Pedagogía"],
+    specialties: ["Brazilian Jiu Jitsu", "BJJ Kids", "Preparacion fisica"],
   },
   {
     id: 3,
@@ -35,7 +35,7 @@ const instructors = [
     position: "center top",
     description:
       "Enfocado en la enseñanza técnica y el desarrollo conceptual del Jiu Jitsu. Su trabajo prioriza la comprensión del combate, el control posicional y la evolución sostenida del practicante.",
-    specialties: ["BJJ", "Técnica", "Conceptos"],
+    specialties: ["Brazilian Jiu Jitsu"],
   },
   {
     id: 4,
@@ -45,17 +45,17 @@ const instructors = [
     position: "center top",
     description:
       "Especialista en lucha sin kimono, con énfasis en control, transiciones y eficacia competitiva. Aporta una visión moderna del grappling aplicada tanto a la competencia como al entrenamiento recreativo.",
-    specialties: ["Grappling", "No-Gi", "Control"],
+    specialties: ["Grappling"],
   },
   {
     id: 5,
     name: "Rodrigo Vendrell",
     role: "Instructor de MMA",
     photo: "/rodrigo.png",
-    position: "center top",
+    position: "center bottom",
     description:
       "Amplia experiencia en striking y constante desarrollo en el ámbito del grappling. Su enfoque integra golpeo, control y transiciones, formando peleadores completos y versátiles.",
-    specialties: ["MMA", "Striking", "Grappling"],
+    specialties: ["MMA"],
   },
 ]
 
