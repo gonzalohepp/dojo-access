@@ -10,32 +10,47 @@ const instructors = [
   {
     id: 1,
     name: "Cristian Hein",
-    role: "Fundador y Head Coach",
-    photo:
-      "cristian.png",
+    role: "Prof. Ed. Física · Lic. Alto Rendimiento",
+    photo: "/cristian1.png",
     description:
-      "Faixa preta de Brazilian Jiu-Jitsu y fundador de Beleza Dojo. Apasionado por enseñar y crear un ambiente de respeto, disciplina y camaradería.",
-    specialties: ["Brazilian Jiu-Jitsu", "Grappling", "Judo"],
+      "Profesor de BJJ, MMA y preparación física. Bicampeón del Mundo CBJJE en faixa preta. Más de una década formando practicantes y competidores, con enfoque en el desarrollo técnico, físico y mental. Fundador y head coach de Beleza Dojo.",
+    specialties: ["BJJ", "MMA", "Alto Rendimiento"],
   },
   {
     id: 2,
-    name: "Profesor Invitado",
-    role: "Instructor de MMA",
-    photo:
-      "/beleza_fondo1.png",
+    name: "Florencia Bussolo",
+    role: "Prof. Ed. Física · Instructora BJJ",
+    photo: "/beleza_fondo1.png",
     description:
-      "Instructor especializado en MMA  con experiencia en campeonatos y en la formación de alumnos desde niveles iniciales.",
-    specialties: ["MMA"],
+      "Bicampeona del Mundo CBJJE en faixa roxa. Instructora a cargo de los grupos infantiles, con amplia experiencia en el trabajo con niños y adolescentes. También dicta preparación física en el dojo.",
+    specialties: ["BJJ Infantil", "Prep. Física", "Pedagogía"],
   },
   {
     id: 3,
-    name: "Profe Grappling",
-    role: "Instructor de Grappling",
-    photo:
-      "/beleza_fondo2.png",
+    name: "Bruno Patitucci",
+    role: "Instructor de Brazilian Jiu Jitsu",
+    photo: "/bruno.png",
     description:
-      "Enfocado en Grappling competitivo, estrategias de combate y preparación para torneos nacionales e internacionales.",
-    specialties: ["Grappling", "Defensa Personal", "Técnicas Avanzadas"],
+      "Enfocado en la enseñanza técnica y el desarrollo conceptual del Jiu Jitsu. Su trabajo prioriza la comprensión del combate, el control posicional y la evolución sostenida del practicante.",
+    specialties: ["BJJ", "Técnica", "Conceptos"],
+  },
+  {
+    id: 4,
+    name: "Fabrizio Cardella",
+    role: "Instructor de Grappling",
+    photo: "/beleza_fondo1.png",
+    description:
+      "Especialista en lucha sin kimono, con énfasis en control, transiciones y eficacia competitiva. Aporta una visión moderna del grappling aplicada tanto a la competencia como al entrenamiento recreativo.",
+    specialties: ["Grappling", "No-Gi", "Control"],
+  },
+  {
+    id: 5,
+    name: "Rodrigo Vendrell",
+    role: "Instructor de MMA",
+    photo: "/rodrigo.png",
+    description:
+      "Amplia experiencia en striking y constante desarrollo en el ámbito del grappling. Su enfoque integra golpeo, control y transiciones, formando peleadores completos y versátiles.",
+    specialties: ["MMA", "Striking", "Grappling"],
   },
 ]
 
@@ -162,11 +177,10 @@ export function InstructorCarousel() {
                               setDirection(index > currentIndex ? 1 : -1)
                               setCurrentIndex(index)
                             }}
-                            className={`h-2 rounded-full transition-all duration-300 ${
-                              index === currentIndex
+                            className={`h-2 rounded-full transition-all duration-300 ${index === currentIndex
                                 ? "w-8 bg-blue-500"
                                 : "w-2 bg-slate-600 hover:bg-slate-500"
-                            }`}
+                              }`}
                             aria-label={`Ver instructor ${index + 1}`}
                             type="button"
                           />
