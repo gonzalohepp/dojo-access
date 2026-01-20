@@ -126,25 +126,26 @@ export function InstructorCarousel() {
             }}
             className="w-full"
           >
-            <Card className="bg-slate-900/60 backdrop-blur-sm border-slate-800 overflow-hidden">
+            <Card className="bg-slate-900/60 backdrop-blur-sm border-slate-800 overflow-hidden shadow-2xl">
               <CardContent className="p-0">
-                <div className="grid md:grid-cols-2 gap-0">
+                <div className="grid md:grid-cols-2 gap-0 min-h-[500px]">
                   {/* Foto */}
-                  <div className="relative h-80 md:h-96 overflow-hidden">
+                  <div className="relative h-[400px] md:h-auto overflow-hidden group">
                     <div
-                      className="absolute inset-0 bg-cover bg-center transform transition-transform duration-700 hover:scale-110"
+                      className="absolute inset-0 bg-cover bg-top transform transition-transform duration-1000 group-hover:scale-105"
                       style={{
                         backgroundImage: `url(${current.photo})`,
                       }}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-slate-900/50 to-transparent md:bg-none" />
 
                     {/* Especialidades */}
-                    <div className="absolute bottom-4 left-4 right-4 flex flex-wrap gap-2">
+                    <div className="absolute bottom-6 left-6 right-6 flex flex-wrap gap-2 z-10">
                       {current.specialties.map((specialty, idx) => (
                         <span
                           key={idx}
-                          className="px-3 py-1 bg-blue-600/90 backdrop-blur-sm text-white text-xs font-semibold rounded-full"
+                          className="px-3 py-1 bg-blue-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-lg shadow-lg"
                         >
                           {specialty}
                         </span>
@@ -153,23 +154,27 @@ export function InstructorCarousel() {
                   </div>
 
                   {/* Info */}
-                  <div className="p-8 md:p-10 flex flex-col justify-center">
+                  <div className="p-8 md:p-12 flex flex-col justify-center h-full relative overflow-hidden bg-slate-900/40">
                     <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
+                      className="relative z-10"
                     >
-                      <div className="mb-4">
-                        <h3 className="text-3xl font-bold text-white mb-2">{current.name}</h3>
-                        <p className="text-blue-400 font-semibold text-lg">{current.role}</p>
+                      <div className="mb-8">
+                        <h3 className="text-3xl md:text-4xl font-black text-white mb-2 tracking-tight">{current.name}</h3>
+                        <div className="h-1 w-20 bg-blue-600 rounded-full mb-4" />
+                        <p className="text-blue-400 font-bold text-sm md:text-base uppercase tracking-widest leading-relaxed">
+                          {current.role}
+                        </p>
                       </div>
 
-                      <p className="text-slate-300 text-lg leading-relaxed mb-6">
+                      <p className="text-slate-300 text-base md:text-lg leading-loose mb-10 font-medium opacity-90">
                         {current.description}
                       </p>
 
                       {/* Dots */}
-                      <div className="flex gap-2">
+                      <div className="flex gap-3">
                         {instructors.map((_, index) => (
                           <button
                             key={index}
@@ -177,9 +182,9 @@ export function InstructorCarousel() {
                               setDirection(index > currentIndex ? 1 : -1)
                               setCurrentIndex(index)
                             }}
-                            className={`h-2 rounded-full transition-all duration-300 ${index === currentIndex
-                                ? "w-8 bg-blue-500"
-                                : "w-2 bg-slate-600 hover:bg-slate-500"
+                            className={`h-1.5 rounded-full transition-all duration-500 ${index === currentIndex
+                              ? "w-12 bg-blue-500 shadow-lg shadow-blue-500/50"
+                              : "w-3 bg-slate-700 hover:bg-slate-600"
                               }`}
                             aria-label={`Ver instructor ${index + 1}`}
                             type="button"
