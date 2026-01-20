@@ -267,16 +267,6 @@ export default function ProfilePage() {
                       </p>
                     </div>
                   </div>
-
-                  <div className="w-full xl:w-auto px-6 py-4 rounded-2xl bg-white dark:bg-slate-800/50 dark:backdrop-blur-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between xl:justify-start gap-4">
-                    <div className="text-right xl:text-right flex-1">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Código de Acceso</p>
-                      <p className="text-2xl font-black text-slate-900 dark:text-white font-mono tracking-tighter truncate">{member.access_code}</p>
-                    </div>
-                    <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 shrink-0">
-                      <Zap className="w-5 h-5" />
-                    </div>
-                  </div>
                 </header>
 
                 <div className="grid lg:grid-cols-3 gap-6 md:gap-8">

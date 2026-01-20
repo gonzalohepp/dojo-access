@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminLayout from '../layouts/AdminLayout'
-import { Plus, Search, Check, Users, UserPlus, Filter, X, Trash2 } from 'lucide-react'
+import { Plus, Search, Check, Users, UserPlus, Filter, X, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { useSearchParams } from 'next/navigation'
@@ -59,6 +59,9 @@ function MembersContent() {
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 6
+
   // --- CARGA ---
   const load = async () => {
     setLoading(true)
@@ -68,7 +71,24 @@ function MembersContent() {
       .order('last_name', { ascending: true, nullsFirst: true })
 
     if (error) console.error('[members] load error:', error)
-    setMembers((data ?? []) as Row[])
+
+    // Fetch avatar_url for each member from profiles table
+    const membersWithAvatars = await Promise.all(
+      (data ?? []).map(async (member: any) => {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('avatar_url')
+          .eq('user_id', member.user_id)
+          .maybeSingle()
+
+        return {
+          ...member,
+          avatar_url: profile?.avatar_url || null
+        }
+      })
+    )
+
+    setMembers(membersWithAvatars as Row[])
     setLoading(false)
   }
 
@@ -139,6 +159,19 @@ function MembersContent() {
       return statusOk && membOk && classOk && qOk
     })
   }, [members, filters, q])
+
+  // Pagination logic
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
+  const paginatedMembers = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+    const endIndex = startIndex + ITEMS_PER_PAGE
+    return filtered.slice(startIndex, endIndex)
+  }, [filtered, currentPage, ITEMS_PER_PAGE])
+
+  // Reset to page 1 when filters or search changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [filters, q])
 
   // --- ACCIONES ---
   const onCreate = () => {
@@ -393,8 +426,73 @@ function MembersContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <MemberList members={filtered} loading={loading} onEdit={onEdit} onDelete={onDelete} />
+            <MemberList members={paginatedMembers} loading={loading} onEdit={onEdit} onDelete={onDelete} />
           </motion.div>
+
+          {/* Pagination Controls */}
+          {!loading && filtered.length > 0 && totalPages > 1 && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.2 }}
+              className="mt-8 flex items-center justify-center gap-2"
+            >
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+
+              <div className="flex items-center gap-2">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
+                  // Show first page, last page, current page, and pages around current
+                  const showPage = page === 1 ||
+                    page === totalPages ||
+                    Math.abs(page - currentPage) <= 1
+
+                  if (!showPage && page === currentPage - 2) {
+                    return <span key={page} className="px-2 text-slate-400">...</span>
+                  }
+                  if (!showPage && page === currentPage + 2) {
+                    return <span key={page} className="px-2 text-slate-400">...</span>
+                  }
+                  if (!showPage) return null
+
+                  return (
+                    <button
+                      key={page}
+                      onClick={() => setCurrentPage(page)}
+                      className={`min-w-[44px] h-11 rounded-xl font-bold text-sm transition-all ${page === currentPage
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                        : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                        }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </motion.div>
+          )}
+
+          {/* Results summary */}
+          {!loading && filtered.length > 0 && (
+            <div className="mt-4 text-center">
+              <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
+                Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} de {filtered.length} miembros
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

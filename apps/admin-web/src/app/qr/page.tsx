@@ -14,7 +14,9 @@ import {
   ShieldCheck,
   Printer,
   Maximize2,
-  Minimize2
+  Minimize2,
+  Lock,
+  Unlock
 } from 'lucide-react'
 import AdminLayout from '../layouts/AdminLayout'
 import { supabase } from '@/lib/supabaseClient'
@@ -58,6 +60,7 @@ export default function QRAcceso() {
   const [token, setToken] = useState<string>('')
   const [nextRefreshAt, setNextRefreshAt] = useState<Date | null>(null)
   const [now, setNow] = useState(Date.now())
+  const [autoRefresh, setAutoRefresh] = useState(true)
 
   // UI State for Guest Access
   const [showGuestConfirm, setShowGuestConfirm] = useState(false)
@@ -99,8 +102,8 @@ export default function QRAcceso() {
       const currentTime = Date.now()
       setNow(currentTime)
 
-      // Auto refresh if expired
-      if (nextRefreshAt && currentTime >= nextRefreshAt.getTime()) {
+      // Auto refresh if expired AND autoRefresh is enabled
+      if (autoRefresh && nextRefreshAt && currentTime >= nextRefreshAt.getTime()) {
         regenerate()
       }
     }, 1000)
@@ -108,7 +111,7 @@ export default function QRAcceso() {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current)
     }
-  }, [nextRefreshAt])
+  }, [nextRefreshAt, autoRefresh])
 
   // Wake Lock for Kiosk Mode
   useEffect(() => {
@@ -146,8 +149,8 @@ export default function QRAcceso() {
   // ================= ACTIONS =================
   const regenerate = async () => {
     const t = genToken()
-    // Hardcoded 30 seconds ttl
-    const durationMs = 30 * 1000
+    // If autoRefresh is disabled, use a very long expiry (1 year)
+    const durationMs = autoRefresh ? 30 * 1000 : 365 * 24 * 60 * 60 * 1000
     const expiry = new Date(Date.now() + durationMs)
 
     const { error } = await supabase.from('qr_tokens').insert({
@@ -313,18 +316,33 @@ export default function QRAcceso() {
               </p>
             </motion.div>
 
-            <motion.div
+            <motion.button
+              onClick={() => {
+                setAutoRefresh(prev => !prev)
+                // Regenerate when toggling to ensure proper expiry
+                setTimeout(() => regenerate(), 100)
+              }}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm"
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`flex items-center gap-3 p-2 rounded-2xl border shadow-sm transition-all ${autoRefresh
+                ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                }`}
             >
-              <div className="px-4 py-2 flex items-center gap-2">
-                <Clock className="w-4 h-4 text-emerald-500 animate-pulse" />
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">
-                  Auto-Renovación Activa (30s)
+              <div className={`px-4 py-2 flex items-center gap-2 ${autoRefresh ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'
+                }`}>
+                {autoRefresh ? (
+                  <Unlock className="w-4 h-4 animate-pulse" />
+                ) : (
+                  <Lock className="w-4 h-4" />
+                )}
+                <span className="text-xs font-bold uppercase tracking-widest">
+                  {autoRefresh ? 'Auto-Renovación Activa' : 'QR Fijo para Imprimir'}
                 </span>
               </div>
-            </motion.div>
+            </motion.button>
           </header>
 
           <div className="grid lg:grid-cols-2 gap-8 items-start">
@@ -355,9 +373,21 @@ export default function QRAcceso() {
                     )}
 
                     {/* Status Badge */}
-                    <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full bg-emerald-500 text-white shadow-lg flex items-center gap-1.5">
-                      <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-widest">Activo</span>
+                    <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1.5 rounded-full shadow-lg flex items-center gap-1.5 ${autoRefresh
+                      ? 'bg-emerald-500 text-white'
+                      : 'bg-amber-500 text-white'
+                      }`}>
+                      {autoRefresh ? (
+                        <>
+                          <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Activo</span>
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-3 h-3" />
+                          <span className="text-[10px] font-black uppercase tracking-widest">Fijo</span>
+                        </>
+                      )}
                     </div>
 
                     {/* Fullscreen Toggle Button */}
@@ -373,11 +403,16 @@ export default function QRAcceso() {
                 <div className="w-full text-center space-y-6">
                   <div>
                     <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">
-                      Tiempo Restante
+                      {autoRefresh ? 'Tiempo Restante' : 'Validez'}
                     </p>
                     <div className="font-variant-numeric text-4xl font-black text-slate-900 dark:text-white tabular-nums tracking-tight">
-                      {formatTimeLeft(nextRefreshAt, now)}
+                      {autoRefresh ? formatTimeLeft(nextRefreshAt, now) : '∞ PERMANENTE'}
                     </div>
+                    {!autoRefresh && (
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-bold mt-2">
+                        Este QR es válido de forma permanente
+                      </p>
+                    )}
                   </div>
 
 
@@ -467,16 +502,28 @@ export default function QRAcceso() {
                 </div>
               </div>
 
-              <div className="rounded-3xl bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 p-6 flex gap-4">
-                <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-500 flex-shrink-0" />
+              <div className={`rounded-3xl border p-6 flex gap-4 ${autoRefresh
+                  ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20'
+                  : 'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20'
+                }`}>
+                <AlertCircle className={`w-6 h-6 flex-shrink-0 ${autoRefresh
+                    ? 'text-amber-600 dark:text-amber-500'
+                    : 'text-blue-600 dark:text-blue-500'
+                  }`} />
                 <div>
-                  <h5 className="font-bold text-amber-900 dark:text-amber-400 text-sm mb-1">
-                    Seguridad del Token
+                  <h5 className={`font-bold text-sm mb-1 ${autoRefresh
+                      ? 'text-amber-900 dark:text-amber-400'
+                      : 'text-blue-900 dark:text-blue-400'
+                    }`}>
+                    {autoRefresh ? 'Seguridad del Token' : 'Modo QR Fijo'}
                   </h5>
-                  <p className="text-xs font-medium text-amber-800/70 dark:text-amber-500/70 leading-relaxed">
-                    Este código QR contiene un token encriptado que expira automáticamente.
-                    Si sospechas que el código ha sido compartido digitalmente, usa el botón
-                    &ldquo;Regenerar&rdquo; para invalidar el anterior inmediatamente.
+                  <p className={`text-xs font-medium leading-relaxed ${autoRefresh
+                      ? 'text-amber-800/70 dark:text-amber-500/70'
+                      : 'text-blue-800/70 dark:text-blue-500/70'
+                    }`}>
+                    {autoRefresh
+                      ? 'Este código QR contiene un token que expira automáticamente cada 30 segundos para mayor seguridad. Si sospechas que el código ha sido compartido digitalmente, usa el botón "Regenerar" para invalidarlo inmediatamente.'
+                      : 'El QR está configurado en modo FIJO, ideal para imprimir y colocar en la entrada. Este código NO expira y funcionará permanentemente. Podés imprimirlo con confianza. Click en el toggle arriba para volver al modo auto-renovación si lo necesitás.'}
                   </p>
                 </div>
               </div>
