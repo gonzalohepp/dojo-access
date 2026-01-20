@@ -46,18 +46,17 @@ const schedules: Record<"acondicionamiento" | "martiales", Schedule> = {
   },
   martiales: {
     type: "martiales",
-    title: "BJJ / Grappling / MMA / Judo",
+    title: "Artes Marciales",
     description:
-      "Horarios de BJJ, Grappling, MMA y Judo organizados por día para todos los niveles.",
+      "Horarios de BJJ, Grappling, MMA, Muay Thai y Judo organizados por día para todos los niveles.",
     days: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
     rows: [
-      ["", "BJJ 7:30–9:00", "", "BJJ 7:30–9:00", "", "Grappling 10:00–11:30"],
-      ["", "", "", "", "", "BJJ Competitivo 12:00–13:30"],
-      ["BJJ 16:30–18:00", "", "BJJ 16:30–18:00", "", "BJJ 16:30–18:00", ""],
+      ["", "BJJ 7:30–9:00", "", "BJJ 7:30–9:00", "", "BJJ Femenino 08:00–09:30"],
+      ["BJJ 16:30–18:00", "", "BJJ 16:30–18:00", "", "BJJ 16:30–18:00", "Grappling 10:00–11:30"],
+      ["Muay Thai 17:00–19:00", "Muay Thai 17:00–19:00", "Muay Thai 17:00–19:00", "Muay Thai 17:00–19:00", "", ""],
       ["BJJ Kids 18:00–19:00", "", "BJJ Kids 18:00–19:00", "", "BJJ Kids 18:00–19:00", ""],
       ["MMA 19:00–20:00", "Grappling 19:00–20:30", "MMA 19:00–20:00", "Grappling 19:00–20:30", "MMA 19:00–20:00", ""],
-      ["BJJ 20:00–21:30", "", "BJJ 20:00–21:30", "", "BJJ 20:00–21:30", ""],
-      ["", "Judo 20:30–22:00", "", "Judo 20:30–22:00", "", ""],
+      ["BJJ 20:00–21:30", "Judo 20:30–22:00", "BJJ 20:00–21:30", "Judo 20:30–22:00", "BJJ 20:00–21:30", ""],
     ],
   },
 }
@@ -112,7 +111,7 @@ export function ScheduleGrid() {
               />
             )}
             <span className="relative z-10 flex items-center gap-2">
-              <Swords className="w-4 h-4" /> BJJ / MMA / Judo
+              Artes Marciales
             </span>
           </button>
 
@@ -126,12 +125,12 @@ export function ScheduleGrid() {
             {activeTab === "acondicionamiento" && (
               <motion.div
                 layoutId="activeTab"
-                className="absolute inset-0 bg-emerald-600 rounded-xl"
+                className="absolute inset-0 bg-blue-600 rounded-xl"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               />
             )}
             <span className="relative z-10 flex items-center gap-2">
-              <Dumbbell className="w-4 h-4" /> Acondicionamiento
+              Acondicionamiento
             </span>
           </button>
         </div>
@@ -150,9 +149,11 @@ export function ScheduleGrid() {
           <div className="text-center mb-10 space-y-3">
             <h3 className="text-3xl md:text-4xl font-black text-white tracking-tight flex items-center justify-center gap-3">
               {currentSchedule.type === "martiales" ? (
-                <Trophy className="w-8 h-8 text-yellow-400" />
+                <>
+                  {/* Icon removed as requested */}
+                </>
               ) : (
-                <Sparkles className="w-8 h-8 text-emerald-400" />
+                <Sparkles className="w-8 h-8 text-blue-400" />
               )}
               {currentSchedule.title}
             </h3>
@@ -161,7 +162,7 @@ export function ScheduleGrid() {
             </p>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
+          <div className={`grid gap-6 md:grid-cols-2 lg:grid-cols-3 ${currentSchedule.type === 'martiales' ? 'xl:grid-cols-6' : 'xl:grid-cols-5'} lg:gap-4`}>
             {(currentSchedule.type === "martiales" ? martialDays : conditioningDays).map((item, index) => {
               // Determine if it's the "Conditioning" render logic (item has .times) or "Martial" (item has .classes)
               // Since both arrays are mapped to objects with different properties, we cast or check
@@ -169,14 +170,11 @@ export function ScheduleGrid() {
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const items = (item as any).classes || (item as any).times
 
-              // Styling constants based on type
-              const isMartial = currentSchedule.type === "martiales"
-              const cardBorder = isMartial ? "hover:border-blue-500/50" : "hover:border-emerald-500/50"
-              const cardShadow = isMartial ? "hover:shadow-blue-500/20" : "hover:shadow-emerald-500/20"
-              const chipGradient = isMartial
-                ? "bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-900/30"
-                : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-900/30"
-              const dayColor = isMartial ? "text-blue-400" : "text-emerald-400"
+              // Styling constants based on type (Unified Blue Theme)
+              const cardBorder = "hover:border-blue-500/50"
+              const cardShadow = "hover:shadow-blue-500/20"
+              const chipGradient = "bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-900/30"
+              const dayColor = "text-blue-400"
 
               return (
                 <motion.div
@@ -210,7 +208,7 @@ export function ScheduleGrid() {
                             flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform
                           `}
                         >
-                          {!isMartial && <Clock className="w-3.5 h-3.5 opacity-80" />}
+                          <Clock className="w-3.5 h-3.5 opacity-80" />
                           {text}
                         </div>
                       ))
