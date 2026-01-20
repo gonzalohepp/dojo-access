@@ -14,11 +14,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Beleza Dojo — Panel",
+    default: "Beleza Dojo | Jiu Jitsu, MMA y Grappling en Quilmes",
     template: "%s | Beleza Dojo",
   },
   description:
-    "Panel administrativo y portal de alumnos para el control de acceso del dojo.",
+    "Academia de Jiu Jitsu, MMA y preparación física en Quilmes. Entrená para mejorar tu rendimiento y alcanzar tu mejor versión.",
   icons: {
     icon: "/logo.png", // poné logo.png en /public
     shortcut: "/logo.png",

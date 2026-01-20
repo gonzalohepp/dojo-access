@@ -28,11 +28,10 @@ type NavItem = {
 
 const navItems: NavItem[] = [
   { label: "Inicio", id: "inicio" },
-  { label: "Dónde estamos", id: "donde-estamos" },
   { label: "Nuestra historia", id: "historia" },
   { label: "Profesores", id: "profesores" },
   { label: "Horarios", id: "horarios" },
-  { label: "Contacto", id: "contacto" },
+  { label: "Dónde estamos", id: "donde-estamos" },
   { label: "Afiliación", id: "afiliacion" },
 ]
 
@@ -294,55 +293,6 @@ export default function HomeLandingPage() {
         </motion.div>
       </section>
 
-      {/* DÓNDE ESTAMOS */}
-      <section id="donde-estamos" className="relative py-32 overflow-hidden bg-slate-950">
-        <div className="absolute inset-0">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px]" />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">DÓNDE ESTAMOS</h2>
-            <div className="flex items-center justify-center gap-2 text-blue-400">
-              <MapPin className="w-5 h-5" />
-              <p className="text-xl font-medium text-slate-300">Av. Calchaquí 4335, Quilmes Oeste</p>
-            </div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="rounded-3xl p-1 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl"
-          >
-            <div className="relative rounded-[20px] overflow-hidden aspect-video md:aspect-[21/9] border border-slate-700/50">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3277.7022264486864!2d-58.2792986235246!3d-34.76309316593384!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95a32e9eef9c5603%3A0xe0b9320f38d1beb8!2sAv.%20Calchaqu%C3%AD%204335%2C%20B1879%20Quilmes%2C%20Provincia%20de%20Buenos%20Aires!5e0!3m2!1ses!2sar!4v1763061000312!5m2!1ses!2sar"
-                width="100%"
-                height="100%"
-                style={{ border: 0, filter: "grayscale(1) invert(1) contrast(1.2) brightness(0.8)" }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-              <div className="absolute bottom-6 right-6">
-                <a
-                  href="https://www.google.com/maps/search/?api=1&query=Av+Calchaquí+4335+Quilmes+Buenos+Aires"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-black/50 hover:scale-105 transition-all flex items-center gap-2"
-                  onClick={() => trackEvent('click_maps')}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Abrir en Google Maps
-                </a>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* HISTORIA */}
       <section id="historia" className="relative py-32 bg-slate-900 overflow-hidden">
         {/* Decorative Grid */}
@@ -432,46 +382,50 @@ export default function HomeLandingPage() {
         </div>
       </section>
 
-      {/* CONTACTO */}
-      <section id="contacto" className="relative py-32 overflow-hidden">
+      {/* DÓNDE ESTAMOS */}
+      <section id="donde-estamos" className="relative py-32 overflow-hidden bg-slate-950">
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[url('/beleza_fondo3.png')] bg-cover bg-center grayscale opacity-10 blur-[4px]" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/90 to-slate-950" />
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]" />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px]" />
         </div>
 
-        <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">DÓNDE ESTAMOS</h2>
+            <div className="flex items-center justify-center gap-2 text-blue-400">
+              <MapPin className="w-5 h-5" />
+              <p className="text-xl font-medium text-slate-300">Av. Calchaquí 4335, Quilmes Oeste</p>
+            </div>
+          </div>
+
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
+            className="rounded-3xl p-1 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl"
           >
-            <h2 className="text-5xl md:text-7xl font-black text-white mb-8 tracking-tight">CONTACTO</h2>
-            <p className="text-xl md:text-2xl text-slate-300 mb-12">
-              ¿Tenés dudas? Escribinos para coordinar tu clase de prueba o conocer más sobre nuestros planes.
-            </p>
-
-            <div className="flex flex-col sm:flex-row justify-center gap-6">
-              <a
-                href="https://wa.me/5491124041132"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center justify-center gap-3 bg-[#25D366] hover:bg-[#20bd5a] text-white px-8 py-5 rounded-2xl font-bold text-lg shadow-lg shadow-green-900/20 transition-all hover:-translate-y-1"
-                onClick={() => trackEvent('click_whatsapp')}
-              >
-                <MessageCircle className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                Hablar por WhatsApp
-              </a>
-
-              <a
-                href="https://www.instagram.com/belezadojo"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex items-center justify-center gap-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white px-8 py-5 rounded-2xl font-bold text-lg shadow-lg shadow-purple-900/20 transition-all hover:-translate-y-1"
-                onClick={() => trackEvent('click_instagram')}
-              >
-                <Instagram className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                Seguinos en Instagram
-              </a>
+            <div className="relative rounded-[20px] overflow-hidden aspect-video md:aspect-[21/9] border border-slate-700/50">
+              <iframe
+                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3277.7022264486864!2d-58.2792986235246!3d-34.76309316593384!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95a32e9eef9c5603%3A0xe0b9320f38d1beb8!2sAv.%20Calchaqu%C3%AD%204335%2C%20B1879%20Quilmes%2C%20Provincia%20de%20Buenos%20Aires!5e0!3m2!1ses!2sar!4v1763061000312!5m2!1ses!2sar"
+                width="100%"
+                height="100%"
+                style={{ border: 0, filter: "grayscale(1) invert(1) contrast(1.2) brightness(0.8)" }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+              <div className="absolute bottom-6 right-6">
+                <a
+                  href="https://www.google.com/maps/search/?api=1&query=Av+Calchaquí+4335+Quilmes+Buenos+Aires"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-black/50 hover:scale-105 transition-all flex items-center gap-2"
+                  onClick={() => trackEvent('click_maps')}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Abrir en Google Maps
+                </a>
+              </div>
             </div>
           </motion.div>
         </div>
@@ -627,16 +581,30 @@ export default function HomeLandingPage() {
       <footer className="bg-slate-950 border-t border-slate-900 py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Beleza Logo" className="w-12 h-12 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500" />
-              <div className="text-left">
-                <span className="block text-lg font-black text-slate-500 uppercase tracking-widest">Beleza Dojo</span>
-                <span className="text-xs text-slate-600 block">Evolución constante</span>
+            <div className="flex flex-col items-center md:items-start gap-4">
+              <div className="flex items-center gap-3">
+                <img src="/logo.png" alt="Beleza Logo" className="w-12 h-12 object-contain grayscale opacity-50 hover:grayscale-0 hover:opacity-100 transition-all duration-500" />
+                <div className="text-left">
+                  <span className="block text-lg font-black text-slate-500 uppercase tracking-widest">Beleza Dojo – Quilmes</span>
+                  <span className="text-xs text-slate-600 block">Evolución constante</span>
+                </div>
               </div>
+              <p className="text-slate-500 text-sm">Av. Calchaquí 4335, Quilmes Oeste</p>
             </div>
-            <p className="text-slate-600 text-sm font-medium">
-              © {new Date().getFullYear()} Beleza Dojo. Quilmes, Buenos Aires.
-            </p>
+
+            <div className="flex flex-col items-center md:items-end gap-2">
+              <div className="flex items-center gap-4">
+                <a href="https://wa.me/5491124041132" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-[#25D366] transition-colors">
+                  <MessageCircle className="w-6 h-6" />
+                </a>
+                <a href="https://www.instagram.com/belezadojo" target="_blank" rel="noopener noreferrer" className="text-slate-500 hover:text-[#E1306C] transition-colors">
+                  <Instagram className="w-6 h-6" />
+                </a>
+              </div>
+              <p className="text-slate-600 text-sm font-medium">
+                © {new Date().getFullYear()} Beleza Dojo. Todos los derechos reservados.
+              </p>
+            </div>
           </div>
         </div>
       </footer>
