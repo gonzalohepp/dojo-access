@@ -145,15 +145,7 @@ export default function HomeLandingPage() {
             </div>
 
             <div className="hidden lg:flex items-center">
-              <Button
-                onClick={() => {
-                  trackEvent('click_access')
-                  handleAccess()
-                }}
-                className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-6 py-2 rounded-xl shadow-lg shadow-blue-600/20 transition-all hover:scale-105 hover:shadow-blue-500/40"
-              >
-                ACCESO
-              </Button>
+
             </div>
 
             {/* Mobile Toggle */}
@@ -187,17 +179,7 @@ export default function HomeLandingPage() {
                     {item.label}
                   </button>
                 ))}
-                <div className="pt-4 px-4">
-                  <Button
-                    onClick={() => {
-                      trackEvent('click_access')
-                      handleAccess()
-                    }}
-                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold h-12 rounded-xl shadow-lg shadow-blue-900/40"
-                  >
-                    ACCESO
-                  </Button>
-                </div>
+
               </div>
             </motion.div>
           )}
