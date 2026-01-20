@@ -412,7 +412,7 @@ export default function HomeLandingPage() {
                 <div className="p-3 bg-purple-500/10 rounded-2xl mb-2">
                   <MapPin className="w-8 h-8 text-purple-400" />
                 </div>
-                <h3 className="text-lg font-bold text-white uppercase tracking-wider">Sede Secundaria</h3>
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider">Filial</h3>
                 <p className="text-xl font-medium text-slate-300">Calle 130 5273, B.Marítimo</p>
               </div>
             </div>
@@ -472,7 +472,7 @@ export default function HomeLandingPage() {
               className="text-2xl md:text-3xl text-slate-300 font-medium leading-relaxed max-w-4xl"
             >
               <span className="text-white">Beleza Dojo</span> es una sede oficial afiliada a la red global de <br className="hidden md:block" />
-              <strong className="text-blue-400 font-black">LOTUS CLUB BRAZILIAN JIU JITSU</strong>.
+              <strong className="text-white font-black">LOTUS CLUB BRAZILIAN JIU JITSU</strong>.
             </motion.p>
 
             <div className="grid md:grid-cols-2 gap-8 w-full max-w-5xl">

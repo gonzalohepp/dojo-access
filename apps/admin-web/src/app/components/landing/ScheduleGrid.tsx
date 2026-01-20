@@ -1,9 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
+import { Clock, Dumbbell, Swords, Trophy, Sparkles } from "lucide-react"
 
 type TimeSlot = {
   time: string
@@ -69,7 +68,17 @@ export function ScheduleGrid() {
   const [activeTab, setActiveTab] = useState<ScheduleKey>("martiales")
   const currentSchedule = schedules[activeTab]
 
-  // Para artes marciales: calculamos las clases por día (columna)
+  // Helper: Pivot table for "Conditioning" to show as Card Columns like Martiales
+  const conditioningDays = currentSchedule.type === "acondicionamiento"
+    ? currentSchedule.days.map((day, dayIndex) => {
+      const times = currentSchedule.times
+        .filter(slot => slot.available[dayIndex])
+        .map(slot => slot.time)
+      return { day, times }
+    })
+    : []
+
+  // Helper: Get classes for Martiales
   const martialDays =
     currentSchedule.type === "martiales"
       ? currentSchedule.days.map((day, dayIndex) => {
@@ -81,114 +90,138 @@ export function ScheduleGrid() {
       : []
 
   return (
-    <div>
+    <div className="w-full relative">
+      {/* Decorative background glow for the whole component */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/5 blur-[100px] rounded-full pointer-events-none" />
+
       {/* Tabs */}
-      <div className="flex justify-center gap-2 md:gap-4 mb-6 md:mb-8 flex-wrap">
-        <Button
-          onClick={() => setActiveTab("martiales")}
-          className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-xl text-xs md:text-base font-semibold transition-all duration-300 ${activeTab === "martiales"
-            ? "bg-blue-600 text-white shadow-lg shadow-blue-600/50"
-            : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          type="button"
-        >
-          BJJ / MMA / Judo
-        </Button>
-        <Button
-          onClick={() => setActiveTab("acondicionamiento")}
-          className={`flex-1 sm:flex-none px-4 md:px-8 py-2 md:py-3 rounded-xl text-xs md:text-base font-semibold transition-all duration-300 ${activeTab === "acondicionamiento"
-            ? "bg-blue-600 text-white shadow-lg shadow-blue-600/50"
-            : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-            }`}
-          type="button"
-        >
-          Acondicionamiento
-        </Button>
+      <div className="relative z-10 flex justify-center gap-4 mb-12">
+        <div className="bg-slate-900/80 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 flex flex-wrap justify-center gap-2 shadow-2xl">
+          <button
+            onClick={() => setActiveTab("martiales")}
+            className={`
+              relative px-6 py-3 rounded-xl text-sm md:text-base font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2
+              ${activeTab === "martiales" ? "text-white shadow-lg" : "text-slate-400 hover:text-white hover:bg-white/5"}
+            `}
+          >
+            {activeTab === "martiales" && (
+              <motion.div
+                layoutId="activeTab"
+                className="absolute inset-0 bg-blue-600 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <span className="relative z-10 flex items-center gap-2">
+              <Swords className="w-4 h-4" /> BJJ / MMA / Judo
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab("acondicionamiento")}
+            className={`
+              relative px-6 py-3 rounded-xl text-sm md:text-base font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2
+              ${activeTab === "acondicionamiento" ? "text-white shadow-lg" : "text-slate-400 hover:text-white hover:bg-white/5"}
+            `}
+          >
+            {activeTab === "acondicionamiento" && (
+              <motion.div
+                layoutId="activeTab"
+                className="absolute inset-0 bg-emerald-600 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <span className="relative z-10 flex items-center gap-2">
+              <Dumbbell className="w-4 h-4" /> Acondicionamiento
+            </span>
+          </button>
+        </div>
       </div>
 
-      <motion.div
-        key={activeTab}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-      >
-        <Card className="bg-slate-900/60 backdrop-blur-sm border-slate-800 overflow-hidden">
-          <CardContent className="p-4 md:p-8">
-            <div className="text-center mb-6">
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-2">{currentSchedule.title}</h3>
-              <p className="text-sm md:text-base text-slate-400">{currentSchedule.description}</p>
-            </div>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
+          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+          exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
+          transition={{ duration: 0.4 }}
+          className="relative z-10"
+        >
+          {/* Header */}
+          <div className="text-center mb-10 space-y-3">
+            <h3 className="text-3xl md:text-4xl font-black text-white tracking-tight flex items-center justify-center gap-3">
+              {currentSchedule.type === "martiales" ? (
+                <Trophy className="w-8 h-8 text-yellow-400" />
+              ) : (
+                <Sparkles className="w-8 h-8 text-emerald-400" />
+              )}
+              {currentSchedule.title}
+            </h3>
+            <p className="text-lg text-slate-400 max-w-2xl mx-auto font-medium">
+              {currentSchedule.description}
+            </p>
+          </div>
 
-            {/* ACONDICIONAMIENTO: queda en tabla como antes */}
-            {currentSchedule.type === "acondicionamiento" ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm md:text-base">
-                  <thead>
-                    <tr className="border-b border-slate-700">
-                      {currentSchedule.days.map((day) => (
-                        <th
-                          key={day}
-                          className="p-3 text-center text-slate-300 font-semibold md:text-lg"
-                        >
-                          {day}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {currentSchedule.times.map((slot, idx) => (
-                      <tr key={idx} className="border-b border-slate-800">
-                        {slot.available.map((isAvailable, dayIdx) => (
-                          <td key={dayIdx} className="p-3 text-center align-middle">
-                            {isAvailable ? (
-                              <div className="bg-blue-600 rounded-lg py-2 md:py-3 px-2 md:px-4 text-white font-semibold md:text-lg">
-                                {slot.time}
-                              </div>
-                            ) : (
-                              <div className="text-slate-600 md:text-lg">—</div>
-                            )}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              // ARTES MARCIALES: cards por día
-              <div className="grid gap-6 md:grid-cols-3 lg:grid-cols-6">
-                {martialDays.map(({ day, classes }) => (
-                  <div
-                    key={day}
-                    className="rounded-2xl border border-slate-700/80 bg-slate-950/70 p-4 flex flex-col gap-3 shadow-[0_0_25px_rgba(15,23,42,0.6)]"
-                  >
-                    <h4 className="text-sm font-semibold text-slate-100 text-center mb-1">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 lg:gap-4">
+            {(currentSchedule.type === "martiales" ? martialDays : conditioningDays).map((item, index) => {
+              // Determine if it's the "Conditioning" render logic (item has .times) or "Martial" (item has .classes)
+              // Since both arrays are mapped to objects with different properties, we cast or check
+              const day = item.day
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const items = (item as any).classes || (item as any).times
+
+              // Styling constants based on type
+              const isMartial = currentSchedule.type === "martiales"
+              const cardBorder = isMartial ? "hover:border-blue-500/50" : "hover:border-emerald-500/50"
+              const cardShadow = isMartial ? "hover:shadow-blue-500/20" : "hover:shadow-emerald-500/20"
+              const chipGradient = isMartial
+                ? "bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-900/30"
+                : "bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-900/30"
+              const dayColor = isMartial ? "text-blue-400" : "text-emerald-400"
+
+              return (
+                <motion.div
+                  key={day}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={`
+                    group relative bg-slate-900/60 backdrop-blur-md border border-white/5 rounded-3xl p-5 
+                    flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 hover:bg-slate-900/80
+                    ${cardBorder} shadow-xl ${cardShadow}
+                  `}
+                >
+                  <div className="text-center border-b border-white/5 pb-3">
+                    <h4 className={`font-black text-lg uppercase tracking-wider ${dayColor}`}>
                       {day}
                     </h4>
+                  </div>
 
-                    {classes.length === 0 ? (
-                      <div className="flex-1 flex items-center justify-center text-xs text-slate-500">
-                        Sin clases
+                  <div className="flex flex-col gap-2.5 flex-1">
+                    {items.length === 0 ? (
+                      <div className="flex-1 flex items-center justify-center text-slate-600 text-sm font-medium italic min-h-[100px]">
+                        Descanso
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        {classes.map((cls, idx) => (
-                          <div
-                            key={idx}
-                            className="bg-blue-600 rounded-lg py-2 px-3 text-[11px] md:text-xs text-white font-semibold text-center"
-                          >
-                            {cls}
-                          </div>
-                        ))}
-                      </div>
+                      items.map((text: string, idx: number) => (
+                        <div
+                          key={idx}
+                          className={`
+                            ${chipGradient} text-white py-3 px-3 rounded-xl text-xs font-bold text-center shadow-lg
+                            flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform
+                          `}
+                        >
+                          {!isMartial && <Clock className="w-3.5 h-3.5 opacity-80" />}
+                          {text}
+                        </div>
+                      ))
                     )}
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </motion.div>
+                </motion.div>
+              )
+            })}
+          </div>
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }

@@ -22,7 +22,7 @@ const instructors = [
     name: "Florencia Bussolo",
     role: "Prof. Ed. Física · Instructora BJJ",
     photo: "/florencia.png",
-    position: "center middle",
+    position: "center center",
     description:
       "Bicampeona del Mundo CBJJE en faixa roxa. Instructora a cargo de los grupos infantiles, con amplia experiencia en el trabajo con niños y adolescentes. También dicta preparación física en el dojo.",
     specialties: ["Brazilian Jiu Jitsu", "BJJ Kids", "Preparacion fisica"],
