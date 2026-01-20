@@ -62,6 +62,14 @@ export default function QRAcceso() {
   const [now, setNow] = useState(Date.now())
   const [autoRefresh, setAutoRefresh] = useState(true)
 
+  // Load autoRefresh state from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('qr_auto_refresh')
+    if (saved !== null) {
+      setAutoRefresh(JSON.parse(saved))
+    }
+  }, [])
+
   // UI State for Guest Access
   const [showGuestConfirm, setShowGuestConfirm] = useState(false)
   const [showGuestSuccess, setShowGuestSuccess] = useState(false)
@@ -318,7 +326,9 @@ export default function QRAcceso() {
 
             <motion.button
               onClick={() => {
-                setAutoRefresh(prev => !prev)
+                const nextValue = !autoRefresh
+                setAutoRefresh(nextValue)
+                localStorage.setItem('qr_auto_refresh', JSON.stringify(nextValue))
                 // Regenerate when toggling to ensure proper expiry
                 setTimeout(() => regenerate(), 100)
               }}
@@ -503,23 +513,23 @@ export default function QRAcceso() {
               </div>
 
               <div className={`rounded-3xl border p-6 flex gap-4 ${autoRefresh
-                  ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20'
-                  : 'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20'
+                ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20'
+                : 'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20'
                 }`}>
                 <AlertCircle className={`w-6 h-6 flex-shrink-0 ${autoRefresh
-                    ? 'text-amber-600 dark:text-amber-500'
-                    : 'text-blue-600 dark:text-blue-500'
+                  ? 'text-amber-600 dark:text-amber-500'
+                  : 'text-blue-600 dark:text-blue-500'
                   }`} />
                 <div>
                   <h5 className={`font-bold text-sm mb-1 ${autoRefresh
-                      ? 'text-amber-900 dark:text-amber-400'
-                      : 'text-blue-900 dark:text-blue-400'
+                    ? 'text-amber-900 dark:text-amber-400'
+                    : 'text-blue-900 dark:text-blue-400'
                     }`}>
                     {autoRefresh ? 'Seguridad del Token' : 'Modo QR Fijo'}
                   </h5>
                   <p className={`text-xs font-medium leading-relaxed ${autoRefresh
-                      ? 'text-amber-800/70 dark:text-amber-500/70'
-                      : 'text-blue-800/70 dark:text-blue-500/70'
+                    ? 'text-amber-800/70 dark:text-amber-500/70'
+                    : 'text-blue-800/70 dark:text-blue-500/70'
                     }`}>
                     {autoRefresh
                       ? 'Este código QR contiene un token que expira automáticamente cada 30 segundos para mayor seguridad. Si sospechas que el código ha sido compartido digitalmente, usa el botón "Regenerar" para invalidarlo inmediatamente.'

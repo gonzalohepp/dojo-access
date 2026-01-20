@@ -264,7 +264,7 @@ export default function HomeLandingPage() {
               onClick={() => trackEvent('click_wsp_hero')}
             >
               <a
-                href="https://wa.me/5491124041132?text=¡Hola%2C%20Beleza%20Dojo!%20Vi%20la%20web%20y%20me%20interesa%20agendar%20mi%20clase%20de%20prueba%20gratuita.%20¿Me%20podrían%20pasar%20los%20horarios%20de%20[Disciplina]?%20Mi%20nombre%20es%3A%20__"
+                href="https://wa.me/5491139021687?text=¡Hola%2C%20Beleza%20Dojo!%20Vi%20la%20web%20y%20me%20interesa%20agendar%20mi%20clase%20de%20prueba%20gratuita.%20¿Me%20podrían%20pasar%20los%20horarios%20de%20[Disciplina]?%20Mi%20nombre%20es%3A%20__"
                 target="_blank"
                 rel="noopener noreferrer"
               >
@@ -372,7 +372,7 @@ export default function HomeLandingPage() {
               onClick={() => trackEvent('click_wsp_schedule')}
             >
               <a
-                href="https://wa.me/5491124041132?text=¡Hola%2C%20Beleza%20Dojo!%20Vi%20la%20web%20y%20me%20interesa%20agendar%20mi%20clase%20de%20prueba%20gratuita.%20¿Me%20podrían%20pasar%20los%20horarios%20de%20[Disciplina]?%20Mi%20nombre%20es%3A%20__"
+                href="https://wa.me/5491139021687?text=¡Hola%2C%20Beleza%20Dojo!%20Vi%20la%20web%20y%20me%20interesa%20agendar%20mi%20clase%20de%20prueba%20gratuita.%20¿Me%20podrían%20pasar%20los%20horarios%20de%20[Disciplina]?%20Mi%20nombre%20es%3A%20__"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3"
@@ -559,7 +559,7 @@ export default function HomeLandingPage() {
             <div className="flex flex-col items-center md:items-end gap-6">
               <div className="flex items-center gap-6">
                 <a
-                  href="https://wa.me/5491124041132"
+                  href="https://wa.me/5491139021687"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-slate-900 hover:bg-[#25D366] text-white p-4 rounded-2xl transition-all hover:scale-110 hover:shadow-lg hover:shadow-green-900/20 group"
