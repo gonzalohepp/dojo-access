@@ -421,7 +421,7 @@ export default function HomeLandingPage() {
             className="rounded-[2.5rem] p-1.5 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl border border-white/10 overflow-hidden"
           >
             <div className="rounded-[2rem] overflow-hidden aspect-[4/3] md:aspect-[21/9]">
-              <AcademiesMapSection />
+              <AcademiesMapSection minimal={true} />
             </div>
           </motion.div>
         </div>
