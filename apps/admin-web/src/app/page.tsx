@@ -294,7 +294,8 @@ export default function HomeLandingPage() {
       </section>
 
       {/* HISTORIA */}
-      <section id="historia" className="relative py-32 bg-slate-900 overflow-hidden">
+      {/* HISTORIA */}
+      <section id="historia" className="relative py-32 bg-slate-900 overflow-hidden scroll-mt-32">
         {/* Decorative Grid */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]" />
 
@@ -334,7 +335,8 @@ export default function HomeLandingPage() {
       </section>
 
       {/* PROFESORES */}
-      <section id="profesores" className="relative py-32 overflow-hidden bg-slate-950">
+      {/* PROFESORES */}
+      <section id="profesores" className="relative py-32 overflow-hidden bg-slate-950 scroll-mt-32">
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950 via-slate-900/50 to-slate-950" />
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
@@ -348,7 +350,8 @@ export default function HomeLandingPage() {
       </section>
 
       {/* HORARIOS */}
-      <section id="horarios" className="relative py-32 bg-slate-900">
+      {/* HORARIOS */}
+      <section id="horarios" className="relative py-32 bg-slate-900 scroll-mt-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-6xl font-black text-white mb-6 uppercase tracking-tight">Horarios</h2>
@@ -383,7 +386,8 @@ export default function HomeLandingPage() {
       </section>
 
       {/* DÓNDE ESTAMOS */}
-      <section id="donde-estamos" className="relative py-32 overflow-hidden bg-slate-950">
+      {/* DÓNDE ESTAMOS */}
+      <section id="donde-estamos" className="relative py-32 overflow-hidden bg-slate-950 scroll-mt-32">
         <div className="absolute inset-0">
           <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px]" />
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px]" />
@@ -428,7 +432,8 @@ export default function HomeLandingPage() {
       </section>
 
       {/* AFILIACIÓN LOTUS (VERTICAL FULL-WIDTH REDESIGN) */}
-      <section id="afiliacion" className="relative py-32 md:py-48 overflow-hidden bg-slate-950">
+      {/* AFILIACIÓN LOTUS (VERTICAL FULL-WIDTH REDESIGN) */}
+      <section id="afiliacion" className="relative py-32 md:py-48 overflow-hidden bg-slate-950 scroll-mt-32">
         {/* Background elements */}
         <div className="absolute inset-0 z-0">
           <div className="absolute top-[350px] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[url('/lotus_bg.png')] bg-contain bg-center bg-no-repeat opacity-10 blur-[8px] pointer-events-none" />

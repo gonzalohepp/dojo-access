@@ -159,13 +159,23 @@ function SafeMapController({ center, zoom, viewMode }: { center: [number, number
     return null
 }
 
-export default function PublicMap({ academies }: { academies: Academy[] }) {
+export default function PublicMap({
+    academies,
+    initialCenter = ARG_CENTER,
+    initialZoom = ARG_ZOOM,
+    hideSidebar = false
+}: {
+    academies: Academy[],
+    initialCenter?: [number, number],
+    initialZoom?: number,
+    hideSidebar?: boolean
+}) {
     const [selected, setSelected] = useState<Academy | null>(null)
     const [search, setSearch] = useState('')
-    const [mapCenter, setMapCenter] = useState<[number, number]>(ARG_CENTER)
-    const [mapZoom, setMapZoom] = useState<number>(ARG_ZOOM)
+    const [mapCenter, setMapCenter] = useState<[number, number]>(initialCenter)
+    const [mapZoom, setMapZoom] = useState<number>(initialZoom)
     const [isLocating, setIsLocating] = useState(false)
-    const [viewMode, setViewMode] = useState<'map' | 'list'>('list')
+    const [viewMode, setViewMode] = useState<'map' | 'list'>(hideSidebar ? 'map' : 'list')
     const [userLocation, setUserLocation] = useState<[number, number] | null>(null)
 
     // Filter academies
@@ -230,85 +240,89 @@ export default function PublicMap({ academies }: { academies: Academy[] }) {
     return (
         <div className="flex flex-col lg:flex-row h-[600px] md:h-[700px] w-full rounded-[2rem] md:rounded-[32px] overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xl relative bg-white dark:bg-slate-950">
             {/* Mobile View Toggle */}
-            <div className="lg:hidden flex p-2 gap-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
-                <button
-                    onClick={() => setViewMode('list')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}
-                >
-                    <Info className="w-4 h-4" /> Lista
-                </button>
-                <button
-                    onClick={() => setViewMode('map')}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'map' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}
-                >
-                    <MapPin className="w-4 h-4" /> Mapa
-                </button>
-            </div>
-
-            {/* Left Sidebar: Search & List */}
-            <div className={`w-full lg:w-80 bg-white dark:bg-slate-900 flex flex-col border-r border-slate-200 dark:border-slate-800 z-20 ${viewMode === 'map' ? 'hidden lg:flex' : 'flex'}`}>
-                <div className="p-6 space-y-4">
-                    <div className="flex items-center justify-between">
-                        <h3 className="font-black text-lg text-slate-800 dark:text-white tracking-tight">Academias</h3>
-                        <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider">
-                            Argentina
-                        </span>
-                    </div>
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input
-                            placeholder="Buscar por ciudad..."
-                            className="w-full h-10 pl-10 pr-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-sm font-medium focus:ring-2 ring-blue-500/20 outline-none transition-all"
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                        />
-                    </div>
-
-                    {/* Geolocation Button */}
+            {!hideSidebar && (
+                <div className="lg:hidden flex p-2 gap-2 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
                     <button
-                        onClick={handleLocateMe}
-                        disabled={isLocating}
-                        className="w-full h-10 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border border-blue-100 dark:border-blue-800/30 transition-all active:scale-95"
+                        onClick={() => setViewMode('list')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'list' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}
                     >
-                        {isLocating ? (
-                            <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                            <LocateFixed className="w-4 h-4" />
-                        )}
-                        {isLocating ? "Obteniendo ubicación..." : "Buscar cerca mío"}
+                        <Info className="w-4 h-4" /> Lista
+                    </button>
+                    <button
+                        onClick={() => setViewMode('map')}
+                        className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${viewMode === 'map' ? 'bg-blue-600 text-white shadow-lg' : 'text-slate-500'}`}
+                    >
+                        <MapPin className="w-4 h-4" /> Mapa
                     </button>
                 </div>
+            )}
 
-                <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-hide">
-                    {filtered.map(academy => (
-                        <motion.div
-                            layoutId={String(academy.id)}
-                            key={academy.id}
-                            onClick={() => handleSelect(academy)}
-                            className={`
+            {/* Left Sidebar: Search & List */}
+            {!hideSidebar && (
+                <div className={`w-full lg:w-80 bg-white dark:bg-slate-900 flex flex-col border-r border-slate-200 dark:border-slate-800 z-20 ${viewMode === 'map' ? 'hidden lg:flex' : 'flex'}`}>
+                    <div className="p-6 space-y-4">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-black text-lg text-slate-800 dark:text-white tracking-tight">Academias</h3>
+                            <span className="bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-[10px] font-black px-2 py-1 rounded-md uppercase tracking-wider">
+                                Argentina
+                            </span>
+                        </div>
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                            <input
+                                placeholder="Buscar por ciudad..."
+                                className="w-full h-10 pl-10 pr-4 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-700 text-sm font-medium focus:ring-2 ring-blue-500/20 outline-none transition-all"
+                                value={search}
+                                onChange={e => setSearch(e.target.value)}
+                            />
+                        </div>
+
+                        {/* Geolocation Button */}
+                        <button
+                            onClick={handleLocateMe}
+                            disabled={isLocating}
+                            className="w-full h-10 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 border border-blue-100 dark:border-blue-800/30 transition-all active:scale-95"
+                        >
+                            {isLocating ? (
+                                <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                                <LocateFixed className="w-4 h-4" />
+                            )}
+                            {isLocating ? "Obteniendo ubicación..." : "Buscar cerca mío"}
+                        </button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto p-4 space-y-2 scrollbar-hide">
+                        {filtered.map(academy => (
+                            <motion.div
+                                layoutId={String(academy.id)}
+                                key={academy.id}
+                                onClick={() => handleSelect(academy)}
+                                className={`
                                 p-4 rounded-xl cursor-pointer border transition-all duration-300 group
                                 ${selected?.id === academy.id
-                                    ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/20'
-                                    : 'bg-slate-50 dark:bg-slate-800/30 border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-800'}
+                                        ? 'bg-blue-600 border-blue-500 shadow-lg shadow-blue-900/20'
+                                        : 'bg-slate-50 dark:bg-slate-800/30 border-transparent hover:border-slate-200 dark:hover:border-slate-700 hover:bg-white dark:hover:bg-slate-800'}
                             `}
-                        >
-                            <h4 className={`font-bold text-sm mb-1 ${selected?.id === academy.id ? 'text-white' : 'text-slate-800 dark:text-slate-200 group-hover:text-blue-500'}`}>
-                                {academy.name}
-                            </h4>
-                            <div className={`flex items-start gap-1.5 text-[10px] font-medium leading-tight ${selected?.id === academy.id ? 'text-blue-100' : 'text-slate-500'}`}>
-                                <MapPin className="w-3 h-3 shrink-0" />
-                                <span>{academy.city} • {academy.address}</span>
+                            >
+                                <h4 className={`font-bold text-sm mb-1 ${selected?.id === academy.id ? 'text-white' : 'text-slate-800 dark:text-slate-200 group-hover:text-blue-500'}`}>
+                                    {academy.name}
+                                </h4>
+                                <div className={`flex items-start gap-1.5 text-[10px] font-medium leading-tight ${selected?.id === academy.id ? 'text-blue-100' : 'text-slate-500'}`}>
+                                    <MapPin className="w-3 h-3 shrink-0" />
+                                    <span>{academy.city} • {academy.address}</span>
+                                </div>
+                            </motion.div>
+                        ))}
+                        {filtered.length === 0 && (
+                            <div className="text-center py-10">
+                                <Info className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                                <p className="text-slate-400 text-xs font-medium">No se encontraron resultados</p>
                             </div>
-                        </motion.div>
-                    ))}
-                    {filtered.length === 0 && (
-                        <div className="text-center py-10">
-                            <Info className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                            <p className="text-slate-400 text-xs font-medium">No se encontraron resultados</p>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Main Content Area: Map + Detailed Sidebar */}
             <div className={`flex-1 relative bg-slate-100 dark:bg-slate-900 overflow-hidden flex ${viewMode === 'list' ? 'hidden lg:flex' : 'flex'}`}>

@@ -12,7 +12,7 @@ const instructors = [
     name: "Cristian Hein",
     role: "Prof. Ed. Física · Lic. Alto Rendimiento",
     photo: "/cristian1.png",
-    position: "center bottom",
+    position: "center middle",
     description:
       "Profesor de BJJ, MMA y preparación física. Bicampeón del Mundo CBJJE en faixa preta. Más de una década formando practicantes y competidores, con enfoque en el desarrollo técnico, físico y mental. Fundador y head coach de Beleza Dojo.",
     specialties: ["Brazilian Jiu Jitsu", "Preparacion fisica"],
@@ -22,7 +22,7 @@ const instructors = [
     name: "Florencia Bussolo",
     role: "Prof. Ed. Física · Instructora BJJ",
     photo: "/florencia.png",
-    position: "center bottom",
+    position: "center middle",
     description:
       "Bicampeona del Mundo CBJJE en faixa roxa. Instructora a cargo de los grupos infantiles, con amplia experiencia en el trabajo con niños y adolescentes. También dicta preparación física en el dojo.",
     specialties: ["Brazilian Jiu Jitsu", "BJJ Kids", "Preparacion fisica"],
