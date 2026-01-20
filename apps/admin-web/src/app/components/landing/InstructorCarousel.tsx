@@ -12,6 +12,7 @@ const instructors = [
     name: "Cristian Hein",
     role: "Prof. Ed. Física · Lic. Alto Rendimiento",
     photo: "/cristian1.png",
+    position: "center top",
     description:
       "Profesor de BJJ, MMA y preparación física. Bicampeón del Mundo CBJJE en faixa preta. Más de una década formando practicantes y competidores, con enfoque en el desarrollo técnico, físico y mental. Fundador y head coach de Beleza Dojo.",
     specialties: ["BJJ", "MMA", "Alto Rendimiento"],
@@ -20,7 +21,8 @@ const instructors = [
     id: 2,
     name: "Florencia Bussolo",
     role: "Prof. Ed. Física · Instructora BJJ",
-    photo: "/beleza_fondo1.png",
+    photo: "/florencia.png",
+    position: "center top",
     description:
       "Bicampeona del Mundo CBJJE en faixa roxa. Instructora a cargo de los grupos infantiles, con amplia experiencia en el trabajo con niños y adolescentes. También dicta preparación física en el dojo.",
     specialties: ["BJJ Infantil", "Prep. Física", "Pedagogía"],
@@ -30,6 +32,7 @@ const instructors = [
     name: "Bruno Patitucci",
     role: "Instructor de Brazilian Jiu Jitsu",
     photo: "/bruno.png",
+    position: "center top",
     description:
       "Enfocado en la enseñanza técnica y el desarrollo conceptual del Jiu Jitsu. Su trabajo prioriza la comprensión del combate, el control posicional y la evolución sostenida del practicante.",
     specialties: ["BJJ", "Técnica", "Conceptos"],
@@ -38,7 +41,8 @@ const instructors = [
     id: 4,
     name: "Fabrizio Cardella",
     role: "Instructor de Grappling",
-    photo: "/beleza_fondo1.png",
+    photo: "/fabrizio.png",
+    position: "center top",
     description:
       "Especialista en lucha sin kimono, con énfasis en control, transiciones y eficacia competitiva. Aporta una visión moderna del grappling aplicada tanto a la competencia como al entrenamiento recreativo.",
     specialties: ["Grappling", "No-Gi", "Control"],
@@ -48,6 +52,7 @@ const instructors = [
     name: "Rodrigo Vendrell",
     role: "Instructor de MMA",
     photo: "/rodrigo.png",
+    position: "center top",
     description:
       "Amplia experiencia en striking y constante desarrollo en el ámbito del grappling. Su enfoque integra golpeo, control y transiciones, formando peleadores completos y versátiles.",
     specialties: ["MMA", "Striking", "Grappling"],
@@ -132,9 +137,10 @@ export function InstructorCarousel() {
                   {/* Foto */}
                   <div className="relative h-[400px] md:h-auto overflow-hidden group">
                     <div
-                      className="absolute inset-0 bg-cover bg-top transform transition-transform duration-1000 group-hover:scale-105"
+                      className="absolute inset-0 bg-cover transform transition-transform duration-1000 group-hover:scale-105"
                       style={{
                         backgroundImage: `url(${current.photo})`,
+                        backgroundPosition: (current as any).position || 'center top'
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80" />

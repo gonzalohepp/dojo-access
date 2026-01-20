@@ -391,10 +391,26 @@ export default function HomeLandingPage() {
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tight">DÓNDE ESTAMOS</h2>
-            <div className="flex items-center justify-center gap-2 text-blue-400">
-              <MapPin className="w-5 h-5" />
-              <p className="text-xl font-medium text-slate-300">Av. Calchaquí 4335, Quilmes Oeste</p>
+            <h2 className="text-4xl md:text-5xl font-black text-white mb-8 tracking-tight">DÓNDE ESTAMOS</h2>
+
+            <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-16">
+              <div className="flex flex-col items-center gap-2">
+                <div className="p-3 bg-blue-500/10 rounded-2xl mb-2">
+                  <MapPin className="w-8 h-8 text-blue-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider">Sede Principal</h3>
+                <p className="text-xl font-medium text-slate-300">Av. Calchaquí 4335, Quilmes Oeste</p>
+              </div>
+
+              <div className="hidden md:block w-px h-16 bg-slate-800" />
+
+              <div className="flex flex-col items-center gap-2">
+                <div className="p-3 bg-purple-500/10 rounded-2xl mb-2">
+                  <MapPin className="w-8 h-8 text-purple-400" />
+                </div>
+                <h3 className="text-lg font-bold text-white uppercase tracking-wider">Sede Secundaria</h3>
+                <p className="text-xl font-medium text-slate-300">Calle 130 5273, B.Marítimo</p>
+              </div>
             </div>
           </div>
 
@@ -402,30 +418,10 @@ export default function HomeLandingPage() {
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-3xl p-1 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl"
+            className="rounded-[2.5rem] p-1.5 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl border border-white/10 overflow-hidden"
           >
-            <div className="relative rounded-[20px] overflow-hidden aspect-video md:aspect-[21/9] border border-slate-700/50">
-              <iframe
-                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3277.7022264486864!2d-58.2792986235246!3d-34.76309316593384!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95a32e9eef9c5603%3A0xe0b9320f38d1beb8!2sAv.%20Calchaqu%C3%AD%204335%2C%20B1879%20Quilmes%2C%20Provincia%20de%20Buenos%20Aires!5e0!3m2!1ses!2sar!4v1763061000312!5m2!1ses!2sar"
-                width="100%"
-                height="100%"
-                style={{ border: 0, filter: "grayscale(1) invert(1) contrast(1.2) brightness(0.8)" }}
-                allowFullScreen
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-              />
-              <div className="absolute bottom-6 right-6">
-                <a
-                  href="https://www.google.com/maps/search/?api=1&query=Av+Calchaquí+4335+Quilmes+Buenos+Aires"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-black/50 hover:scale-105 transition-all flex items-center gap-2"
-                  onClick={() => trackEvent('click_maps')}
-                >
-                  <ExternalLink className="w-4 h-4" />
-                  Abrir en Google Maps
-                </a>
-              </div>
+            <div className="rounded-[2rem] overflow-hidden aspect-[4/3] md:aspect-[21/9]">
+              <AcademiesMapSection />
             </div>
           </motion.div>
         </div>
@@ -460,12 +456,8 @@ export default function HomeLandingPage() {
             className="flex flex-col items-center text-center space-y-12 mb-20"
           >
             <motion.div variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }} className="flex flex-col items-center">
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-[10px] font-black tracking-[0.3em] uppercase mb-6 backdrop-blur-md">
-                <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
-                Red Global de Excelencia
-              </span>
               <h2 className="text-6xl md:text-9xl font-black text-white leading-[0.8] tracking-tighter mb-8">
-                LOTUS <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-600">CLUB</span>
+                LOTUS CLUB
               </h2>
               <div className="w-32 h-2 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-600 rounded-full" />
             </motion.div>
@@ -533,23 +525,7 @@ export default function HomeLandingPage() {
           </motion.div>
         </div>
 
-        {/* Full Width Map Container */}
-        <motion.div
-          initial={{ opacity: 0, y: 100 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1, ease: "easeOut" }}
-          viewport={{ once: true }}
-          className="relative w-full max-w-[1920px] mx-auto px-4"
-        >
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-tr from-blue-500/20 to-cyan-500/20 blur-3xl rounded-[3rem] opacity-50 group-hover:opacity-75 transition duration-1000" />
-            <div className="relative rounded-[2.5rem] md:rounded-[4rem] p-1.5 md:p-3 bg-gradient-to-b from-slate-800 to-slate-900 shadow-[0_0_80px_rgba(30,58,138,0.2)] border border-white/10 overflow-hidden">
-              <div className="rounded-[2rem] md:rounded-[3.5rem] overflow-hidden">
-                <AcademiesMapSection minimal={true} />
-              </div>
-            </div>
-          </div>
-        </motion.div>
+
       </section>
 
       {/* CTA FINAL */}
