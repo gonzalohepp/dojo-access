@@ -237,9 +237,9 @@ export default function HomeLandingPage() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-tight tracking-tight"
           >
-            TU POTENCIAL <br className="hidden sm:block" />
+            Entrená para alcanzar <br className="hidden sm:block" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 animate-gradient-x">
-              NO TIENE LÍMITES
+              tu mejor versión
             </span>
           </motion.h1>
 
@@ -250,7 +250,7 @@ export default function HomeLandingPage() {
             className="text-xl md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto font-medium leading-relaxed"
           >
             Entrená con los mejores en <span className="text-blue-400 font-bold">Quilmes</span>.
-            Jiu-Jitsu, Grappling, MMA y Judo en un ambiente diseñado para tu evolución.
+            Jiu Jitsu · Grappling - MMA · Muay Thai· . Formación técnica, física y mental con enfoque en alto rendimiento y evolución real.
           </motion.p>
 
           <motion.div
@@ -261,12 +261,15 @@ export default function HomeLandingPage() {
           >
             <Button
               asChild
-              className="bg-blue-600 hover:bg-blue-500 text-white text-lg font-bold px-8 py-7 rounded-2xl shadow-xl shadow-blue-600/30 transition-all hover:scale-105 hover:-translate-y-1"
+              className="bg-blue-600 hover:bg-blue-500 text-white text-xl md:text-2xl font-black px-10 py-8 rounded-2xl shadow-xl shadow-blue-600/30 transition-all hover:scale-105 hover:-translate-y-1 w-full sm:w-auto"
               onClick={() => trackEvent('click_wsp_hero')}
             >
-              <a href="https://www.instagram.com/belezadojo" target="_blank" rel="noopener noreferrer">
-                Quiero mi clase de prueba
-                <ChevronRight className="w-5 h-5 ml-2" />
+              <a
+                href="https://wa.me/5491124041132?text=¡Hola%2C%20Beleza%20Dojo!%20Vi%20la%20web%20y%20me%20interesa%20agendar%20mi%20clase%20de%20prueba%20gratuita.%20¿Me%20podrían%20pasar%20los%20horarios%20de%20[Disciplina]?%20Mi%20nombre%20es%3A%20__"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                👉 Quiero mi clase de prueba
               </a>
             </Button>
             <Button
@@ -361,7 +364,7 @@ export default function HomeLandingPage() {
 
             <div className="space-y-8 text-lg text-slate-300 leading-relaxed relative z-10">
               <p>
-                Todo comenzó en <span className="text-blue-400 font-bold">Agosto de 2011</span>, en un pequeño gimnasio de Quilmes. Un grupo de apasionados necesitaba una identidad. Así nació Beleza.
+                <span className="text-white font-bold">Beleza Dojo</span> nace en 2011 con un objetivo claro: formar practicantes y competidores con un enfoque técnico, físico y mental sólido.
               </p>
               <p>
                 <span className="text-white font-black text-xl">"BELEZA"</span> — expresión brasileña para decir que "está todo bien". Elegimos este nombre para reflejar el ambiente de camaradería y respeto que se respira en cada entrenamiento, sin perder la intensidad.
@@ -369,8 +372,11 @@ export default function HomeLandingPage() {
               <p>
                 Nuestro símbolo es el <span className="text-white font-black text-xl">"SHAKA"</span> 🤙. Representa amistad, comprensión y solidaridad. Valores innegociables dentro y fuera del tatami.
               </p>
-              <div className="pl-6 border-l-4 border-blue-500 py-2 italic text-slate-400">
-                "Hoy, más de una década después, seguimos con la misma pasión, construyendo el mejor centro de entrenamiento de combate de Zona Sur."
+              <p>
+                Nuestro método prioriza el progreso real, la comprensión profunda del combate y el desarrollo sostenido en el tiempo.
+              </p>
+              <div className="pl-6 border-l-4 border-blue-500 py-2 italic text-slate-400 font-medium">
+                "Entrenar en Beleza Dojo significa asumir un compromiso con tu evolución, dentro y fuera del tatami."
               </div>
             </div>
           </motion.div>
@@ -400,6 +406,28 @@ export default function HomeLandingPage() {
           </div>
           <div className="bg-slate-950 p-1 md:p-2 rounded-[2.5rem] shadow-2xl border border-slate-800">
             <ScheduleGrid />
+          </div>
+
+          {/* CTA Debajo de Horarios */}
+          <div className="mt-12 text-center space-y-8">
+            <h3 className="text-2xl md:text-3xl font-bold text-blue-200">
+              Tu primera clase es gratuita. ¡Vení a conocernos!
+            </h3>
+            <Button
+              asChild
+              className="bg-green-600 hover:bg-green-500 text-white text-xl font-bold px-10 py-6 rounded-2xl shadow-xl shadow-green-900/20 transition-all hover:scale-105 hover:-translate-y-1 animate-pulse"
+              onClick={() => trackEvent('click_wsp_schedule')}
+            >
+              <a
+                href="https://wa.me/5491124041132?text=¡Hola%2C%20Beleza%20Dojo!%20Vi%20la%20web%20y%20me%20interesa%20agendar%20mi%20clase%20de%20prueba%20gratuita.%20¿Me%20podrían%20pasar%20los%20horarios%20de%20[Disciplina]?%20Mi%20nombre%20es%3A%20__"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3"
+              >
+                <MessageCircle className="w-6 h-6" />
+                Reservá tu clase de prueba
+              </a>
+            </Button>
           </div>
         </div>
       </section>
