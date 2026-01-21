@@ -169,65 +169,119 @@ export function ScheduleGrid() {
           </div>
 
           {currentSchedule.type === "martiales" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4 overflow-x-auto pb-4">
-              {/* Day Headers */}
-              {currentSchedule.days.map((dia, i) => (
-                <div key={dia} className="hidden lg:block bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-4 sticky top-0 z-20" style={{ gridColumn: i + 1, gridRow: 1 }}>
-                  <h4 className="text-blue-400 font-black text-center text-sm tracking-[0.2em]">{dia.toUpperCase()}</h4>
-                </div>
-              ))}
+            <>
+              {/* Desktop Grid (lg and up) */}
+              <div className="hidden lg:grid lg:grid-cols-6 gap-4">
+                {/* Day Headers */}
+                {currentSchedule.days.map((dia) => (
+                  <div key={dia} className="bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-4">
+                    <h4 className="text-blue-400 font-black text-center text-sm tracking-[0.2em]">{dia.toUpperCase()}</h4>
+                  </div>
+                ))}
 
-              {/* Full Grid Rendering (Rows 2 to 7) */}
-              {Array.from({ length: 6 }).map((_, rowIndex) => { // 6 rows of classes (2 to 7)
-                const currentRow = rowIndex + 2
-                return Array.from({ length: 6 }).map((_, colIndex) => { // 6 columns (days)
-                  const currentCol = colIndex + 1
-                  // Find class for this specific cell
-                  const clase = currentSchedule.clases.find(c => c.col === currentCol && c.row === currentRow)
-                  const theme = clase ? getStyles(clase.tipo) : ''
+                {/* Full Grid Rendering (Rows 2 to 7) */}
+                {Array.from({ length: 6 }).map((_, rowIndex) => {
+                  const currentRow = rowIndex + 2
+                  return currentSchedule.days.map((_, colIndex) => {
+                    const currentCol = colIndex + 1
+                    const clase = currentSchedule.clases.find(c => c.col === currentCol && c.row === currentRow)
+                    const theme = clase ? getStyles(clase.tipo) : ''
+
+                    return (
+                      <motion.div
+                        key={`desktop-${currentRow}-${currentCol}`}
+                        whileHover={clase ? { scale: 1.02, y: -4 } : {}}
+                        className={`
+                          relative rounded-2xl p-5 border min-h-[120px] flex flex-col justify-center transition-all duration-300
+                          ${clase
+                            ? `bg-gradient-to-br ${theme} cursor-pointer shadow-xl group`
+                            : 'bg-slate-900/20 border-white/5'
+                          }
+                        `}
+                      >
+                        {clase && (
+                          <>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                            <div className="relative z-10 flex flex-col items-center text-center gap-2">
+                              <h5 className="font-black text-2xl md:text-3xl text-white tracking-tighter leading-none italic uppercase">
+                                {clase.nombre}
+                              </h5>
+                              {clase.subtitle && (
+                                <span className="text-[10px] font-black text-white/90 bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full uppercase tracking-widest border border-white/10">
+                                  {clase.subtitle}
+                                </span>
+                              )}
+                              <div className="flex items-center gap-1.5 text-white/90 font-bold text-[11px] bg-black/30 px-2.5 py-1.5 rounded-xl border border-white/5 mt-1">
+                                <Clock className="w-3 h-3" />
+                                {clase.horario}
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </motion.div>
+                    )
+                  })
+                })}
+              </div>
+
+              {/* Mobile/Tablet Layout (below lg) - Cards grouped by day */}
+              <div className="lg:hidden space-y-6">
+                {currentSchedule.days.map((dia, dayIndex) => {
+                  const dayCol = dayIndex + 1
+                  const clasesDelDia = currentSchedule.clases
+                    .filter(c => c.col === dayCol)
+                    .sort((a, b) => a.row - b.row)
+
+                  if (clasesDelDia.length === 0) return null
 
                   return (
                     <motion.div
-                      key={`${currentRow}-${currentCol}`}
-                      whileHover={clase ? { scale: 1.02, y: -4 } : {}}
-                      className={`
-                        relative rounded-2xl p-5 border lg:min-h-[120px] flex flex-col justify-center transition-all duration-300
-                        ${clase
-                          ? `bg-gradient-to-br ${theme} cursor-pointer shadow-xl group`
-                          : 'bg-slate-900/20 border-white/5 hidden lg:flex' // Empty cell style
-                        }
-                      `}
-                      style={{
-                        gridColumn: typeof window !== 'undefined' && window.innerWidth >= 1024 ? currentCol : 'auto',
-                        gridRow: typeof window !== 'undefined' && window.innerWidth >= 1024 ? currentRow : 'auto',
-                        // On mobile/tablet, hide empty cells entirely to stack only active classes
-                        display: (typeof window !== 'undefined' && window.innerWidth < 1024 && !clase) ? 'none' : undefined
-                      }}
+                      key={dia}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: dayIndex * 0.05 }}
+                      className="bg-slate-900/60 backdrop-blur-md border border-white/5 rounded-3xl p-4 md:p-6"
                     >
-                      {clase && (
-                        <>
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
-                          <div className="relative z-10 flex flex-col items-center text-center gap-2">
-                            <h5 className="font-black text-2xl md:text-3xl text-white tracking-tighter leading-none italic uppercase">
-                              {clase.nombre}
-                            </h5>
-                            {clase.subtitle && (
-                              <span className="text-[10px] font-black text-white/90 bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full uppercase tracking-widest border border-white/10">
-                                {clase.subtitle}
-                              </span>
-                            )}
-                            <div className="flex items-center gap-1.5 text-white/90 font-bold text-[11px] bg-black/30 px-2.5 py-1.5 rounded-xl border border-white/5 mt-1">
-                              <Clock className="w-3 h-3" />
-                              {clase.horario}
-                            </div>
-                          </div>
-                        </>
-                      )}
+                      {/* Day Header */}
+                      <div className="text-center border-b border-white/10 pb-3 mb-4">
+                        <h4 className="font-black text-lg uppercase tracking-wider text-blue-400">{dia.toUpperCase()}</h4>
+                      </div>
+
+                      {/* Classes for this day */}
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {clasesDelDia.map((clase, idx) => {
+                          const theme = getStyles(clase.tipo)
+                          return (
+                            <motion.div
+                              key={`mobile-${dia}-${idx}`}
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.98 }}
+                              className={`relative rounded-2xl p-4 border bg-gradient-to-br ${theme} cursor-pointer shadow-xl group`}
+                            >
+                              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
+                              <div className="relative z-10 flex flex-col items-center text-center gap-1.5">
+                                <h5 className="font-black text-xl text-white tracking-tighter leading-none italic uppercase">
+                                  {clase.nombre}
+                                </h5>
+                                {clase.subtitle && (
+                                  <span className="text-[9px] font-black text-white/90 bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full uppercase tracking-widest border border-white/10">
+                                    {clase.subtitle}
+                                  </span>
+                                )}
+                                <div className="flex items-center gap-1 text-white/90 font-bold text-[10px] bg-black/30 px-2 py-1 rounded-lg border border-white/5 mt-1">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  {clase.horario}
+                                </div>
+                              </div>
+                            </motion.div>
+                          )
+                        })}
+                      </div>
                     </motion.div>
                   )
-                })
-              })}
-            </div>
+                })}
+              </div>
+            </>
           ) : (
             /* Conditioning Render (Cards) */
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 lg:gap-4">
