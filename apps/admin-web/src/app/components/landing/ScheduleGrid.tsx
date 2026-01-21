@@ -157,7 +157,15 @@ export function ScheduleGrid() {
     : []
 
   return (
-    <div className="w-full relative">
+    <div
+      className="w-full relative py-20 px-4 md:px-0"
+      style={{
+        backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9)), url(/tatami.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/5 blur-[100px] rounded-full pointer-events-none" />
 
       {/* Tabs */}

@@ -67,6 +67,16 @@ const instructors = [
       "Medallista sudamericano, multi campeón nacional y metropolitano. Top 5 ranking sudamericano m1. Colaborador desde 2019 de la selección paralímpica de judo. Actualmente entrenando en el Cenard. Practicante de judo desde 2010.",
     specialties: ["Judo"],
   },
+  {
+    id: 7,
+    name: "Damian Siri",
+    role: "Instructor de Muay Thai",
+    photo: "/damian.png",
+    position: "center top",
+    description:
+      "Tres veces Campeón Argentino de Sanda. Experiencia en Tailandia en diferentes campamentos de entrenamiento. Pelea en el primer estadio de Muay Thai a nivel mundial Rajadamnern Stadium. Integrante como profesor equipo competitivo de Muay Thai de KMT. 15 años de experiencia en artes marciales.",
+    specialties: ["Muay Thai"],
+  },
 ]
 
 const slideVariants = {
