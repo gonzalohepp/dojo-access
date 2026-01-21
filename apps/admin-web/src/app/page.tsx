@@ -333,13 +333,22 @@ export default function HomeLandingPage() {
 
       {/* HORARIOS */}
       {/* HORARIOS */}
-      <section id="horarios" className="relative py-32 bg-slate-900 scroll-mt-32">
+      <section
+        id="horarios"
+        className="relative py-32 scroll-mt-32 overflow-hidden"
+        style={{
+          backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95)), url(/tatami.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed'
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-6xl font-black text-white mb-6 uppercase tracking-tight">Horarios</h2>
             <p className="text-xl text-slate-400">Encontrá tu momento para entrenar</p>
           </div>
-          <div className="bg-slate-950 p-1 md:p-2 rounded-[2.5rem] shadow-2xl border border-slate-800">
+          <div className="bg-slate-950/40 backdrop-blur-md p-1 md:p-2 rounded-[2.5rem] shadow-2xl border border-white/10">
             <ScheduleGrid />
           </div>
 
