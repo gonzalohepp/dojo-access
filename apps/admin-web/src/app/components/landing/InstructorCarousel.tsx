@@ -57,6 +57,16 @@ const instructors = [
       "Amplia experiencia en striking y constante desarrollo en el ámbito del grappling. Su enfoque integra golpeo, control y transiciones, formando peleadores completos y versátiles.",
     specialties: ["MMA"],
   },
+  {
+    id: 6,
+    name: "Santiago Fraga",
+    role: "Instructor de Judo",
+    photo: "/santiago.png",
+    position: "center top",
+    description:
+      "Medallista sudamericano, multi campeón nacional y metropolitano. Top 5 ranking sudamericano m1. Colaborador desde 2019 de la selección paralímpica de judo. Actualmente entrenando en el Cenard. Practicante de judo desde 2010.",
+    specialties: ["Judo"],
+  },
 ]
 
 const slideVariants = {
