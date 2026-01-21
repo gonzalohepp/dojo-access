@@ -17,12 +17,21 @@ type ConditioningSchedule = {
   times: TimeSlot[]
 }
 
+type MartialClass = {
+  nombre: string
+  subtitle?: string
+  horario: string
+  tipo: "bjj" | "kids" | "muay" | "mma" | "grappling" | "judo" | "fem"
+  col: number
+  row: number
+}
+
 type MartialSchedule = {
   type: "martiales"
   title: string
   description: string
   days: string[]
-  rows: string[][]
+  clases: MartialClass[]
 }
 
 type Schedule = ConditioningSchedule | MartialSchedule
@@ -47,16 +56,33 @@ const schedules: Record<"acondicionamiento" | "martiales", Schedule> = {
   martiales: {
     type: "martiales",
     title: "Artes Marciales",
-    description:
-      "Horarios de BJJ, Grappling, MMA, Muay Thai y Judo organizados por día para todos los niveles.",
+    description: "Horarios de BJJ, Grappling, MMA, Muay Thai y Judo organizados por día para todos los niveles.",
     days: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
-    rows: [
-      ["", "BJJ 7:30–9:00", "", "BJJ 7:30–9:00", "", "BJJ Femenino 08:00–09:30"],
-      ["BJJ 16:30–18:00", "", "BJJ 16:30–18:00", "", "BJJ 16:30–18:00", "Grappling 10:00–11:30"],
-      ["Muay Thai 17:00–19:00", "Muay Thai 17:00–19:00", "Muay Thai 17:00–19:00", "Muay Thai 17:00–19:00", "", ""],
-      ["BJJ Kids 18:00–19:00", "", "BJJ Kids 18:00–19:00", "", "BJJ Kids 18:00–19:00", ""],
-      ["MMA 19:00–20:00", "Grappling 19:00–20:30", "MMA 19:00–20:00", "Grappling 19:00–20:30", "MMA 19:00–20:00", ""],
-      ["BJJ 20:00–21:30", "Judo 20:30–22:00", "BJJ 20:00–21:30", "Judo 20:30–22:00", "BJJ 20:00–21:30", ""],
+    clases: [
+      { nombre: 'BJJ', horario: '7:30 A 9:00', tipo: 'bjj', col: 2, row: 2 },
+      { nombre: 'BJJ', horario: '7:30 A 9:00', tipo: 'bjj', col: 4, row: 2 },
+      { nombre: 'BJJ', subtitle: 'FEMENINO', horario: '08:00 A 09:30', tipo: 'fem', col: 6, row: 2 },
+      { nombre: 'BJJ', horario: '16:30 A 18:00', tipo: 'bjj', col: 1, row: 3 },
+      { nombre: 'BJJ', horario: '16:30 A 18:00', tipo: 'bjj', col: 3, row: 3 },
+      { nombre: 'BJJ', horario: '16:30 A 18:00', tipo: 'bjj', col: 5, row: 3 },
+      { nombre: 'GRAPPLING', horario: '10:00 A 11:30', tipo: 'grappling', col: 6, row: 3 },
+      { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 1, row: 4 },
+      { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 3, row: 4 },
+      { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 5, row: 4 },
+      { nombre: 'MUAY', subtitle: 'THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 1, row: 5 },
+      { nombre: 'MUAY', subtitle: 'THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 2, row: 5 },
+      { nombre: 'MUAY', subtitle: 'THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 3, row: 5 },
+      { nombre: 'MUAY', subtitle: 'THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 4, row: 5 },
+      { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 1, row: 6 },
+      { nombre: 'GRAPPLING', horario: '19:00 A 20:30', tipo: 'grappling', col: 2, row: 6 },
+      { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 3, row: 6 },
+      { nombre: 'GRAPPLING', horario: '19:00 A 20:30', tipo: 'grappling', col: 4, row: 6 },
+      { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 5, row: 6 },
+      { nombre: 'BJJ', horario: '20:00 A 21:30', tipo: 'bjj', col: 1, row: 7 },
+      { nombre: 'JUDO', horario: '20:30 A 22:00', tipo: 'judo', col: 2, row: 7 },
+      { nombre: 'BJJ', horario: '20:00 A 21:30', tipo: 'bjj', col: 3, row: 7 },
+      { nombre: 'JUDO', horario: '20:30 A 22:00', tipo: 'judo', col: 4, row: 7 },
+      { nombre: 'BJJ', horario: '20:00 A 21:30', tipo: 'bjj', col: 5, row: 7 },
     ],
   },
 }
@@ -67,7 +93,21 @@ export function ScheduleGrid() {
   const [activeTab, setActiveTab] = useState<ScheduleKey>("martiales")
   const currentSchedule = schedules[activeTab]
 
-  // Helper: Pivot table for "Conditioning" to show as Card Columns like Martiales
+  // Helper styles for class types
+  const getStyles = (tipo: string) => {
+    const themes: Record<string, string> = {
+      bjj: 'from-blue-600 to-indigo-700 shadow-blue-500/20 border-blue-400/30',
+      fem: 'from-pink-600 to-rose-700 shadow-pink-500/20 border-pink-400/30',
+      kids: 'from-sky-500 to-blue-600 shadow-sky-500/20 border-sky-400/30',
+      muay: 'from-slate-700 to-indigo-900 shadow-indigo-500/20 border-indigo-400/30',
+      mma: 'from-zinc-700 to-black shadow-slate-500/20 border-slate-500/30',
+      grappling: 'from-indigo-600 to-violet-800 shadow-indigo-500/20 border-indigo-400/30',
+      judo: 'from-blue-800 to-slate-900 shadow-blue-700/20 border-blue-600/30',
+    }
+    return themes[tipo] || themes.bjj
+  }
+
+  // Handle conditioning pivot for the card-based layout
   const conditioningDays = currentSchedule.type === "acondicionamiento"
     ? currentSchedule.days.map((day, dayIndex) => {
       const times = currentSchedule.times
@@ -77,20 +117,8 @@ export function ScheduleGrid() {
     })
     : []
 
-  // Helper: Get classes for Martiales
-  const martialDays =
-    currentSchedule.type === "martiales"
-      ? currentSchedule.days.map((day, dayIndex) => {
-        const classes = currentSchedule.rows
-          .map((row) => row[dayIndex])
-          .filter((cell) => cell && cell.trim().length > 0)
-        return { day, classes }
-      })
-      : []
-
   return (
     <div className="w-full relative">
-      {/* Decorative background glow for the whole component */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/5 blur-[100px] rounded-full pointer-events-none" />
 
       {/* Tabs */}
@@ -98,40 +126,24 @@ export function ScheduleGrid() {
         <div className="bg-slate-900/80 backdrop-blur-xl p-1.5 rounded-2xl border border-white/10 flex flex-wrap justify-center gap-2 shadow-2xl">
           <button
             onClick={() => setActiveTab("martiales")}
-            className={`
-              relative px-6 py-3 rounded-xl text-sm md:text-base font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2
-              ${activeTab === "martiales" ? "text-white shadow-lg" : "text-slate-400 hover:text-white hover:bg-white/5"}
-            `}
+            className={`relative px-6 py-3 rounded-xl text-sm md:text-base font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2
+              ${activeTab === "martiales" ? "text-white shadow-lg" : "text-slate-400 hover:text-white hover:bg-white/5"}`}
           >
             {activeTab === "martiales" && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute inset-0 bg-blue-600 rounded-xl"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-              />
+              <motion.div layoutId="activeTab" className="absolute inset-0 bg-blue-600 rounded-xl" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
             )}
-            <span className="relative z-10 flex items-center gap-2">
-              Artes Marciales
-            </span>
+            <span className="relative z-10">Artes Marciales</span>
           </button>
 
           <button
             onClick={() => setActiveTab("acondicionamiento")}
-            className={`
-              relative px-6 py-3 rounded-xl text-sm md:text-base font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2
-              ${activeTab === "acondicionamiento" ? "text-white shadow-lg" : "text-slate-400 hover:text-white hover:bg-white/5"}
-            `}
+            className={`relative px-6 py-3 rounded-xl text-sm md:text-base font-black uppercase tracking-wider transition-all duration-300 flex items-center gap-2
+              ${activeTab === "acondicionamiento" ? "text-white shadow-lg" : "text-slate-400 hover:text-white hover:bg-white/5"}`}
           >
             {activeTab === "acondicionamiento" && (
-              <motion.div
-                layoutId="activeTab"
-                className="absolute inset-0 bg-blue-600 rounded-xl"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-              />
+              <motion.div layoutId="activeTab" className="absolute inset-0 bg-blue-600 rounded-xl" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
             )}
-            <span className="relative z-10 flex items-center gap-2">
-              Acondicionamiento
-            </span>
+            <span className="relative z-10">Acondicionamiento</span>
           </button>
         </div>
       </div>
@@ -139,85 +151,98 @@ export function ScheduleGrid() {
       <AnimatePresence mode="wait">
         <motion.div
           key={activeTab}
-          initial={{ opacity: 0, y: 20, filter: "blur(10px)" }}
-          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-          exit={{ opacity: 0, y: -20, filter: "blur(10px)" }}
+          initial={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
+          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+          exit={{ opacity: 0, scale: 0.98, filter: "blur(10px)" }}
           transition={{ duration: 0.4 }}
           className="relative z-10"
         >
           {/* Header */}
           <div className="text-center mb-10 space-y-3">
-            <h3 className="text-3xl md:text-4xl font-black text-white tracking-tight flex items-center justify-center gap-3">
-              {currentSchedule.type === "martiales" ? (
-                <>
-                  {/* Icon removed as requested */}
-                </>
-              ) : (
-                <Sparkles className="w-8 h-8 text-blue-400" />
-              )}
-              {currentSchedule.title}
+            <h3 className="text-3xl md:text-5xl font-black text-white tracking-tighter flex items-center justify-center gap-3 italic">
+              {currentSchedule.type === "acondicionamiento" && <Sparkles className="w-8 h-8 text-blue-400" />}
+              {currentSchedule.title.toUpperCase()}
             </h3>
             <p className="text-lg text-slate-400 max-w-2xl mx-auto font-medium">
               {currentSchedule.description}
             </p>
           </div>
 
-          <div className={`grid gap-6 md:grid-cols-2 lg:grid-cols-3 ${currentSchedule.type === 'martiales' ? 'xl:grid-cols-6' : 'xl:grid-cols-5'} lg:gap-4`}>
-            {(currentSchedule.type === "martiales" ? martialDays : conditioningDays).map((item, index) => {
-              // Determine if it's the "Conditioning" render logic (item has .times) or "Martial" (item has .classes)
-              // Since both arrays are mapped to objects with different properties, we cast or check
-              const day = item.day
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const items = (item as any).classes || (item as any).times
+          {currentSchedule.type === "martiales" ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 lg:gap-4 overflow-x-auto pb-4">
+              {/* Day Headers */}
+              {currentSchedule.days.map((dia, i) => (
+                <div key={dia} className="hidden lg:block bg-slate-900/40 backdrop-blur-md border border-white/5 rounded-2xl p-4 sticky top-0 z-20" style={{ gridColumn: i + 1, gridRow: 1 }}>
+                  <h4 className="text-blue-400 font-black text-center text-sm tracking-[0.2em]">{dia.toUpperCase()}</h4>
+                </div>
+              ))}
 
-              // Styling constants based on type (Unified Blue Theme)
-              const cardBorder = "hover:border-blue-500/50"
-              const cardShadow = "hover:shadow-blue-500/20"
-              const chipGradient = "bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-900/30"
-              const dayColor = "text-blue-400"
-
-              return (
+              {/* Martial Classes Grid */}
+              {currentSchedule.clases.map((clase, i) => {
+                const theme = getStyles(clase.tipo)
+                return (
+                  <motion.div
+                    key={i}
+                    whileHover={{ scale: 1.02, y: -4 }}
+                    className={`
+                      relative rounded-2xl p-5 border bg-gradient-to-br ${theme}
+                      group cursor-pointer transition-all duration-300 shadow-xl lg:min-h-[120px]
+                      flex flex-col justify-center
+                    `}
+                    style={{
+                      gridColumn: typeof window !== 'undefined' && window.innerWidth >= 1024 ? clase.col : 'auto',
+                      gridRow: typeof window !== 'undefined' && window.innerWidth >= 1024 ? clase.row : 'auto',
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="relative z-10 flex flex-col items-center text-center gap-2">
+                      <h5 className="font-black text-2xl md:text-3xl text-white tracking-tighter leading-none italic uppercase">
+                        {clase.nombre}
+                      </h5>
+                      {clase.subtitle && (
+                        <span className="text-[10px] font-black text-white/90 bg-white/20 backdrop-blur-md px-2 py-0.5 rounded-full uppercase tracking-widest border border-white/10">
+                          {clase.subtitle}
+                        </span>
+                      )}
+                      <div className="flex items-center gap-1.5 text-white/90 font-bold text-[11px] bg-black/30 px-2.5 py-1.5 rounded-xl border border-white/5 mt-1">
+                        <Clock className="w-3 h-3" />
+                        {clase.horario}
+                      </div>
+                    </div>
+                  </motion.div>
+                )
+              })}
+            </div>
+          ) : (
+            /* Conditioning Render (Cards) */
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 lg:gap-4">
+              {conditioningDays.map((item, index) => (
                 <motion.div
-                  key={day}
+                  key={item.day}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  className={`
-                    group relative bg-slate-900/60 backdrop-blur-md border border-white/5 rounded-3xl p-5 
-                    flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 hover:bg-slate-900/80
-                    ${cardBorder} shadow-xl ${cardShadow}
-                  `}
+                  className="bg-slate-900/60 backdrop-blur-md border border-white/5 rounded-3xl p-5 flex flex-col gap-4 transition-all duration-300 hover:-translate-y-1 hover:bg-slate-900/80 hover:border-blue-500/50 shadow-xl hover:shadow-blue-500/20"
                 >
                   <div className="text-center border-b border-white/5 pb-3">
-                    <h4 className={`font-black text-lg uppercase tracking-wider ${dayColor}`}>
-                      {day}
-                    </h4>
+                    <h4 className="font-black text-lg uppercase tracking-wider text-blue-400">{item.day}</h4>
                   </div>
-
                   <div className="flex flex-col gap-2.5 flex-1">
-                    {items.length === 0 ? (
-                      <div className="flex-1 flex items-center justify-center text-slate-600 text-sm font-medium italic min-h-[100px]">
-                        Descanso
-                      </div>
+                    {item.times.length === 0 ? (
+                      <div className="flex-1 flex items-center justify-center text-slate-600 text-sm font-medium italic min-h-[100px]">Descanso</div>
                     ) : (
-                      items.map((text: string, idx: number) => (
-                        <div
-                          key={idx}
-                          className={`
-                            ${chipGradient} text-white py-3 px-3 rounded-xl text-xs font-bold text-center shadow-lg
-                            flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform
-                          `}
-                        >
+                      item.times.map((time, idx) => (
+                        <div key={idx} className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 px-3 rounded-xl text-xs font-bold text-center shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] transition-transform shadow-blue-900/30">
                           <Clock className="w-3.5 h-3.5 opacity-80" />
-                          {text}
+                          {time}
                         </div>
                       ))
                     )}
                   </div>
                 </motion.div>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </motion.div>
       </AnimatePresence>
     </div>
