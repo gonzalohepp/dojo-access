@@ -373,57 +373,93 @@ export function ScheduleGrid() {
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              className={`relative w-full max-w-lg bg-gradient-to-br ${getStyles(selectedClass.tipo)} p-8 rounded-[2.5rem] border border-white/20 shadow-2xl shadow-black`}
+              // 📍 CAMBIO 1: Quitamos el padding (p-8) y el background aquí.
+              // Agregamos 'overflow-hidden' y un color base oscuro.
+              className={`relative w-full max-w-lg rounded-[2.5rem] border border-white/20 shadow-2xl shadow-black overflow-hidden bg-zinc-900`}
             >
-              {/* Botón Cerrar */}
-              <button
-                onClick={() => setSelectedClass(null)}
-                className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors bg-black/20 p-2 rounded-full"
-              >
-                <X className="w-6 h-6" />
-              </button>
 
-              <div className="space-y-6">
-                <div>
-                  <span className="text-white/60 font-black tracking-widest text-xs uppercase">Información de Clase</span>
-                  <h2 className="text-5xl font-black text-white italic leading-none mt-2">
-                    {selectedClass.nombre}
-                  </h2>
-                  {selectedClass.subtitle && (
-                    <span className="inline-block mt-2 bg-white/20 px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-tighter">
-                      {selectedClass.subtitle}
-                    </span>
-                  )}
+              {/* 📍 ZONA DE VIDEO (Se muestra solo si es BJJ) */}
+              {selectedClass.tipo === 'bjj' && (
+                <div className="absolute inset-0 z-0">
+                  <video
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    preload="auto"
+                    // 📍 REEMPLAZA ESTE LINK por el de tu video propio (ej: "/videos/bjj-demo.mp4")
+                    src="/bjj.mp4"
+                    // 'object-cover' hace que rellene todo el espacio sin deformarse
+                    className="w-full h-full object-cover"
+                  />
+                  {/* Capa azulada para teñir el video y que combine con la marca */}
+                  <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply" />
+                  {/* Degradado negro desde abajo para asegurar que el texto blanco se lea bien */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
                 </div>
+              )}
 
-                <div className="flex gap-3">
-                  <div className="bg-black/40 px-4 py-2 rounded-xl flex items-center gap-2 border border-white/5">
-                    <Clock className="w-4 h-4 text-blue-400" />
-                    <span className="text-white font-bold text-sm">{selectedClass.horario}</span>
-                  </div>
-                </div>
+              {/* 📍 ZONA DE CONTENIDO (Texto y botones) */}
+              {/* Usamos 'relative z-10' para que quede POR ENCIMA del video. */}
+              {/* Si NO es bjj, aplicamos el fondo degradado normal aquí. Si ES bjj, fondo transparente. */}
+              <div className={`relative z-10 p-8 h-full ${selectedClass.tipo !== 'bjj' ? `bg-gradient-to-br ${getStyles(selectedClass.tipo)}` : ''}`}>
 
-                <div className="space-y-4">
-                  <p className="text-white/90 leading-relaxed font-medium">
-                    {/* Aquí usamos la info de BJJ si el tipo es 'bjj' */}
-                    {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES]?.descripcion ||
-                      "Prepárate para una sesión intensa de entrenamiento. Consulta con el profesor los requisitos de equipo."}
-                  </p>
-
-                  {selectedClass.tipo === 'bjj' && (
-                    <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
-                      <h4 className="text-white font-black text-xs uppercase mb-1">Requisitos:</h4>
-                      <p className="text-white/70 text-sm">{INFO_CLASES.bjj.requisitos}</p>
-                    </div>
-                  )}
-                </div>
-
+                {/* Botón Cerrar */}
                 <button
                   onClick={() => setSelectedClass(null)}
-                  className="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-blue-50 transition-all active:scale-95 uppercase tracking-widest"
+                  className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors bg-black/20 p-2 rounded-full backdrop-blur-sm"
                 >
-                  Cerrar Detalles
+                  <X className="w-6 h-6" />
                 </button>
+
+                <div className="space-y-6">
+                  <div>
+                    <span className="text-white/80 font-black tracking-widest text-xs uppercase">Información de Clase</span>
+                    {/* Añadí una sombra sutil al texto para que resalte más sobre el video */}
+                    <h2 className="text-5xl font-black text-white italic leading-none mt-2 drop-shadow-lg">
+                      {selectedClass.nombre}
+                    </h2>
+                    {selectedClass.subtitle && (
+                      <span className="inline-block mt-2 bg-white/20 px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-tighter backdrop-blur-md">
+                        {selectedClass.subtitle}
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl flex items-center gap-2 border border-white/10">
+                      <Clock className="w-4 h-4 text-blue-400" />
+                      <span className="text-white font-bold text-sm">{selectedClass.horario}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <p className="text-white/90 leading-relaxed font-medium drop-shadow-sm">
+                      {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES]?.descripcion ||
+                        "Prepárate para una sesión intensa de entrenamiento. Consulta con el profesor los requisitos de equipo."}
+                    </p>
+
+                    {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES] && (
+                      <div className="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                        <h4 className="text-blue-300 font-black text-xs uppercase mb-1 italic">Requisitos:</h4>
+                        <p className="text-white/80 text-sm italic mb-3">
+                          {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES].requisitos}
+                        </p>
+                        <h4 className="text-green-300 font-black text-xs uppercase mb-1 italic">Beneficios:</h4>
+                        <p className="text-white/80 text-sm italic">
+                          {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES].beneficios}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={() => setSelectedClass(null)}
+                    className="w-full bg-white/90 backdrop-blur-sm text-black font-black py-4 rounded-2xl hover:bg-white transition-all active:scale-95 uppercase tracking-widest shadow-lg"
+                  >
+                    Cerrar Detalles
+                  </button>
+                </div>
               </div>
             </motion.div>
           </div>
