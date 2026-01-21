@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
-import { Clock, Dumbbell, Swords, Trophy, Sparkles } from "lucide-react"
+import { Clock, Dumbbell, Swords, Trophy, Sparkles, X } from "lucide-react"
 
 type TimeSlot = {
   time: string
@@ -55,7 +55,7 @@ const schedules: Record<"acondicionamiento" | "martiales", Schedule> = {
   },
   martiales: {
     type: "martiales",
-    title: "Artes Marciales",
+    title: "",
     description: "Horarios de BJJ, Grappling, MMA, Muay Thai y Judo organizados por día para todos los niveles.",
     days: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
     clases: [
@@ -69,10 +69,10 @@ const schedules: Record<"acondicionamiento" | "martiales", Schedule> = {
       { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 1, row: 4 },
       { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 3, row: 4 },
       { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 5, row: 4 },
-      { nombre: 'MUAY', subtitle: 'THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 1, row: 5 },
-      { nombre: 'MUAY', subtitle: 'THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 2, row: 5 },
-      { nombre: 'MUAY', subtitle: 'THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 3, row: 5 },
-      { nombre: 'MUAY', subtitle: 'THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 4, row: 5 },
+      { nombre: 'MUAY THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 1, row: 5 },
+      { nombre: 'MUAY THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 2, row: 5 },
+      { nombre: 'MUAY THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 3, row: 5 },
+      { nombre: 'MUAY THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 4, row: 5 },
       { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 1, row: 6 },
       { nombre: 'GRAPPLING', horario: '19:00 A 20:30', tipo: 'grappling', col: 2, row: 6 },
       { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 3, row: 6 },
@@ -89,11 +89,50 @@ const schedules: Record<"acondicionamiento" | "martiales", Schedule> = {
 
 type ScheduleKey = keyof typeof schedules
 
+const INFO_CLASES = {
+  bjj: {
+    descripcion: "El Jiu-Jitsu Brasileño se centra en la lucha cuerpo a cuerpo en el suelo, usando palancas y estrangulaciones para someter al oponente sin necesidad de golpes.",
+    requisitos: "Gi (Kimono), protector bucal y sandalias para transitar fuera del tatami.",
+    beneficios: "Defensa personal, quema calórica alta y desarrollo de paciencia bajo presión."
+  },
+  muay: {
+    descripcion: "Conocido como el 'Arte de las ocho extremidades', utiliza puños, codos, rodillas y espinillas. Incluye técnicas de clinch y derribos básicos.",
+    requisitos: "Vendas, guantes de 14/16oz, protectores de tibia y protector bucal.",
+    beneficios: "Resistencia cardiovascular extrema, potencia de golpeo y coordinación motriz."
+  },
+  mma: {
+    descripcion: "Combina lo mejor del striking y el grappling. Aprenderás a transicionar entre el combate de pie y la lucha en el suelo de forma fluida.",
+    requisitos: "Guantillas de MMA, protector bucal, y ropa deportiva resistente (Rashguard).",
+    beneficios: "Es el entrenamiento más completo, mejora la agilidad y la capacidad de reacción."
+  },
+  grappling: {
+    descripcion: "Lucha de sumisión sin kimono. Se enfoca en el control posicional, derribos de lucha olímpica y llaves de articulación.",
+    requisitos: "Rashguard (remera de compresión) y bermudas sin cierres ni bolsillos.",
+    beneficios: "Mejora la fuerza explosiva, el equilibrio y la velocidad mental."
+  },
+  judo: {
+    descripcion: "Arte marcial basado en proyecciones y derribos utilizando el peso del oponente. También incluye técnicas de inmovilización en el suelo.",
+    requisitos: "Judogi grueso y cinturón correspondiente.",
+    beneficios: "Postura perfecta, respeto absoluto y una base sólida de derribos."
+  },
+  kids: {
+    descripcion: "Clases diseñadas para niños donde se enseña la base del BJJ a través de juegos y disciplina. Fomentamos el compañerismo y el respeto.",
+    requisitos: "Kimono infantil y muchas ganas de divertirse.",
+    beneficios: "Psicomotricidad, confianza frente al bullying y disciplina desde temprana edad."
+  },
+  fem: {
+    descripcion: "Espacio exclusivo para mujeres enfocado en técnicas de defensa personal y BJJ deportivo en un ambiente de apoyo mutuo.",
+    requisitos: "Kimono y ropa cómoda debajo.",
+    beneficios: "Empoderamiento, comunidad femenina y seguridad personal."
+  }
+}
+
 export function ScheduleGrid() {
   const [activeTab, setActiveTab] = useState<ScheduleKey>("martiales")
+  const [selectedClass, setSelectedClass] = useState<MartialClass | null>(null)
   const currentSchedule = schedules[activeTab]
 
-  // Helper styles for class types
+  // ACA CAMBIO LOS COLORES DE LAS CARDS
   const getStyles = (tipo: string) => {
     const themes: Record<string, string> = {
       bjj: 'from-blue-600 to-indigo-700 shadow-blue-500/20 border-blue-400/30',
@@ -191,6 +230,7 @@ export function ScheduleGrid() {
                       <motion.div
                         key={`desktop-${currentRow}-${currentCol}`}
                         whileHover={clase ? { scale: 1.02, y: -4 } : {}}
+                        onClick={() => clase && setSelectedClass(clase)}
                         className={`
                           relative rounded-2xl p-5 border min-h-[120px] flex flex-col justify-center transition-all duration-300
                           ${clase
@@ -256,6 +296,7 @@ export function ScheduleGrid() {
                               key={`mobile-${dia}-${idx}`}
                               whileHover={{ scale: 1.02 }}
                               whileTap={{ scale: 0.98 }}
+                              onClick={() => setSelectedClass(clase)}
                               className={`relative rounded-2xl p-4 border bg-gradient-to-br ${theme} cursor-pointer shadow-xl group`}
                             >
                               <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl" />
@@ -313,6 +354,80 @@ export function ScheduleGrid() {
             </div>
           )}
         </motion.div>
+      </AnimatePresence>
+      {/* Modal / Popup */}
+      <AnimatePresence>
+        {selectedClass && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            {/* Fondo desenfocado */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedClass(null)}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            />
+
+            {/* Tarjeta del Modal */}
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className={`relative w-full max-w-lg bg-gradient-to-br ${getStyles(selectedClass.tipo)} p-8 rounded-[2.5rem] border border-white/20 shadow-2xl shadow-black`}
+            >
+              {/* Botón Cerrar */}
+              <button
+                onClick={() => setSelectedClass(null)}
+                className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors bg-black/20 p-2 rounded-full"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              <div className="space-y-6">
+                <div>
+                  <span className="text-white/60 font-black tracking-widest text-xs uppercase">Información de Clase</span>
+                  <h2 className="text-5xl font-black text-white italic leading-none mt-2">
+                    {selectedClass.nombre}
+                  </h2>
+                  {selectedClass.subtitle && (
+                    <span className="inline-block mt-2 bg-white/20 px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-tighter">
+                      {selectedClass.subtitle}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="bg-black/40 px-4 py-2 rounded-xl flex items-center gap-2 border border-white/5">
+                    <Clock className="w-4 h-4 text-blue-400" />
+                    <span className="text-white font-bold text-sm">{selectedClass.horario}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <p className="text-white/90 leading-relaxed font-medium">
+                    {/* Aquí usamos la info de BJJ si el tipo es 'bjj' */}
+                    {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES]?.descripcion ||
+                      "Prepárate para una sesión intensa de entrenamiento. Consulta con el profesor los requisitos de equipo."}
+                  </p>
+
+                  {selectedClass.tipo === 'bjj' && (
+                    <div className="bg-white/10 p-4 rounded-2xl border border-white/10">
+                      <h4 className="text-white font-black text-xs uppercase mb-1">Requisitos:</h4>
+                      <p className="text-white/70 text-sm">{INFO_CLASES.bjj.requisitos}</p>
+                    </div>
+                  )}
+                </div>
+
+                <button
+                  onClick={() => setSelectedClass(null)}
+                  className="w-full bg-white text-black font-black py-4 rounded-2xl hover:bg-blue-50 transition-all active:scale-95 uppercase tracking-widest"
+                >
+                  Cerrar Detalles
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </AnimatePresence>
     </div>
   )
