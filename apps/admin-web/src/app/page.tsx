@@ -339,7 +339,7 @@ export default function HomeLandingPage() {
         style={{
           backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95)), url(/tatami.png)',
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          backgroundPosition: 'bottom center',
           backgroundAttachment: 'fixed'
         }}
       >
@@ -348,7 +348,7 @@ export default function HomeLandingPage() {
             <h2 className="text-4xl md:text-6xl font-black text-white mb-6 uppercase tracking-tight">Horarios</h2>
             <p className="text-xl text-slate-400">Encontrá tu momento para entrenar</p>
           </div>
-          <div className="bg-slate-950/40 backdrop-blur-md p-1 md:p-2 rounded-[2.5rem] shadow-2xl border border-white/10">
+          <div className="bg-slate-950/80 backdrop-blur-md p-1 md:p-2 rounded-[2.5rem] shadow-2xl border border-white/10">
             <ScheduleGrid />
           </div>
 

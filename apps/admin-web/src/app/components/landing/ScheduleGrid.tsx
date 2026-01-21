@@ -162,7 +162,7 @@ export function ScheduleGrid() {
       style={{
         backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9)), url(/tatami.png)',
         backgroundSize: 'cover',
-        backgroundPosition: 'center',
+        backgroundPosition: 'bottom center',
         backgroundAttachment: 'fixed'
       }}
     >
