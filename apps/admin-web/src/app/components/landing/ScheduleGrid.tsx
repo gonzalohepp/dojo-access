@@ -162,11 +162,10 @@ export function ScheduleGrid() {
       style={{
         backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9)), url(/tatami.png)',
         backgroundSize: 'cover',
-        backgroundPosition: 'bottom center',
+        backgroundPosition: 'center',
         backgroundAttachment: 'fixed'
       }}
     >
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-blue-600/5 blur-[100px] rounded-full pointer-events-none" />
 
       {/* Tabs */}
       <div className="relative z-10 flex justify-center gap-4 mb-12">

@@ -339,7 +339,7 @@ export default function HomeLandingPage() {
         style={{
           backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.8), rgba(15, 23, 42, 0.95)), url(/tatami.png)',
           backgroundSize: 'cover',
-          backgroundPosition: 'bottom center',
+          backgroundPosition: 'center',
           backgroundAttachment: 'fixed'
         }}
       >
