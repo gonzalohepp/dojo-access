@@ -157,15 +157,7 @@ export function ScheduleGrid() {
     : []
 
   return (
-    <div
-      className="w-full relative py-20 px-4 md:px-0"
-      style={{
-        backgroundImage: 'linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.9)), url(/tatami.png)',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed'
-      }}
-    >
+    <div className="w-full relative py-12 px-2 md:px-0">
 
       {/* Tabs */}
       <div className="relative z-10 flex justify-center gap-4 mb-12">
@@ -242,7 +234,7 @@ export function ScheduleGrid() {
                           relative rounded-2xl p-5 border min-h-[120px] flex flex-col justify-center transition-all duration-300
                           ${clase
                             ? `bg-gradient-to-br ${theme} cursor-pointer shadow-xl group`
-                            : 'bg-slate-900/20 border-white/5'
+                            : 'bg-white/[0.02] border-white/5'
                           }
                         `}
                       >

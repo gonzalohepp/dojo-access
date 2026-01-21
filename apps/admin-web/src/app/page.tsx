@@ -348,7 +348,8 @@ export default function HomeLandingPage() {
             <h2 className="text-4xl md:text-6xl font-black text-white mb-6 uppercase tracking-tight">Horarios</h2>
             <p className="text-xl text-slate-400">Encontrá tu momento para entrenar</p>
           </div>
-          <div className="bg-slate-950/80 backdrop-blur-md p-1 md:p-2 rounded-[2.5rem] shadow-2xl border border-white/10">
+          <div className="bg-slate-950/60 backdrop-blur-xl p-4 md:p-8 rounded-[3rem] shadow-[0_0_50px_rgba(0,0,0,0.5)] border border-white/10 relative overflow-hidden group">
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             <ScheduleGrid />
           </div>
 
