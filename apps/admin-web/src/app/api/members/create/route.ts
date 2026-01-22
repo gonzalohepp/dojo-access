@@ -15,7 +15,8 @@ export async function POST(req: Request) {
             membership_type,
             last_payment_date,
             next_payment_due,
-            classes
+            classes,
+            role
         } = body
 
         if (!email) {
@@ -62,7 +63,7 @@ export async function POST(req: Request) {
             .from('profiles')
             .upsert({
                 user_id: userId,
-                // role: 'member', // Remove hardcoded role to prevent overwrite on upsert
+                role: role || 'member',
                 first_name,
                 last_name,
                 email,

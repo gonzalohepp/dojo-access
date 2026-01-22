@@ -720,6 +720,9 @@ export default function NotificationsPage() {
                                                             {user.role === 'admin' && (
                                                                 <span className="text-[8px] font-black bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-1.5 py-0.5 rounded uppercase tracking-widest leading-none">Admin</span>
                                                             )}
+                                                            {user.role === 'instructor' && (
+                                                                <span className="text-[8px] font-black bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400 px-1.5 py-0.5 rounded uppercase tracking-widest leading-none">Instructor</span>
+                                                            )}
                                                         </div>
                                                         <p className="text-[10px] text-slate-500 font-bold truncate uppercase tracking-tighter mt-0.5">
                                                             {user.email}

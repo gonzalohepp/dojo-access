@@ -53,7 +53,8 @@ function MembersContent() {
   const [filters, setFilters] = useState({
     status: 'todos' as 'todos' | 'activo' | 'vencido',
     membership: 'todos' as 'todos' | 'monthly' | 'quarterly' | 'semiannual' | 'annual',
-    className: 'todas' as 'todas' | string
+    className: 'todas' as 'todas' | string,
+    role: 'todos' as 'todos' | 'admin' | 'member' | 'instructor' | 'becado' | 'pending'
   })
   const [q, setQ] = useState('')
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
@@ -150,13 +151,14 @@ function MembersContent() {
       const classOk =
         filters.className === 'todas' ||
         (m.class_names ?? []).some((n) => n === filters.className)
+      const roleOk = filters.role === 'todos' || m.role === filters.role
       const qOk =
         !q ||
         full.toLowerCase().includes(q.toLowerCase()) ||
         (m.email ?? '').toLowerCase().includes(q.toLowerCase()) ||
         (m.phone ?? '').includes(q) ||
         (m.access_code ?? '').toLowerCase().includes(q.toLowerCase())
-      return statusOk && membOk && classOk && qOk
+      return statusOk && membOk && classOk && qOk && roleOk
     })
   }, [members, filters, q])
 
@@ -269,6 +271,7 @@ function MembersContent() {
           emergency_phone: payload.emergency_contact ?? null,
           notes: payload.notes ?? null,
           access_code: payload.access_code?.trim() || null,
+          role: (payload as any).role || 'member'
         })
         .eq('user_id', userId)
       if (upErr) {
@@ -335,7 +338,8 @@ function MembersContent() {
           membership_type: payload.membership_type,
           last_payment_date: payload.last_payment_date,
           next_payment_due: payload.next_payment_due,
-          classes: payload.classes
+          classes: payload.classes,
+          role: (payload as any).role || 'member'
         })
       })
 

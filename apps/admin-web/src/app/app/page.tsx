@@ -71,7 +71,7 @@ export default async function HomePage() {
 
   // 🔹 Redirección por rol
   const role = profile?.role ?? 'pending'
-  if (role === 'admin') {
+  if (role === 'admin' || role === 'instructor') {
     redirect('/admin')
   } else {
     // Si es member o pending, va a validate

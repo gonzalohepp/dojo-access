@@ -38,7 +38,7 @@ type Notification = {
   read: boolean
 }
 
-type Role = 'admin' | 'member'
+type Role = 'admin' | 'member' | 'instructor' | 'becado' | 'pending'
 type Profile = {
   user_id: string
   email: string | null
@@ -177,7 +177,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
 
   // ========= Real-time Security Alerts =========
   useEffect(() => {
-    if (!profile || profile.role !== 'admin') return
+    if (!profile || (profile.role !== 'admin' && profile.role !== 'instructor')) return
 
     const userId = profile.user_id
     console.log('[AdminLayout] Subscribing to security alerts for admin:', userId)
@@ -309,7 +309,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
   // Moved to top
 
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || profile?.role === 'instructor'
   const nav = isAdmin ? adminNav : userNav
 
   const displayName =

@@ -96,8 +96,8 @@ export async function middleware(request: NextRequest) {
                 .eq('user_id', user.id)
                 .single()
 
-            if (profile?.role !== 'admin') {
-                console.warn(`[middleware] Blocked member ${user.email} from ${pathname}`)
+            if (profile?.role !== 'admin' && profile?.role !== 'instructor') {
+                console.warn(`[middleware] Blocked ${profile?.role || 'member'} ${user.email} from ${pathname}`)
                 return NextResponse.redirect(new URL('/validate', origin))
             }
         }

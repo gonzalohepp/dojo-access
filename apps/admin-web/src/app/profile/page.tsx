@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Clock,
   CheckCircle,
+  CheckCircle2,
   XCircle,
   Activity,
   Zap,
@@ -23,6 +24,9 @@ import {
   DollarSign
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import SubscriptionModal from '../components/profile/SubscriptionModal'
 import PhotoCropper from '../components/profile/PhotoCropper'
 import { fmtARS, fmtDate, fmtSchedule } from '@/lib/format'
@@ -40,6 +44,7 @@ type MemberRow = {
   expires_at?: string | null
   status?: string | null
   avatar_url?: string | null
+  role?: 'admin' | 'member' | 'instructor' | 'becado' | 'pending' | null
 }
 
 type ClassRow = {
@@ -83,6 +88,7 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false)
   const [notLogged, setNotLogged] = useState(false)
   const [showPayModal, setShowPayModal] = useState(false)
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [tempImage, setTempImage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -136,7 +142,7 @@ export default function ProfilePage() {
       })
       reader.readAsDataURL(file)
     } catch (error: any) {
-      alert(error.message)
+      toast.error('Error al cargar la imagen', { description: error.message })
     }
   }
 
@@ -175,9 +181,9 @@ export default function ProfilePage() {
       if (updateError) throw updateError
 
       setMember(prev => prev ? { ...prev, avatar_url: publicUrl } : null)
-      alert('Foto actualizada correctamente')
+      setShowSuccessModal(true)
     } catch (error: any) {
-      alert(error.message)
+      toast.error('Error al actualizar la foto', { description: error.message })
     } finally {
       setUploading(false)
     }
@@ -278,8 +284,12 @@ export default function ProfilePage() {
                       <p className="text-slate-500 dark:text-slate-400 text-base md:text-lg font-medium flex flex-col md:flex-row items-center gap-2">
                         <span>{member.email}</span>
                         <span className="hidden md:inline">•</span>
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-xs font-bold uppercase tracking-wide">
-                          {member.membership_type === 'monthly' ? 'Miembro Mensual' : 'Miembro'}
+                        <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-wider">
+                          {member.role === 'admin' ? 'Administrador' :
+                            member.role === 'instructor' ? 'Instructor' :
+                              member.role === 'becado' ? 'Becado' :
+                                member.role === 'pending' ? 'Pendiente' :
+                                  'Socio Activo'}
                         </span>
                       </p>
                     </div>
@@ -485,6 +495,34 @@ export default function ProfilePage() {
           additional: classes.filter(c => !c.is_principal).map(c => c.id)
         }}
       />
+
+      {/* Success Modal - Premium Style */}
+      <Dialog open={showSuccessModal} onOpenChange={setShowSuccessModal}>
+        <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white rounded-3xl p-0 overflow-hidden">
+          <div className="p-8 text-center bg-gradient-to-b from-transparent to-black/40">
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="space-y-4"
+            >
+              <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30 relative">
+                <div className="absolute inset-0 bg-blue-500 blur-2xl opacity-20 animate-pulse" />
+                <CheckCircle2 className="w-14 h-14 text-blue-500 relative z-10" />
+              </div>
+              <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase italic leading-none">¡Foto Actualizada!</h2>
+              <p className="text-blue-400 font-bold text-lg italic uppercase tracking-wider">Tu perfil se ve increíble</p>
+              <div className="pt-6">
+                <Button
+                  onClick={() => setShowSuccessModal(false)}
+                  className="w-full py-6 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 text-white font-bold uppercase tracking-widest"
+                >
+                  Continuar
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Cropper Modal */}
       <AnimatePresence>

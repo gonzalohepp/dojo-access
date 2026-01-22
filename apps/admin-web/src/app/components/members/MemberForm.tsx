@@ -31,6 +31,7 @@ export default function MemberForm({
     next_payment_due: lastDayOfMonth(new Date()).toISOString().slice(0, 10),
     emergency_contact: '',
     notes: '',
+    role: 'member' as 'admin' | 'member' | 'instructor' | 'becado' | 'pending',
   })
   const [manualCode, setManualCode] = useState(false)
 
@@ -54,6 +55,7 @@ export default function MemberForm({
         next_payment_due: member.end_date ? new Date(member.end_date).toISOString().slice(0, 10) : new Date(addMonths(new Date(), 1)).toISOString().slice(0, 10),
         emergency_contact: member.emergency_phone ?? '',
         notes: member.notes ?? '',
+        role: (member as any).role ?? 'member',
       }))
 
       // Fetch exact membership dates (start_date vs last_payment_date)
@@ -263,6 +265,22 @@ export default function MemberForm({
               value={form.emergency_contact}
               onChange={(e) => setForm({ ...form, emergency_contact: e.target.value })}
             />
+          </div>
+
+          <div className="relative group md:col-span-2">
+            <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+            <select
+              className={`${inputClass} appearance-none cursor-pointer`}
+              value={form.role}
+              onChange={(e) => setForm({ ...form, role: e.target.value as any })}
+            >
+              <option value="member">Socio (Member)</option>
+              <option value="instructor">Instructor</option>
+              <option value="becado">Becado</option>
+              <option value="admin">Administrador</option>
+              <option value="pending">Pendiente</option>
+            </select>
+            <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rol de Usuario</div>
           </div>
         </div>
       </section>

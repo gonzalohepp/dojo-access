@@ -14,6 +14,7 @@ export async function POST(req: Request) {
       emergency_phone, // (antes lo llamabas emergency_contact en el form)
       notes,
       access_code,
+      role
     } = body ?? {}
 
     if (!user_id) {
@@ -36,6 +37,7 @@ export async function POST(req: Request) {
         emergency_phone: emergency_phone ?? null,
         notes: notes ?? null,
         access_code: access_code ?? null,
+        role: role ?? undefined
       })
       .eq('user_id', user_id)
 

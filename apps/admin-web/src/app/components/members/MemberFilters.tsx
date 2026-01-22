@@ -4,6 +4,7 @@ type Filters = {
   status: 'todos' | 'activo' | 'vencido'
   membership: 'todos' | 'monthly' | 'quarterly' | 'semiannual' | 'annual'
   className: 'todas' | string
+  role: 'todos' | 'admin' | 'member' | 'instructor' | 'becado' | 'pending'
 }
 
 type ClassOpt = { id: number; name: string }
@@ -55,6 +56,20 @@ export default function MemberFilters({
             {c.name}
           </option>
         ))}
+      </select>
+
+      {/* Rol */}
+      <select
+        className="h-10 rounded-xl border border-slate-200 bg-white/50 backdrop-blur-sm px-4 text-xs font-bold uppercase tracking-wider text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer appearance-none hover:bg-white"
+        value={value.role}
+        onChange={(e) => onChange({ ...value, role: e.target.value as Filters['role'] })}
+      >
+        <option value="todos">Todos los Roles</option>
+        <option value="member">Socios</option>
+        <option value="instructor">Instructores</option>
+        <option value="becado">Becados</option>
+        <option value="admin">Administrador</option>
+        <option value="pending">Pendientes</option>
       </select>
     </div>
   )

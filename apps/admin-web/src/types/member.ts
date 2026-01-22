@@ -16,7 +16,7 @@ export type MemberRow = {
     class_ids?: number[]
     class_names?: string[]
     avatar_url?: string | null
-    is_new_member?: boolean
+    role?: 'admin' | 'member' | 'instructor' | 'becado' | 'pending' | null
     estimated_monthly_fee?: number | null
 }
 
@@ -39,6 +39,7 @@ export type MemberPayload = {
     next_payment_due?: string
     emergency_contact?: string
     notes?: string
+    role?: 'admin' | 'member' | 'instructor' | 'becado' | 'pending'
 }
 
 export type ClassOption = {

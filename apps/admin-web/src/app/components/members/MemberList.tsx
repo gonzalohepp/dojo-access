@@ -91,6 +91,15 @@ export default function MemberList({
                   <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${isActive ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                     {isActive ? 'Activo' : 'Vencido'}
                   </div>
+                  {m.role && m.role !== 'member' && (
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${m.role === 'admin' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                      m.role === 'instructor' ? 'bg-purple-50 text-purple-600 border-purple-100' :
+                        m.role === 'becado' ? 'bg-orange-50 text-orange-600 border-orange-100' :
+                          'bg-amber-50 text-amber-600 border-amber-100' // pending
+                      }`}>
+                      {m.role}
+                    </div>
+                  )}
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-50 text-slate-500 border border-slate-100 text-[10px] font-black uppercase tracking-widest">
                     <Shield className="w-3 h-3" />
                     {(m.membership_type && ({
