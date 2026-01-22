@@ -24,6 +24,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import SubscriptionModal from '../components/profile/SubscriptionModal'
+import PhotoCropper from '../components/profile/PhotoCropper'
 import { fmtARS, fmtDate, fmtSchedule } from '@/lib/format'
 
 
@@ -82,6 +83,7 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false)
   const [notLogged, setNotLogged] = useState(false)
   const [showPayModal, setShowPayModal] = useState(false)
+  const [tempImage, setTempImage] = useState<string | null>(null)
 
   useEffect(() => {
     (async () => {
@@ -126,22 +128,37 @@ export default function ProfilePage() {
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
-      setUploading(true)
       if (!e.target.files || e.target.files.length === 0) return
+      const file = e.target.files[0]
+      const reader = new FileReader()
+      reader.addEventListener('load', () => {
+        setTempImage(reader.result as string)
+      })
+      reader.readAsDataURL(file)
+    } catch (error: any) {
+      alert(error.message)
+    }
+  }
+
+  const handleApplyCrop = async (blob: Blob) => {
+    try {
+      setUploading(true)
+      setTempImage(null)
 
       const { data: auth } = await supabase.auth.getUser()
       const userId = auth?.user?.id
 
       if (!userId) throw new Error("No authenticated user found")
 
-      const file = e.target.files[0]
-      const fileExt = file.name.split('.').pop()
-      // Use authenticated ID for storage path to ensure permission and consistency
-      const filePath = `${userId}/${Math.random()}.${fileExt}`
+      // Use a consistent extension for simplicity as it's a blob
+      const filePath = `${userId}/${Math.random()}.jpg`
 
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(filePath, file)
+        .upload(filePath, blob, {
+          contentType: 'image/jpeg',
+          upsert: true
+        })
 
       if (uploadError) throw uploadError
 
@@ -465,9 +482,20 @@ export default function ProfilePage() {
         onClose={() => setShowPayModal(false)}
         initialData={{
           principal: classes.find(c => c.is_principal)?.id,
-          additional: classes.filter(c => !c.is_principal && c.is_principal === false).map(c => c.id) // Note: filter might need to be robust
+          additional: classes.filter(c => !c.is_principal).map(c => c.id)
         }}
       />
+
+      {/* Cropper Modal */}
+      <AnimatePresence>
+        {tempImage && (
+          <PhotoCropper
+            image={tempImage}
+            onCancel={() => setTempImage(null)}
+            onCropComplete={handleApplyCrop}
+          />
+        )}
+      </AnimatePresence>
     </AdminLayout>
   )
 }
