@@ -72,7 +72,7 @@ const instructors = [
     name: "Damian Siri",
     role: "Instructor de Muay Thai",
     photo: "/damian.png",
-    position: "center top",
+    position: "center center",
     description:
       "Tres veces Campeón Argentino de Sanda. Experiencia en Tailandia en diferentes campamentos de entrenamiento. Pelea en el primer estadio de Muay Thai a nivel mundial Rajadamnern Stadium. Integrante como profesor equipo competitivo de Muay Thai de KMT. 15 años de experiencia en artes marciales.",
     specialties: ["Muay Thai"],

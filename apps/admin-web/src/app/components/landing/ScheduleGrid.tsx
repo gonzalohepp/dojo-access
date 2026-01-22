@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Clock, Dumbbell, Swords, Trophy, Sparkles, X } from "lucide-react"
 
@@ -92,44 +93,50 @@ type ScheduleKey = keyof typeof schedules
 const INFO_CLASES = {
   bjj: {
     descripcion: "El Jiu-Jitsu Brasileño se centra en la lucha cuerpo a cuerpo en el suelo, usando palancas y estrangulaciones para someter al oponente sin necesidad de golpes.",
-    requisitos: "Gi (Kimono), protector bucal y sandalias para transitar fuera del tatami.",
-    beneficios: "Defensa personal, quema calórica alta y desarrollo de paciencia bajo presión."
+    requisitos: "Ropa deportiva o kimono (se puede conseguir en dojo). Protector bucal recomendado.",
+    beneficios: "Mejora la fuerza funcional, la movilidad, la técnica, la concentración y la confianza, siendo apto tanto para defensa personal como para práctica recreativa y competitiva."
   },
   muay: {
-    descripcion: "Conocido como el 'Arte de las ocho extremidades', utiliza puños, codos, rodillas y espinillas. Incluye técnicas de clinch y derribos básicos.",
-    requisitos: "Vendas, guantes de 14/16oz, protectores de tibia y protector bucal.",
-    beneficios: "Resistencia cardiovascular extrema, potencia de golpeo y coordinación motriz."
+    descripcion: "El Muay Thai es un arte marcial de combate de pie que utiliza puños, codos, rodillas y patadas, con énfasis en técnica y resistencia.",
+    requisitos: "Ropa deportiva, vendas, guantes, protector bucal (los podes conseguir en el dojo).",
+    beneficios: "Mejora la condición física, la potencia, la coordinación y la confianza personal."
   },
   mma: {
-    descripcion: "Combina lo mejor del striking y el grappling. Aprenderás a transicionar entre el combate de pie y la lucha en el suelo de forma fluida.",
-    requisitos: "Guantillas de MMA, protector bucal, y ropa deportiva resistente (Rashguard).",
-    beneficios: "Es el entrenamiento más completo, mejora la agilidad y la capacidad de reacción."
+    descripcion: "Las Artes Marciales Mixtas combinan golpeo, derribos y lucha en el suelo, integrando distintas disciplinas en un sistema completo de combate.",
+    requisitos: "Ropa deportiva, vendas, protector bucal y guantes (se pueden conseguir en el dojo).",
+    beneficios: "Desarrolla condición física general, coordinación, resistencia y comprensión integral del combate."
   },
   grappling: {
-    descripcion: "Lucha de sumisión sin kimono. Se enfoca en el control posicional, derribos de lucha olímpica y llaves de articulación.",
-    requisitos: "Rashguard (remera de compresión) y bermudas sin cierres ni bolsillos.",
-    beneficios: "Mejora la fuerza explosiva, el equilibrio y la velocidad mental."
+    descripcion: "El Grappling es lucha cuerpo a cuerpo sin kimono, enfocada en derribos, control, transiciones y sumisiones, con un ritmo más dinámico.",
+    requisitos: "Ropa deportiva ajustada (rashguard o similar). Protector bucal recomendado.",
+    beneficios: "Mejora la movilidad, el control corporal y la eficacia en situaciones reales y competitivas."
   },
   judo: {
-    descripcion: "Arte marcial basado en proyecciones y derribos utilizando el peso del oponente. También incluye técnicas de inmovilización en el suelo.",
-    requisitos: "Judogi grueso y cinturón correspondiente.",
-    beneficios: "Postura perfecta, respeto absoluto y una base sólida de derribos."
+    descripcion: "El Judo es un arte marcial basado en proyecciones, desequilibrios y control en el suelo, priorizando el uso eficiente de la fuerza.",
+    requisitos: "Kimono de judo o ropa resistente para comenzar.",
+    beneficios: "Desarrolla fuerza, equilibrio, coordinación y disciplina, con una base técnica sólida y formativa."
   },
   kids: {
-    descripcion: "Clases diseñadas para niños donde se enseña la base del BJJ a través de juegos y disciplina. Fomentamos el compañerismo y el respeto.",
-    requisitos: "Kimono infantil y muchas ganas de divertirse.",
-    beneficios: "Psicomotricidad, confianza frente al bullying y disciplina desde temprana edad."
+    descripcion: "El Jiu-Jitsu Infantil enseña a niños y niñas a controlar su cuerpo, respetar normas y resolver situaciones físicas de forma segura, a través del juego y la técnica.",
+    requisitos: "Ropa cómoda o kimono (se puede conseguir en el dojo).",
+    beneficios: "Mejora la coordinación, la disciplina, la confianza y el autocontrol, en un entorno cuidado y formativo."
   },
   fem: {
-    descripcion: "Espacio exclusivo para mujeres enfocado en técnicas de defensa personal y BJJ deportivo en un ambiente de apoyo mutuo.",
-    requisitos: "Kimono y ropa cómoda debajo.",
-    beneficios: "Empoderamiento, comunidad femenina y seguridad personal."
+    descripcion: "La clase de Jiu-Jitsu Femenino es un espacio de entrenamiento recreativo destinado exclusivamente a mujeres, pensado para aprender y practicar Jiu-Jitsu Brasileño de forma progresiva, técnica y en un ambiente cómodo y de acompañamiento.",
+    requisitos: "Ropa deportiva o kimono (se puede conseguir en dojo). Protector bucal recomendado.",
+    beneficios: "Mejora la fuerza funcional, la movilidad, la técnica, la concentración y la confianza, siendo apto tanto para defensa personal como para práctica recreativa y competitiva."
   }
 }
 
 export function ScheduleGrid() {
   const [activeTab, setActiveTab] = useState<ScheduleKey>("martiales")
   const [selectedClass, setSelectedClass] = useState<MartialClass | null>(null)
+  const [isMounted, setIsMounted] = useState(false)
+
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
   const currentSchedule = schedules[activeTab]
 
   // ACA CAMBIO LOS COLORES DE LAS CARDS
@@ -354,116 +361,109 @@ export function ScheduleGrid() {
           )}
         </motion.div>
       </AnimatePresence>
-      {/* Modal / Popup */}
-      <AnimatePresence>
-        {selectedClass && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            {/* Fondo desenfocado */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedClass(null)}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md"
-            />
+      {/* Modal / Popup - Using Portal to ensure it's always centered in the viewport */}
+      {isMounted && createPortal(
+        <AnimatePresence>
+          {selectedClass && (
+            <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 pointer-events-none">
+              {/* Fondo desenfocado */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSelectedClass(null)}
+                className="absolute inset-0 bg-black/80 backdrop-blur-md pointer-events-auto"
+              />
 
-            {/* Tarjeta del Modal */}
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.9, opacity: 0, y: 20 }}
-              // 📍 CAMBIO 1: Quitamos el padding (p-8) y el background aquí.
-              // Agregamos 'overflow-hidden' y un color base oscuro.
-              className={`relative w-full max-w-lg rounded-[2.5rem] border border-white/20 shadow-2xl shadow-black overflow-hidden bg-zinc-900`}
-            >
+              {/* Tarjeta del Modal */}
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                animate={{ scale: 1, opacity: 1, y: 0 }}
+                exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className={`relative w-full max-w-lg rounded-[2.5rem] border border-white/20 shadow-2xl shadow-black overflow-hidden bg-zinc-900 pointer-events-auto max-h-[90vh] flex flex-col`}
+              >
 
-              {/* 📍 ZONA DE VIDEO (Se muestra solo si es BJJ) */}
-              {selectedClass.tipo === 'bjj' && (
-                <div className="absolute inset-0 z-0">
-                  <video
-                    autoPlay
-                    loop
-                    muted
-                    playsInline
-                    preload="auto"
-                    // 📍 REEMPLAZA ESTE LINK por el de tu video propio (ej: "/videos/bjj-demo.mp4")
-                    src="/bjj.mp4"
-                    // 'object-cover' hace que rellene todo el espacio sin deformarse
-                    className="w-full h-full object-cover"
-                  />
-                  {/* Capa azulada para teñir el video y que combine con la marca */}
-                  <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply" />
-                  {/* Degradado negro desde abajo para asegurar que el texto blanco se lea bien */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
-                </div>
-              )}
-
-              {/* 📍 ZONA DE CONTENIDO (Texto y botones) */}
-              {/* Usamos 'relative z-10' para que quede POR ENCIMA del video. */}
-              {/* Si NO es bjj, aplicamos el fondo degradado normal aquí. Si ES bjj, fondo transparente. */}
-              <div className={`relative z-10 p-8 h-full ${selectedClass.tipo !== 'bjj' ? `bg-gradient-to-br ${getStyles(selectedClass.tipo)}` : ''}`}>
-
-                {/* Botón Cerrar */}
-                <button
-                  onClick={() => setSelectedClass(null)}
-                  className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors bg-black/20 p-2 rounded-full backdrop-blur-sm"
-                >
-                  <X className="w-6 h-6" />
-                </button>
-
-                <div className="space-y-6">
-                  <div>
-                    <span className="text-white/80 font-black tracking-widest text-xs uppercase">Información de Clase</span>
-                    {/* Añadí una sombra sutil al texto para que resalte más sobre el video */}
-                    <h2 className="text-5xl font-black text-white italic leading-none mt-2 drop-shadow-lg">
-                      {selectedClass.nombre}
-                    </h2>
-                    {selectedClass.subtitle && (
-                      <span className="inline-block mt-2 bg-white/20 px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-tighter backdrop-blur-md">
-                        {selectedClass.subtitle}
-                      </span>
-                    )}
+                {/* 📍 ZONA DE VIDEO (Se muestra solo si es BJJ) */}
+                {selectedClass.tipo === 'bjj' && (
+                  <div className="absolute inset-0 z-0">
+                    <video
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                      src="/bjj.mp4"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
                   </div>
+                )}
 
-                  <div className="flex gap-3">
-                    <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl flex items-center gap-2 border border-white/10">
-                      <Clock className="w-4 h-4 text-blue-400" />
-                      <span className="text-white font-bold text-sm">{selectedClass.horario}</span>
-                    </div>
-                  </div>
+                {/* 📍 ZONA DE CONTENIDO (Texto y botones) - Contenedor con scroll para mobile */}
+                <div className={`relative z-10 p-8 h-full overflow-y-auto scrollbar-none ${selectedClass.tipo !== 'bjj' ? `bg-gradient-to-br ${getStyles(selectedClass.tipo)}` : ''}`}>
 
-                  <div className="space-y-4">
-                    <p className="text-white/90 leading-relaxed font-medium drop-shadow-sm">
-                      {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES]?.descripcion ||
-                        "Prepárate para una sesión intensa de entrenamiento. Consulta con el profesor los requisitos de equipo."}
-                    </p>
-
-                    {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES] && (
-                      <div className="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-white/10">
-                        <h4 className="text-blue-300 font-black text-xs uppercase mb-1 italic">Requisitos:</h4>
-                        <p className="text-white/80 text-sm italic mb-3">
-                          {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES].requisitos}
-                        </p>
-                        <h4 className="text-green-300 font-black text-xs uppercase mb-1 italic">Beneficios:</h4>
-                        <p className="text-white/80 text-sm italic">
-                          {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES].beneficios}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
+                  {/* Botón Cerrar */}
                   <button
                     onClick={() => setSelectedClass(null)}
-                    className="w-full bg-white/90 backdrop-blur-sm text-black font-black py-4 rounded-2xl hover:bg-white transition-all active:scale-95 uppercase tracking-widest shadow-lg"
+                    className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors bg-black/20 p-2 rounded-full backdrop-blur-sm z-50"
                   >
-                    Cerrar Detalles
+                    <X className="w-6 h-6" />
                   </button>
+
+                  <div className="space-y-6">
+                    <div>
+                      <span className="text-white/80 font-black tracking-widest text-xs uppercase">Información de Clase</span>
+                      <h2 className="text-4xl md:text-5xl font-black text-white italic leading-none mt-2 drop-shadow-lg">
+                        {selectedClass.nombre}
+                      </h2>
+                      {selectedClass.subtitle && (
+                        <span className="inline-block mt-2 bg-white/20 px-3 py-1 rounded-full text-xs font-bold text-white uppercase tracking-tighter backdrop-blur-md">
+                          {selectedClass.subtitle}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex gap-3">
+                      <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-xl flex items-center gap-2 border border-white/10">
+                        <Clock className="w-4 h-4 text-blue-400" />
+                        <span className="text-white font-bold text-sm">{selectedClass.horario}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <p className="text-white/90 leading-relaxed font-medium drop-shadow-sm">
+                        {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES]?.descripcion ||
+                          "Prepárate para una sesión intensa de entrenamiento. Consulta con el profesor los requisitos de equipo."}
+                      </p>
+
+                      {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES] && (
+                        <div className="bg-black/30 backdrop-blur-md p-4 rounded-2xl border border-white/10">
+                          <h4 className="text-blue-300 font-black text-xs uppercase mb-1 italic">Requisitos:</h4>
+                          <p className="text-white/80 text-sm italic mb-3">
+                            {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES].requisitos}
+                          </p>
+                          <h4 className="text-green-300 font-black text-xs uppercase mb-1 italic">Beneficios:</h4>
+                          <p className="text-white/80 text-sm italic">
+                            {INFO_CLASES[selectedClass.tipo as keyof typeof INFO_CLASES].beneficios}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      onClick={() => setSelectedClass(null)}
+                      className="w-full bg-white/90 backdrop-blur-sm text-black font-black py-4 rounded-2xl hover:bg-white transition-all active:scale-95 uppercase tracking-widest shadow-lg mt-4"
+                    >
+                      Cerrar Detalles
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
     </div>
   )
 }
