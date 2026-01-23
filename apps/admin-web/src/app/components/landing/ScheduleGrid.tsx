@@ -383,24 +383,33 @@ export function ScheduleGrid() {
                 className={`relative w-full max-w-lg rounded-[2.5rem] border border-white/20 shadow-2xl shadow-black overflow-hidden bg-zinc-900 pointer-events-auto max-h-[90vh] flex flex-col`}
               >
 
-                {/* 📍 ZONA DE VIDEO (Se muestra solo si es BJJ) */}
-                {selectedClass.tipo === 'bjj' && (
+                {/* 📍 ZONA DE VIDEO (Se muestra si el tipo tiene video asignado) */}
+                {['bjj', 'grappling', 'fem', 'mma'].includes(selectedClass.tipo) && (
                   <div className="absolute inset-0 z-0">
                     <video
                       autoPlay
                       loop
                       muted
                       playsInline
-                      src="/bjj.mp4"
+                      src={
+                        selectedClass.tipo === 'grappling' ? '/gpp.mp4' :
+                          selectedClass.tipo === 'fem' ? '/bjj_fem.mp4' :
+                            selectedClass.tipo === 'mma' ? '/mma.mp4' :
+                              '/bjj.mp4'
+                      }
                       className="w-full h-full object-cover"
                     />
-                    <div className="absolute inset-0 bg-blue-900/60 mix-blend-multiply" />
+                    <div className={`absolute inset-0 mix-blend-multiply ${selectedClass.tipo === 'grappling' ? 'bg-indigo-900/60' :
+                        selectedClass.tipo === 'fem' ? 'bg-pink-900/60' :
+                          selectedClass.tipo === 'mma' ? 'bg-red-900/60' :
+                            'bg-blue-900/60'
+                      }`} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
                   </div>
                 )}
 
                 {/* 📍 ZONA DE CONTENIDO (Texto y botones) - Contenedor con scroll para mobile */}
-                <div className={`relative z-10 p-8 h-full overflow-y-auto scrollbar-none ${selectedClass.tipo !== 'bjj' ? `bg-gradient-to-br ${getStyles(selectedClass.tipo)}` : ''}`}>
+                <div className={`relative z-10 p-8 h-full overflow-y-auto scrollbar-none ${!['bjj', 'grappling', 'fem', 'mma'].includes(selectedClass.tipo) ? `bg-gradient-to-br ${getStyles(selectedClass.tipo)}` : ''}`}>
 
                   {/* Botón Cerrar */}
                   <button

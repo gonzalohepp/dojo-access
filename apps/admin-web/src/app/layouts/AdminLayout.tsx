@@ -30,7 +30,7 @@ import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 type Notification = {
   id: string
-  type: 'access_denied' | 'fraud' | 'pending_user'
+  type: 'access_denied' | 'fraud'
   title: string
   description: string
   timestamp: string
@@ -38,7 +38,7 @@ type Notification = {
   read: boolean
 }
 
-type Role = 'admin' | 'member' | 'instructor' | 'becado' | 'pending'
+type Role = 'admin' | 'member' | 'instructor' | 'becado'
 type Profile = {
   user_id: string
   email: string | null
@@ -103,13 +103,8 @@ export default function AdminLayout({ children, active }: { children: React.Reac
       .order('scanned_at', { ascending: false })
       .limit(20) // Fetch more to account for dismissed
 
-    // 2. Fetch Pending Users
-    const { data: pending } = await supabase
-      .from('profiles')
-      .select('user_id, first_name, last_name, email, created_at')
-      .eq('role', 'pending')
-      .order('created_at', { ascending: false })
-      .limit(10)
+      .order('scanned_at', { ascending: false })
+      .limit(20) // Fetch more to account for dismissed
 
     const mappedLogs: Notification[] = (logs || [])
       .filter(l => !dismissed.includes(l.id.toString()))
@@ -122,19 +117,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
         read: true
       }))
 
-    const mappedPending: Notification[] = (pending || [])
-      .filter(p => !dismissed.includes(p.user_id))
-      .map(p => ({
-        id: p.user_id,
-        type: 'pending_user',
-        title: 'Nuevo Registro',
-        description: `${p.first_name || ''} ${p.last_name || ''} (${p.email}) pendiente de aprobación.`,
-        timestamp: p.created_at || new Date().toISOString(),
-        link: `/members?new_id=${p.user_id}&new_email=${p.email}&new_name=${encodeURIComponent(`${p.first_name || ''} ${p.last_name || ''}`.trim())}`,
-        read: true
-      }))
-
-    const combined = [...mappedLogs, ...mappedPending]
+    const combined = [...mappedLogs]
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, 15)
 
@@ -253,29 +236,6 @@ export default function AdminLayout({ children, active }: { children: React.Reac
                 })
               }
             }
-          }
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'profiles' },
-        (payload) => {
-          const p = payload.new as any
-          if (p.role === 'pending') {
-            const newNotif: Notification = {
-              id: p.user_id,
-              type: 'pending_user',
-              title: 'Solicitud de Registro',
-              description: `${p.first_name || ''} ${p.last_name || ''} pendiente de aprobación.`,
-              timestamp: p.created_at || new Date().toISOString(),
-              link: `/members?new_id=${p.user_id}&new_email=${p.email}&new_name=${encodeURIComponent(`${p.first_name || ''} ${p.last_name || ''}`.trim())}`,
-              read: false
-            }
-            setNotifications(prev => [newNotif, ...prev].slice(0, 15))
-            toast.info('Nueva Solicitud', {
-              description: `${p.email} se ha logueado.`,
-              duration: 8000
-            })
           }
         }
       )
@@ -507,7 +467,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
                                       }`}>
                                       {n.type === 'access_denied' ? <ShieldAlert className="w-5 h-5" /> :
                                         n.type === 'fraud' ? <AlertTriangle className="w-5 h-5" /> :
-                                          <UserPlus className="w-5 h-5" />}
+                                          <Bell className="w-5 h-5" />}
                                     </div>
                                     <div className="flex-1 min-w-0">
                                       <p className="text-xs font-black text-slate-900 dark:text-white leading-tight mb-1 uppercase tracking-tight">{n.title}</p>

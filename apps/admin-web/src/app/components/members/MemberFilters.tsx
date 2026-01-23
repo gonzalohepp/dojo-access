@@ -4,7 +4,7 @@ type Filters = {
   status: 'todos' | 'activo' | 'vencido'
   membership: 'todos' | 'monthly' | 'quarterly' | 'semiannual' | 'annual'
   className: 'todas' | string
-  role: 'todos' | 'admin' | 'member' | 'instructor' | 'becado' | 'pending'
+  role: 'todos' | 'admin' | 'member' | 'instructor' | 'becado'
 }
 
 type ClassOpt = { id: number; name: string }
@@ -69,7 +69,6 @@ export default function MemberFilters({
         <option value="instructor">Instructores</option>
         <option value="becado">Becados</option>
         <option value="admin">Administrador</option>
-        <option value="pending">Pendientes</option>
       </select>
     </div>
   )

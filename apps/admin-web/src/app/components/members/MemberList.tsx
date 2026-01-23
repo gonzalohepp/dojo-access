@@ -94,8 +94,7 @@ export default function MemberList({
                   {m.role && m.role !== 'member' && (
                     <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border ${m.role === 'admin' ? 'bg-blue-50 text-blue-600 border-blue-100' :
                       m.role === 'instructor' ? 'bg-purple-50 text-purple-600 border-purple-100' :
-                        m.role === 'becado' ? 'bg-orange-50 text-orange-600 border-orange-100' :
-                          'bg-amber-50 text-amber-600 border-amber-100' // pending
+                        'bg-orange-50 text-orange-600 border-orange-100' // becado
                       }`}>
                       {m.role}
                     </div>
@@ -131,7 +130,11 @@ export default function MemberList({
                     </div>
                     <div className="flex flex-col">
                       <span className="text-[10px] font-black text-slate-400 uppercase leading-none mb-0.5">Vencimiento</span>
-                      <span className={isActive ? 'text-slate-900' : 'text-red-600 font-bold'}>{fmtDate(m.next_payment_due)}</span>
+                      <span className={isActive ? 'text-slate-900' : 'text-red-600 font-bold'}>
+                        {m.next_payment_due === '2099-12-31'
+                          ? 'VITALICIA'
+                          : fmtDate(m.next_payment_due)}
+                      </span>
                     </div>
                   </div>
                 </div>

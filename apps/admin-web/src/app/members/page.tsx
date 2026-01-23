@@ -54,7 +54,7 @@ function MembersContent() {
     status: 'todos' as 'todos' | 'activo' | 'vencido',
     membership: 'todos' as 'todos' | 'monthly' | 'quarterly' | 'semiannual' | 'annual',
     className: 'todas' as 'todas' | string,
-    role: 'todos' as 'todos' | 'admin' | 'member' | 'instructor' | 'becado' | 'pending'
+    role: 'todos' as 'todos' | 'admin' | 'member' | 'instructor' | 'becado'
   })
   const [q, setQ] = useState('')
   const [confirmingId, setConfirmingId] = useState<string | null>(null)
@@ -254,7 +254,7 @@ function MembersContent() {
       payload.access_code?.trim() || (await generateAccessCode(payload.full_name))
 
     // EDITAR (o actualizar usuario existente)
-    // Importante: si editing.status es undefined es que es un "nuevo" via pending
+    // Importante: si pasamos `editing` con datos, se comporta como editar.
     // Pero en el modal actual, si pasamos `editing` con datos, se comporta como editar.
     // Usaremos el endpoint de creación para todo lo que no sea una edición de un Miembro ya Activo/Inactivo
     if (editing && editing.status) {
@@ -322,7 +322,7 @@ function MembersContent() {
       return
     }
 
-    // CREAR (incluyendo los que vienen de 'pending')
+    // CREAR
     try {
       const res = await fetch('/api/members/create', {
         method: 'POST',

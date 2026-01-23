@@ -69,6 +69,8 @@ export default function MetricasPage() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [memberships, setMemberships] = useState<Membership[]>([])
   const [totalMembers, setTotalMembers] = useState(0)
+  const [activeMembers, setActiveMembers] = useState(0)
+  const [activeUserIds, setActiveUserIds] = useState<Set<string>>(new Set())
   const [accessLogsToday, setAccessLogsToday] = useState<number>(0)
   const [recentAccesses, setRecentAccesses] = useState<any[]>([])
   const [landingEvents, setLandingEvents] = useState<any[]>([])
@@ -83,11 +85,16 @@ export default function MetricasPage() {
     const fetchData = async () => {
       setLoading(true)
 
-      const { count: profilesCount } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('role', 'member')
-      setTotalMembers(profilesCount || 0)
+      const { data: viewData } = await supabase
+        .from('members_with_status')
+        .select('user_id, status, role')
+
+      const allViewRows = (viewData || [])
+      setTotalMembers(allViewRows.filter(r => r.role !== 'admin').length)
+      const activeIds = allViewRows.filter(r => r.status === 'activo' && r.role !== 'admin').map(r => r.user_id)
+      setActiveMembers(activeIds.length)
+      setActiveUserIds(new Set(activeIds))
+
 
       const sixMonthsAgo = startOfMonth(addDays(today(), -180))
       const { data: memb } = await supabase
@@ -151,16 +158,6 @@ export default function MetricasPage() {
 
   /* ================= KPIs ================= */
 
-  const activeUserIds = useMemo(() => {
-    const now = today()
-    const set = new Set<string>()
-    memberships.forEach(m => {
-      if (m.end_date && tzDate(m.end_date) >= now) set.add(m.member_id)
-    })
-    return set
-  }, [memberships])
-
-  const activeMembers = activeUserIds.size
 
   const expiring7d = useMemo(() => {
     const start = today()

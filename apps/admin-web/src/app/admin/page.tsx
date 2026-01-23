@@ -57,7 +57,6 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [payments, setPayments] = useState<PayRow[]>([])
   const [access, setAccess] = useState<AccessRow[]>([])
-  const [pendingUsers, setPendingUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -87,7 +86,6 @@ export default function AdminDashboard() {
         { data: s, error: se },
         { data: p, error: pe },
         { data: a, error: ae },
-        { data: u, error: ue },
       ] = await Promise.all([
         supabase.from('dashboard_stats').select('*').maybeSingle(),
         supabase
@@ -100,26 +98,13 @@ export default function AdminDashboard() {
           .select('scanned_at, result, reason, profiles!access_logs_user_id_fkey(first_name,last_name,avatar_url)')
           .order('scanned_at', { ascending: false })
           .limit(10),
-        supabase
-          .from('profiles')
-          .select('user_id, first_name, last_name, email')
-          .eq('role', 'pending')
       ])
 
       if (se) throw se
       if (pe) throw pe
       if (ae) throw ae
 
-      if (ue) {
-        if (ue.code === '22P02') {
-          console.warn('[Dashboard] Enum mismatch for "pending" role. Registrations list will be hidden until SQL is run.')
-        } else {
-          throw ue
-        }
-      }
-
       setStats(s as Stats)
-      setPendingUsers(u || [])
 
       const mappedPayments = (p ?? []).map((r) => {
         const row = r as {
@@ -176,14 +161,6 @@ export default function AdminDashboard() {
         { event: '*', schema: 'public', table: 'payments' },
         () => {
           console.debug('[Realtime] Payment change detected')
-          fetchData()
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'profiles', filter: "role=eq.pending" },
-        () => {
-          console.debug('[Realtime] Pending user change detected')
           fetchData()
         }
       )
@@ -295,17 +272,6 @@ export default function AdminDashboard() {
             />
           </section>
 
-          {/* Nuevos Registros */}
-          <div className="mb-10">
-            <RegistrationRequests
-              users={pendingUsers}
-              loading={loading}
-              onAdd={(u) => {
-                const name = `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim()
-                router.push(`/members?new_id=${u.user_id}&new_email=${u.email}&new_name=${encodeURIComponent(name || 'Nuevo Usuario')}`)
-              }}
-            />
-          </div>
 
 
           {/* Activity Section */}

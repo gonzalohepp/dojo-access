@@ -31,7 +31,7 @@ export default function MemberForm({
     next_payment_due: lastDayOfMonth(new Date()).toISOString().slice(0, 10),
     emergency_contact: '',
     notes: '',
-    role: 'member' as 'admin' | 'member' | 'instructor' | 'becado' | 'pending',
+    role: 'member' as 'admin' | 'member' | 'instructor' | 'becado',
   })
   const [manualCode, setManualCode] = useState(false)
 
@@ -47,7 +47,8 @@ export default function MemberForm({
         email: member.email ?? '',
         phone: member.phone ?? '',
         access_code: member.access_code ?? '',
-        principal_class: member.class_ids?.[0] ?? null, // Fallback: first one as principal for old data
+        // These will be corrected in the class_enrollments fetch below
+        principal_class: member.class_ids?.[0] ?? null,
         additional_classes: member.class_ids?.slice(1) ?? [],
         membership_type: (member.membership_type ? ({
           monthly: 'mensual', quarterly: 'trimestral', semiannual: 'semestral', annual: 'anual'
@@ -58,7 +59,23 @@ export default function MemberForm({
         role: (member as any).role ?? 'member',
       }))
 
-      // Fetch exact membership dates (start_date vs last_payment_date)
+      // 1. Fetch exact enrollment status (principal vs additional)
+      supabase.from('class_enrollments')
+        .select('class_id, is_principal')
+        .eq('user_id', member.user_id)
+        .then(({ data: enrollments }) => {
+          if (enrollments && enrollments.length > 0) {
+            const principal = enrollments.find(e => e.is_principal)?.class_id || enrollments[0].class_id
+            const additionals = enrollments.filter(e => e.class_id !== principal).map(e => e.class_id)
+            setForm(prev => ({
+              ...prev,
+              principal_class: principal,
+              additional_classes: additionals
+            }))
+          }
+        })
+
+      // 2. Fetch exact membership dates
       supabase.from('memberships')
         .select('start_date, last_payment_date')
         .eq('member_id', member.user_id)
@@ -278,7 +295,6 @@ export default function MemberForm({
               <option value="instructor">Instructor</option>
               <option value="becado">Becado</option>
               <option value="admin">Administrador</option>
-              <option value="pending">Pendiente</option>
             </select>
             <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rol de Usuario</div>
           </div>
@@ -338,7 +354,11 @@ export default function MemberForm({
               <Calendar className="w-5 h-5" />
             </div>
             <div className={`${inputClass} flex items-center bg-slate-100 cursor-not-allowed`}>
-              {new Date(form.next_payment_due + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+              {form.next_payment_due === '2099-12-31'
+                ? 'VITALICIA'
+                : form.next_payment_due
+                  ? new Date(form.next_payment_due + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                  : '—'}
             </div>
             <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Vence Automáticamente</div>
           </div>

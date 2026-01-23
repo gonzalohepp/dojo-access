@@ -47,7 +47,7 @@ export default async function HomePage() {
     profile = byEmail
   }
 
-  // 🔹 Si sigue sin haber perfil, lo creamos como 'pending'
+  // 🔹 Si sigue sin haber perfil, lo creamos como 'member'
   if (!profile && !profileErr) {
     const { data: newProfile, error: createErr } = await supabase
       .from('profiles')
@@ -56,25 +56,25 @@ export default async function HomePage() {
         email: user.email,
         first_name: user.user_metadata?.first_name || '',
         last_name: user.user_metadata?.last_name || '',
-        role: 'pending',
+        role: 'member',
         access_code: null
       })
       .select('user_id, role, email')
       .single()
 
     if (createErr) {
-      console.error('[app/page] Error creating pending profile:', createErr)
+      console.error('[app/page] Error creating member profile:', createErr)
     } else {
       profile = newProfile
     }
   }
 
   // 🔹 Redirección por rol
-  const role = profile?.role ?? 'pending'
+  const role = profile?.role ?? 'member'
   if (role === 'admin' || role === 'instructor') {
     redirect('/admin')
   } else {
-    // Si es member o pending, va a validate
+    // Si es member, va a validate
     // (En validate ya se maneja el caso de que no sea activo)
     redirect('/validate')
   }

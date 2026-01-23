@@ -44,7 +44,7 @@ type MemberRow = {
   expires_at?: string | null
   status?: string | null
   avatar_url?: string | null
-  role?: 'admin' | 'member' | 'instructor' | 'becado' | 'pending' | null
+  role?: 'admin' | 'member' | 'instructor' | 'becado' | null
 }
 
 type ClassRow = {
@@ -288,8 +288,7 @@ export default function ProfilePage() {
                           {member.role === 'admin' ? 'Administrador' :
                             member.role === 'instructor' ? 'Instructor' :
                               member.role === 'becado' ? 'Becado' :
-                                member.role === 'pending' ? 'Pendiente' :
-                                  'Socio Activo'}
+                                'Socio Activo'}
                         </span>
                       </p>
                     </div>
@@ -333,11 +332,13 @@ export default function ProfilePage() {
                         </p>
                         <div>
                           <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter mb-4">
-                            {member.next_payment_due && new Date(member.next_payment_due + 'T12:00:00') < new Date()
-                              ? `Venció el ${fmtDate(member.next_payment_due)}`
-                              : fmtDate(member.next_payment_due)}
+                            {member.next_payment_due === '2099-12-31'
+                              ? 'SIN VENCIMIENTO'
+                              : member.next_payment_due && new Date(member.next_payment_due + 'T12:00:00') < new Date()
+                                ? `Venció el ${fmtDate(member.next_payment_due)}`
+                                : fmtDate(member.next_payment_due)}
                           </p>
-                          {daysLeft !== null && (
+                          {daysLeft !== null && member.next_payment_due && member.next_payment_due !== '2099-12-31' && (
                             <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
@@ -348,6 +349,7 @@ export default function ProfilePage() {
                           )}
                           <p className="text-xs font-bold text-slate-400 mt-2">
                             {(() => {
+                              if (member.next_payment_due === '2099-12-31') return 'Tu membresía es vitalicia'
                               if (daysLeft !== null && daysLeft > 0) return `Quedan ${daysLeft} días de entrenamiento`
 
                               // Logic for expired/grace period messaging
