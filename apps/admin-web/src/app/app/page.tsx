@@ -1,8 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import StudentDashboard from './StudentDashboard'
-import StudentLayout from '../layouts/StudentLayout'
 
 export default async function HomePage() {
   const cookieStore = await cookies()
@@ -71,17 +69,12 @@ export default async function HomePage() {
     }
   }
 
-
   // 🔹 Redirección por rol
   const role = profile?.role ?? 'member'
   if (role === 'admin' || role === 'instructor') {
     redirect('/admin')
   } else {
-    // Si es member, mostramos el Dashboard de Alumno dentro del Layout
-    return (
-      <StudentLayout>
-        <StudentDashboard user={user} />
-      </StudentLayout>
-    )
+    // Si es member, va a validate
+    redirect('/validate')
   }
 }
