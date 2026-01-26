@@ -37,7 +37,7 @@ export default function AcademiesMapSection({ minimal = false }: { minimal?: boo
     if (minimal) {
         return <PublicMap
             academies={displayAcademies}
-            initialCenter={[-34.74, -58.24]}
+            initialCenter={[-34.775826, -58.252102]}
             initialZoom={13}
             hideSidebar={true}
         />
