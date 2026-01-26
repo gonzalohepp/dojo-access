@@ -2,8 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
 import {
   CheckCircle, XCircle, Download, Search,
   Calendar, ChevronLeft, ChevronRight,
@@ -35,39 +33,45 @@ export default function AccessLogPage() {
   const [from, setFrom] = useState<string>('')
   const [to, setTo] = useState<string>('')
 
-  const fetchLogs = async () => {
-    setIsLoading(true)
-
-    // Fetch with profiles join to get member name
-    const { data, error } = await supabase
-      .from('access_logs')
-      .select(`
-        *,
-        profiles!access_logs_user_id_fkey (
-          first_name,
-          last_name
-        )
-      `)
-      .order('scanned_at', { ascending: false })
-
-    if (error) {
-      console.error('Error fetching logs:', error)
-      setLogs([])
-    } else {
-      const mapped = (data || []).map((l: { id: string | number; scanned_at: string; result: string; reason?: string | null; user_id: string; profiles?: { first_name?: string; last_name?: string } | null }) => ({
-        id: l.id,
-        scanned_at: l.scanned_at,
-        member_name: l.profiles ? `${l.profiles.first_name || ''} ${l.profiles.last_name || ''}`.trim() : 'Desconocido',
-        result: l.result,
-        reason: l.reason,
-        member_id: l.user_id
-      }))
-      setLogs(mapped)
-    }
-    setIsLoading(false)
-  }
+  // Enhanced setters to reset pagination
+  const setQWrapper = (val: string) => { setQ(val); setCurrentPage(1); }
+  const setFromWrapper = (val: string) => { setFrom(val); setCurrentPage(1); }
+  const setToWrapper = (val: string) => { setTo(val); setCurrentPage(1); }
+  const setResultadoWrapper = (val: 'todos' | 'autorizado' | 'denegado') => { setResultado(val); setCurrentPage(1); }
 
   useEffect(() => {
+    const fetchLogs = async () => {
+      setIsLoading(true)
+
+      // Fetch with profiles join to get member name
+      const { data, error } = await supabase
+        .from('access_logs')
+        .select(`
+          *,
+          profiles!access_logs_user_id_fkey (
+            first_name,
+            last_name
+          )
+        `)
+        .order('scanned_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching logs:', error)
+        setLogs([])
+      } else {
+        const mapped = (data || []).map((l: any) => ({
+          id: l.id,
+          scanned_at: l.scanned_at,
+          member_name: l.profiles ? `${l.profiles.first_name || ''} ${l.profiles.last_name || ''}`.trim() : 'Desconocido',
+          result: l.result,
+          reason: l.reason,
+          member_id: l.user_id
+        }))
+        setLogs(mapped)
+      }
+      setIsLoading(false)
+    }
+
     fetchLogs()
   }, [])
 
@@ -111,11 +115,6 @@ export default function AccessLogPage() {
       endIndex: end
     }
   }, [filteredLogs, currentPage])
-
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [q, from, to, resultado])
 
   const exportToCSV = () => {
     const rows = filteredLogs.map((log) => [
@@ -217,7 +216,7 @@ export default function AccessLogPage() {
               <input
                 type="text"
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
+                onChange={(e) => setQWrapper(e.target.value)}
                 placeholder="Buscar por nombre de socio..."
                 className="w-full h-12 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 pl-11 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none focus:ring-4 focus:ring-blue-500/10 focus:border-blue-500/50 transition-all"
               />
@@ -228,7 +227,7 @@ export default function AccessLogPage() {
               <input
                 type="date"
                 value={from}
-                onChange={(e) => setFrom(e.target.value)}
+                onChange={(e) => setFromWrapper(e.target.value)}
                 className="flex-1 h-12 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500/50 transition-all"
               />
             </div>
@@ -238,7 +237,7 @@ export default function AccessLogPage() {
               <input
                 type="date"
                 value={to}
-                onChange={(e) => setTo(e.target.value)}
+                onChange={(e) => setToWrapper(e.target.value)}
                 className="flex-1 h-12 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 text-xs font-bold text-slate-700 dark:text-slate-200 outline-none focus:border-blue-500/50 transition-all"
               />
             </div>
@@ -246,7 +245,7 @@ export default function AccessLogPage() {
             <div className="md:col-span-2 relative group">
               <SelectUi
                 value={resultado}
-                onChange={(v) => setResultado(v as typeof resultado)}
+                onChange={(v) => setResultadoWrapper(v as typeof resultado)}
                 options={[
                   { value: 'todos', label: 'Todos' },
                   { value: 'autorizado', label: 'Autorizados' },

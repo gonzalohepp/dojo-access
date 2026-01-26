@@ -32,6 +32,7 @@ export default function ReportesPage() {
     const [members, setMembers] = useState<Member[]>([])
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
+    const [now] = useState(() => Date.now())
 
     useEffect(() => {
         async function fetchData() {
@@ -46,7 +47,7 @@ export default function ReportesPage() {
             if (!membersData) return
 
             // 2. Obtener el último acceso de cada uno en los últimos 30 días
-            const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+            const thirtyDaysAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString()
             const { data: logs } = await supabase
                 .from('access_logs')
                 .select('user_id, scanned_at')
@@ -72,10 +73,10 @@ export default function ReportesPage() {
         }
 
         fetchData()
-    }, [])
+    }, [now])
 
     const absentMembers = useMemo(() => {
-        const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000
+        const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000
         return members
             .filter(m => {
                 if (!m.last_access) return true // Nunca vino en 30 días
@@ -90,7 +91,7 @@ export default function ReportesPage() {
                 if (!b.last_access) return 1
                 return new Date(a.last_access).getTime() - new Date(b.last_access).getTime()
             })
-    }, [members, search])
+    }, [members, search, now])
 
     return (
         <AdminLayout active="/reportes">
@@ -228,7 +229,7 @@ export default function ReportesPage() {
                                                                 {new Date(m.last_access).toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}
                                                             </div>
                                                             <div className="text-[10px] text-red-500 font-black uppercase tracking-widest">
-                                                                Hace {Math.floor((Date.now() - new Date(m.last_access).getTime()) / (1000 * 60 * 60 * 24))} días
+                                                                Hace {Math.floor((now - new Date(m.last_access).getTime()) / (1000 * 60 * 60 * 24))} días
                                                             </div>
                                                         </div>
                                                     ) : (

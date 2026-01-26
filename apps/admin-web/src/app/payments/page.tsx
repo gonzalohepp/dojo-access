@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import AdminLayout from '../layouts/AdminLayout';
-import { Plus, Download, Check, Receipt, CreditCard, ChevronLeft, ChevronRight, FileSpreadsheet, Search } from 'lucide-react';
+import { Plus, Download, Check, Receipt, ChevronLeft, ChevronRight } from 'lucide-react';
 
 import PaymentFilters from '../components/payments/PaymentFilters';
 import PaymentModal from '../components/payments/PaymentModal';
@@ -36,6 +36,11 @@ export default function PaymentsPage() {
   const [classOpts, setClassOpts] = useState<{ value: string; label: string }[]>([]);
   const [months, setMonths] = useState<{ value: string; label: string }[]>([]);
   const [filters, setFilters] = useState({ member: '', classId: '', month: '' });
+
+  const handleFilterChange = (newFilters: typeof filters) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
 
   // modal
   const [open, setOpen] = useState(false);
@@ -132,10 +137,6 @@ export default function PaymentsPage() {
     return filtered.slice(start, start + ITEMS_PER_PAGE);
   }, [filtered, currentPage]);
 
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters]);
-
   const onExport = () => {
     const header = ['Fecha', 'Miembro', 'Monto', 'Método', 'Periodo Desde', 'Periodo Hasta', 'Notas'];
     const lines = filtered.map((r) => [
@@ -222,7 +223,7 @@ export default function PaymentsPage() {
             classes={classOpts}
             months={months}
             value={filters}
-            onChange={setFilters}
+            onChange={handleFilterChange}
           />
         </motion.div>
 

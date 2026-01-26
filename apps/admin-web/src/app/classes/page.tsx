@@ -18,7 +18,6 @@ export default function ClassesPage() {
   const [showSuccess, setShowSuccess] = useState(false)
 
   const load = useCallback(async () => {
-    setLoading(true)
     const { data, error } = await supabase
       .from('classes')
       .select('id,name,instructor,days,start_time,end_time,capacity,max_students,color,description,price,price_principal,price_additional,created_at')
@@ -54,6 +53,7 @@ export default function ClassesPage() {
       alert('Error eliminando clase: ' + error.message)
       return
     }
+    setLoading(true)
     await load()
   }
 
@@ -216,6 +216,7 @@ export default function ClassesPage() {
                   onCancel={() => setShowForm(false)}
                   onSaved={async () => {
                     setShowForm(false)
+                    setLoading(true)
                     await load()
                     setShowSuccess(true)
                     setTimeout(() => setShowSuccess(false), 3000)

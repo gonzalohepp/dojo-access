@@ -7,21 +7,21 @@ export function usePushNotifications() {
     const [subscription, setSubscription] = useState<PushSubscription | null>(null)
 
     useEffect(() => {
+        const registerServiceWorker = async () => {
+            try {
+                const registration = await navigator.serviceWorker.register('/sw.js')
+                const sub = await registration.pushManager.getSubscription()
+                setSubscription(sub)
+            } catch (err) {
+                console.error('SW registration failed:', err)
+            }
+        }
+
         if ('serviceWorker' in navigator && 'PushManager' in window) {
             setIsSupported(true)
             registerServiceWorker()
         }
     }, [])
-
-    const registerServiceWorker = async () => {
-        try {
-            const registration = await navigator.serviceWorker.register('/sw.js')
-            const sub = await registration.pushManager.getSubscription()
-            setSubscription(sub)
-        } catch (err) {
-            console.error('SW registration failed:', err)
-        }
-    }
 
     const subscribeUser = async (vapidPublicKey: string) => {
         try {
