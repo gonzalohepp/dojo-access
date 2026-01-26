@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import StudentDashboard from './StudentDashboard'
 
 export default async function HomePage() {
   const cookieStore = await cookies()
@@ -74,10 +75,7 @@ export default async function HomePage() {
   if (role === 'admin' || role === 'instructor') {
     redirect('/admin')
   } else {
-    // Si es member, va a validate
-    // (En validate ya se maneja el caso de que no sea activo)
-    redirect('/validate')
+    // Si es member, mostramos el Dashboard de Alumno
+    return <StudentDashboard user={user} />
   }
-
-  return null
 }
