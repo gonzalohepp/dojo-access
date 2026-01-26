@@ -107,7 +107,7 @@ function ValidateContent() {
           .maybeSingle()
 
         if (tokenErr || !dbToken) {
-          console.log('Token invalido o expirado:', token)
+          // Token invalido
           setAllowed(false)
           setResultMsg('El código QR ha expirado o no es válido. Escanea el de la pantalla nuevamente.')
           setOpenResult(true)

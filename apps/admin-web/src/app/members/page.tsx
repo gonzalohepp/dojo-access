@@ -73,21 +73,30 @@ function MembersContent() {
 
     if (error) console.error('[members] load error:', error)
 
-    // Fetch avatar_url for each member from profiles table
-    const membersWithAvatars = await Promise.all(
-      (data ?? []).map(async (member: any) => {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('avatar_url')
-          .eq('user_id', member.user_id)
-          .maybeSingle()
+    const rawMembers = data ?? []
 
-        return {
-          ...member,
-          avatar_url: profile?.avatar_url || null
-        }
-      })
-    )
+    // Performance Fix: Batch fetch avatars instead of N+1 loop
+    const userIds = rawMembers.map((m: any) => m.user_id).filter(Boolean)
+
+    let avatarMap: Record<string, string | null> = {}
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('user_id, avatar_url')
+        .in('user_id', userIds)
+
+      if (profiles) {
+        profiles.forEach((p: any) => {
+          avatarMap[p.user_id] = p.avatar_url
+        })
+      }
+    }
+
+    const membersWithAvatars = rawMembers.map((member: any) => ({
+      ...member,
+      avatar_url: avatarMap[member.user_id] || null
+    }))
 
     setMembers(membersWithAvatars as Row[])
     setLoading(false)
@@ -187,7 +196,7 @@ function MembersContent() {
 
   /** Paso 4.1: eliminar con API */
   const onDelete = async (user_id: string) => {
-    console.log('[Members] onDelete triggered for:', user_id)
+
     setConfirmingId(user_id)
   }
 
@@ -197,7 +206,6 @@ function MembersContent() {
 
     try {
       setDeletingId(user_id)
-      console.log('[Members] Calling delete API...')
       const res = await fetch('/api/members/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,7 +213,6 @@ function MembersContent() {
       })
 
       const data = await res.json()
-      console.log('[Members] Delete API response:', data)
 
       if (!res.ok) {
         throw new Error(data.error || 'Error desconocido')

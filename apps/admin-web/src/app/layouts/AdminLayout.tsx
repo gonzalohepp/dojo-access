@@ -137,7 +137,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
         setProfile(data as Profile)
         // Ensure push sync happens for the current user session
         if ('Notification' in window && Notification.permission === 'granted') {
-          console.log('[Push] Syncing subscription for session:', user.id)
+          // Subscription synced
           subscribeUser(VAPID_PUBLIC_KEY).catch(err =>
             console.error('[Push] Silent sync failed:', err)
           )
@@ -163,7 +163,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
     if (!profile || (profile.role !== 'admin' && profile.role !== 'instructor')) return
 
     const userId = profile.user_id
-    console.log('[AdminLayout] Subscribing to security alerts for admin:', userId)
+    // Subscribing to security alerts
 
     const channel = supabase
       .channel(`security_alerts_${userId}`)
@@ -173,7 +173,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
         async (payload) => {
           const newLog = payload.new as any
           if (newLog.result === 'denegado') {
-            console.log('[Security] Access Denied detected:', newLog)
+            // Access Denied detected
 
             let name = 'Usuario desconocido'
             if (newLog.user_id) {
@@ -242,7 +242,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
       .subscribe()
 
     return () => {
-      console.log('[AdminLayout] Cleaning up security alerts for admin:', userId)
+      // Cleanup security alerts
       supabase.removeChannel(channel)
     }
   }, [profile?.user_id, profile?.role])

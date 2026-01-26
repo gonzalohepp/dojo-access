@@ -20,15 +20,15 @@ export const metadata: Metadata = {
   description:
     "Academia de Jiu Jitsu, MMA y preparación física en Quilmes. Entrená para mejorar tu rendimiento y alcanzar tu mejor versión.",
   icons: {
-    icon: "/logo.png", // poné logo.png en /public
+    icon: [
+      { url: "/logo.png" },
+      { url: "/logo.png", sizes: "32x32", type: "image/png" },
+    ],
     shortcut: "/logo.png",
-    apple: "/logo.png",
+    apple: [{ url: "/logo.png", sizes: "180x180", type: "image/png" }],
   },
   manifest: "/manifest.json",
-  metadataBase:
-    typeof window === "undefined"
-      ? new URL("http://localhost:3000")
-      : undefined,
+  metadataBase: new URL("https://belezadojo.com.ar"),
 }
 
 import { Providers } from "./providers"
