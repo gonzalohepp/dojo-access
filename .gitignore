@@ -29,6 +29,7 @@ pnpm-debug.log*
 # Backups & Temporary files
 backup/
 backups/
+backup-supabase/
 *.backup
 *.bak
 *.tmp
@@ -44,7 +45,7 @@ Thumbs.db
 *~
 
 # IDE / Editor files
-.vscode/settings.json
+.vscode/
 .idea/
 *.sublime-project
 *.sublime-workspace
@@ -57,6 +58,7 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
+database/scripts/
 
 # Misc
 .cache/
