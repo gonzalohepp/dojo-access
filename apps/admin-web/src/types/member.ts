@@ -7,7 +7,6 @@ export type MemberRow = {
     emergency_phone: string | null
     notes: string | null
     access_code: string | null
-    membership_type: 'monthly' | 'quarterly' | 'semiannual' | 'annual' | null
     next_payment_due: string | null
     start_date?: string | null // Original Join Date
     last_payment_date?: string | null // Last Payment / Renewal Date
@@ -34,7 +33,6 @@ export type MemberPayload = {
     phone?: string
     access_code?: string
     classes: { class_id: number; is_principal: boolean }[]
-    membership_type: 'mensual' | 'trimestral' | 'semestral' | 'anual'
     last_payment_date?: string
     next_payment_due?: string
     emergency_contact?: string

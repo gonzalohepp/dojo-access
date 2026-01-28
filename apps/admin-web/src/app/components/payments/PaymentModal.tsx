@@ -10,7 +10,6 @@ type MemberOpt = {
   user_id: string;
   name: string;
   is_new_member: boolean;
-  membership_type: string;
 };
 
 type ClassOption = {
@@ -67,7 +66,6 @@ export default function PaymentModal({
           user_id: p.user_id,
           name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim(),
           is_new_member: p.is_new_member,
-          membership_type: p.membership_type || 'monthly'
         }));
         setMembers(opts);
       }
@@ -141,10 +139,9 @@ export default function PaymentModal({
     if (!userId || !principalClass) return;
     setLoading(true);
 
-    // 1. Calculate Period
+    // 1. Calculate Period (Strictly month-to-month)
     const today = new Date();
-    const durationMap = { monthly: 1, quarterly: 3, semiannual: 6, annual: 12 };
-    const months = durationMap[selectedMember?.membership_type as keyof typeof durationMap] || 1;
+    const months = 1;
     const toDate = lastDayOfMonth(addMonths(today, months - 1));
     const fromStr = today.toISOString().slice(0, 10);
     const toStr = toDate.toISOString().slice(0, 10);
@@ -194,7 +191,7 @@ export default function PaymentModal({
 
     await supabase.from('memberships').upsert({
       member_id: userId,
-      type: selectedMember?.membership_type || 'monthly',
+      type: 'monthly',
       start_date: finalStartDate,
       last_payment_date: fromStr, // New field for renewal logic
       end_date: toStr,

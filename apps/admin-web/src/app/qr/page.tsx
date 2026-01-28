@@ -564,7 +564,7 @@ export default function QRAcceso() {
                   const { error } = await supabase.from('access_logs').insert({
                     user_id: null,
                     result: 'autorizado',
-                    reason: 'Acceso invitado manual (Admin)',
+                    reason: 'Acceso invitado manual',
                     scanned_at: new Date().toISOString(),
                   })
                   setShowGuestConfirm(false)

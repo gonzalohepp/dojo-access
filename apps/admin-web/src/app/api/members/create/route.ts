@@ -81,18 +81,11 @@ export async function POST(req: Request) {
         }
 
         // 3. Create Membership
-        const typeMap: Record<string, string> = {
-            mensual: 'monthly',
-            trimestral: 'quarterly',
-            semestral: 'semiannual',
-            anual: 'annual'
-        }
-
         const { error: memErr } = await supabase
             .from('memberships')
             .upsert({
                 member_id: userId,
-                type: typeMap[membership_type] || 'monthly',
+                type: 'monthly',
                 start_date: last_payment_date ?? new Date().toISOString().slice(0, 10),
                 end_date: next_payment_due ?? null
             },

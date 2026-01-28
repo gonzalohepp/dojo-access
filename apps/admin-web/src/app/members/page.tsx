@@ -52,7 +52,6 @@ function MembersContent() {
 
   const [filters, setFilters] = useState({
     status: 'todos' as 'todos' | 'activo' | 'vencido',
-    membership: 'todos' as 'todos' | 'monthly' | 'quarterly' | 'semiannual' | 'annual',
     className: 'todas' as 'todas' | string,
     role: 'todos' as 'todos' | 'admin' | 'member' | 'instructor' | 'becado'
   })
@@ -142,7 +141,6 @@ function MembersContent() {
         emergency_phone: null,
         notes: 'Registro pendiente desde login',
         access_code: null,
-        membership_type: null,
         next_payment_due: null
       })
       setOpen(true)
@@ -155,8 +153,6 @@ function MembersContent() {
       const full = [m.first_name, m.last_name].filter(Boolean).join(' ').trim()
       const derived = m.status || 'vencido'
       const statusOk = filters.status === 'todos' || filters.status === derived
-      const membOk =
-        filters.membership === 'todos' || m.membership_type === filters.membership
       const classOk =
         filters.className === 'todas' ||
         (m.class_names ?? []).some((n) => n === filters.className)
@@ -167,7 +163,7 @@ function MembersContent() {
         (m.email ?? '').toLowerCase().includes(q.toLowerCase()) ||
         (m.phone ?? '').includes(q) ||
         (m.access_code ?? '').toLowerCase().includes(q.toLowerCase())
-      return statusOk && membOk && classOk && qOk && roleOk
+      return statusOk && classOk && qOk && roleOk
     })
   }, [members, filters, q])
 
@@ -248,12 +244,6 @@ function MembersContent() {
 
   /** Paso 4.2: upsert de membresía con onConflict: 'member_id' */
   const onSubmit = async (payload: MemberPayload) => {
-    const typeMap: Record<string, 'monthly' | 'quarterly' | 'semiannual' | 'annual'> = {
-      mensual: 'monthly',
-      trimestral: 'quarterly',
-      semestral: 'semiannual',
-      anual: 'annual'
-    }
 
     const [first_name, ...rest] = payload.full_name.trim().split(/\s+/)
     const last_name = rest.join(' ')
@@ -299,7 +289,7 @@ function MembersContent() {
         .upsert(
           {
             member_id: userId,
-            type: typeMap[payload.membership_type],
+            type: 'monthly',
             start_date: existingMem?.start_date || payload.last_payment_date || new Date().toISOString().slice(0, 10),
             last_payment_date: payload.last_payment_date || new Date().toISOString().slice(0, 10),
             end_date: payload.next_payment_due ?? null
@@ -342,7 +332,6 @@ function MembersContent() {
           emergency_phone: payload.emergency_contact ?? null,
           notes: payload.notes ?? null,
           access_code,
-          membership_type: payload.membership_type,
           last_payment_date: payload.last_payment_date,
           next_payment_due: payload.next_payment_due,
           classes: payload.classes,

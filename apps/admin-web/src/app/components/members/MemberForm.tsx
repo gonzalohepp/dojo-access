@@ -25,7 +25,6 @@ export default function MemberForm({
     access_code: '',
     principal_class: null as number | null,
     additional_classes: [] as number[],
-    membership_type: 'mensual',
     last_payment_date: new Date().toISOString().slice(0, 10),
     start_date: '', // Join Date
     next_payment_due: lastDayOfMonth(new Date()).toISOString().slice(0, 10),
@@ -50,9 +49,6 @@ export default function MemberForm({
         // These will be corrected in the class_enrollments fetch below
         principal_class: member.class_ids?.[0] ?? null,
         additional_classes: member.class_ids?.slice(1) ?? [],
-        membership_type: (member.membership_type ? ({
-          monthly: 'mensual', quarterly: 'trimestral', semiannual: 'semestral', annual: 'anual'
-        } as Record<string, string>)[member.membership_type] : 'mensual'),
         next_payment_due: member.end_date ? new Date(member.end_date).toISOString().slice(0, 10) : new Date(addMonths(new Date(), 1)).toISOString().slice(0, 10),
         emergency_contact: member.emergency_phone ?? '',
         notes: member.notes ?? '',
@@ -140,27 +136,16 @@ export default function MemberForm({
     }
   }, [form.full_name, manualCode, member?.user_id])
 
-  const handleMembershipChange = (v: string) => {
-    const months = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 }[v] ?? 1
-    const baseDate = form.last_payment_date ? new Date(form.last_payment_date + 'T12:00:00') : new Date()
-    const expiration = lastDayOfMonth(addMonths(baseDate, months - 1))
-    setForm(s => ({
-      ...s,
-      membership_type: v,
-      next_payment_due: expiration.toISOString().slice(0, 10)
-    }))
-  }
-
-  // Auto-calculate expiration when last_payment_date changes
+  // Auto-calculate expiration when last_payment_date changes (Fixed to 1 month)
   useEffect(() => {
-    const months = { mensual: 1, trimestral: 3, semestral: 6, anual: 12 }[form.membership_type] ?? 1
+    if (!form.last_payment_date) return
     const baseDate = new Date(form.last_payment_date + 'T12:00:00')
-    const expiration = lastDayOfMonth(addMonths(baseDate, months - 1))
+    const expiration = lastDayOfMonth(baseDate)
     setForm(s => ({
       ...s,
       next_payment_due: expiration.toISOString().slice(0, 10)
     }))
-  }, [form.last_payment_date, form.membership_type])
+  }, [form.last_payment_date])
 
   const setPrincipalClass = (id: number) => {
     setForm(s => ({
@@ -320,31 +305,7 @@ export default function MemberForm({
           <h4 className="text-sm font-black text-slate-900 uppercase tracking-widest">Membresía y Pagos</h4>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="relative group md:col-span-3">
-            <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Plan de Membresía</div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-              {[
-                { id: 'mensual', label: 'Mensual' },
-                { id: 'trimestral', label: 'Trimestral' },
-                { id: 'semestral', label: 'Semestral' },
-                { id: 'anual', label: 'Anual' }
-              ].map(m => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => handleMembershipChange(m.id)}
-                  className={`p-3 rounded-2xl border transition-all text-center ${form.membership_type === m.id
-                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                    : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'
-                    }`}
-                >
-                  <span className="text-xs font-black uppercase tracking-widest">{m.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="relative group col-span-1 md:col-span-1">
             <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
             <input

@@ -21,7 +21,8 @@ import {
   ArrowRight,
   Check,
   Wifi,
-  WifiOff
+  WifiOff,
+  Activity
 } from 'lucide-react'
 import { Toaster, toast } from 'sonner'
 import ThemeToggle from '../components/ThemeToggle'
@@ -59,6 +60,7 @@ const NAV_ITEMS = [
   { href: '/payments', label: 'Pagos', icon: DollarSign, roles: ['admin'] },
   { href: '/metricas', label: 'Metricas', icon: ChartLine, roles: ['admin'] },
   { href: '/reportes', label: 'Reportes', icon: ClipboardList, roles: ['admin'] },
+  { href: '/asistencia-vivo', label: 'Asistencia en Vivo', icon: Activity, roles: ['admin', 'instructor'] },
   { href: '/access-log', label: 'Historial de Accesos', icon: ClipboardList, roles: ['admin'] },
 ]
 

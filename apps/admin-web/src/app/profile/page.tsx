@@ -40,7 +40,6 @@ type MemberRow = {
   email: string | null
   phone: string | null
   access_code: string | null
-  membership_type: 'monthly' | 'quarterly' | 'semiannual' | 'annual' | null
   next_payment_due: string | null
   expires_at?: string | null
   status?: string | null
@@ -212,7 +211,10 @@ export default function ProfilePage() {
   }
 
   const fullName = useMemo(() => [member?.first_name, member?.last_name].filter(Boolean).join(' ').trim(), [member])
-  const isActive = useMemo(() => member?.status === 'activo', [member?.status])
+  const isActive = useMemo(() => {
+    if (member?.role && ['admin', 'instructor', 'becado'].includes(member.role)) return true
+    return member?.status === 'activo'
+  }, [member?.status, member?.role])
   const daysLeft = useMemo(() => member?.next_payment_due ? daysDiff(new Date(), new Date(`${member.next_payment_due}T00:00:00`)) : null, [member])
 
   const ClassItem = ({ c, idx }: { c: ClassRow, idx: number }) => (
@@ -354,13 +356,13 @@ export default function ProfilePage() {
                         </p>
                         <div>
                           <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter mb-4">
-                            {member.next_payment_due === '2099-12-31'
+                            {(member.role && ['admin', 'instructor', 'becado'].includes(member.role)) || member.next_payment_due === '2099-12-31'
                               ? 'SIN VENCIMIENTO'
                               : member.next_payment_due && new Date(member.next_payment_due + 'T12:00:00') < new Date()
                                 ? `Venció el ${fmtDate(member.next_payment_due)}`
                                 : fmtDate(member.next_payment_due)}
                           </p>
-                          {daysLeft !== null && member.next_payment_due && member.next_payment_due !== '2099-12-31' && (
+                          {daysLeft !== null && member.next_payment_due && member.next_payment_due !== '2099-12-31' && (!member.role || !['admin', 'instructor', 'becado'].includes(member.role)) && (
                             <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
@@ -371,7 +373,7 @@ export default function ProfilePage() {
                           )}
                           <p className="text-xs font-bold text-slate-400 mt-2">
                             {(() => {
-                              if (member.next_payment_due === '2099-12-31') return 'Tu membresía es vitalicia'
+                              if ((member.role && ['admin', 'instructor', 'becado'].includes(member.role)) || member.next_payment_due === '2099-12-31') return 'Tu membresía es vitalicia'
                               if (daysLeft !== null && daysLeft > 0) return `Quedan ${daysLeft} días de entrenamiento`
 
                               // Logic for expired/grace period messaging
@@ -388,15 +390,17 @@ export default function ProfilePage() {
                               return 'Tu tiempo ha expirado'
                             })()}
                           </p>
-                          <div className="mt-6">
-                            <button
-                              onClick={() => setShowPayModal(true)}
-                              className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#009EE3] text-white font-black uppercase tracking-widest text-sm shadow-lg shadow-[#009EE3]/30 hover:bg-[#008ED0] transition-all hover:scale-105 active:scale-95"
-                            >
-                              <DollarSign className="w-5 h-5" />
-                              Pagar Suscripción
-                            </button>
-                          </div>
+                          {(!member.role || !['admin', 'instructor', 'becado'].includes(member.role)) && (
+                            <div className="mt-6">
+                              <button
+                                onClick={() => setShowPayModal(true)}
+                                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#009EE3] text-white font-black uppercase tracking-widest text-sm shadow-lg shadow-[#009EE3]/30 hover:bg-[#008ED0] transition-all hover:scale-105 active:scale-95"
+                              >
+                                <DollarSign className="w-5 h-5" />
+                                Pagar Suscripción
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </motion.div>
                     </div>
