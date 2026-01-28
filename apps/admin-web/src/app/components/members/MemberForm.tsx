@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { addMonths, lastDayOfMonth } from 'date-fns'
 import { motion } from 'framer-motion'
-import { User, Mail, Phone, Hash, Shield, Calendar, BookOpen, AlertCircle, Save, Plus } from 'lucide-react'
+import { User, Mail, Phone, Hash, Shield, Calendar, BookOpen, AlertCircle, Save, Plus, Award, UserPlus } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
 import { MemberRow, MemberPayload, ClassOption } from '@/types/member'
 
@@ -285,18 +285,28 @@ export default function MemberForm({
           </div>
 
           <div className="relative group md:col-span-2">
-            <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
-            <select
-              className={`${inputClass} appearance-none cursor-pointer`}
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value as any })}
-            >
-              <option value="member">Socio (Member)</option>
-              <option value="instructor">Instructor</option>
-              <option value="becado">Becado</option>
-              <option value="admin">Administrador</option>
-            </select>
             <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Rol de Usuario</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { id: 'member', label: 'Socio', icon: User },
+                { id: 'instructor', label: 'Instructor', icon: Shield },
+                { id: 'becado', label: 'Becado', icon: Award },
+                { id: 'admin', label: 'Admin', icon: UserPlus }
+              ].map(r => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => setForm({ ...form, role: r.id as any })}
+                  className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${form.role === r.id
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20'
+                    : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'
+                    }`}
+                >
+                  <r.icon className={`w-4 h-4 ${form.role === r.id ? 'text-white' : 'text-blue-500'}`} />
+                  <span className="text-xs font-black uppercase tracking-widest">{r.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -311,18 +321,28 @@ export default function MemberForm({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="relative group">
-            <Shield className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
-            <select
-              className={`${inputClass} appearance-none cursor-pointer focus:ring-emerald-500/10 focus:border-emerald-500/50`}
-              value={form.membership_type}
-              onChange={(e) => handleMembershipChange(e.target.value)}
-            >
-              <option value="mensual">Plan Mensual</option>
-              <option value="trimestral">Plan Trimestral</option>
-              <option value="semestral">Plan Semestral</option>
-              <option value="anual">Plan Anual</option>
-            </select>
+          <div className="relative group md:col-span-3">
+            <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Plan de Membresía</div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {[
+                { id: 'mensual', label: 'Mensual' },
+                { id: 'trimestral', label: 'Trimestral' },
+                { id: 'semestral', label: 'Semestral' },
+                { id: 'anual', label: 'Anual' }
+              ].map(m => (
+                <button
+                  key={m.id}
+                  type="button"
+                  onClick={() => handleMembershipChange(m.id)}
+                  className={`p-3 rounded-2xl border transition-all text-center ${form.membership_type === m.id
+                    ? 'bg-emerald-600 border-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                    : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'
+                    }`}
+                >
+                  <span className="text-xs font-black uppercase tracking-widest">{m.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="relative group col-span-1 md:col-span-1">

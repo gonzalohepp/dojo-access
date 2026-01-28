@@ -26,6 +26,19 @@ const BELT_COLORS: Record<string, { bg: string, text: string, border: string, do
     'negro': { bg: 'bg-slate-950', text: 'text-white', border: 'border-red-900/50', dot: 'bg-red-600' },
 }
 
+const BELT_OPTIONS = [
+    'Blanco',
+    'Blanco Grado 1', 'Blanco Grado 2', 'Blanco Grado 3', 'Blanco Grado 4',
+    'Azul',
+    'Azul Grado 1', 'Azul Grado 2', 'Azul Grado 3', 'Azul Grado 4',
+    'Morado',
+    'Morado Grado 1', 'Morado Grado 2', 'Morado Grado 3', 'Morado Grado 4',
+    'Marrón',
+    'Marrón Grado 1', 'Marrón Grado 2', 'Marrón Grado 3', 'Marrón Grado 4',
+    'Negro',
+    'Negro Grado 1', 'Negro Grado 2', 'Negro Grado 3', 'Negro Grado 4',
+]
+
 export default function MemberGrades({ userId, readOnly = false }: { userId: string, readOnly?: boolean }) {
     const [grades, setGrades] = useState<Grade[]>([])
     const [loading, setLoading] = useState(true)
@@ -39,21 +52,24 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
 
     const fetchGrades = async () => {
         setLoading(true)
-        const { data, error } = await supabase
-            .from('member_grades')
-            .select(`
-                id, grade, awarded_at, notes,
-                instructor:profiles!member_grades_instructor_id_fkey(first_name, last_name)
-            `)
-            .eq('user_id', userId)
-            .order('awarded_at', { ascending: false })
+        try {
+            const { data, error } = await supabase
+                .from('member_grades')
+                .select(`
+                    id, grade, awarded_at, notes,
+                    instructor:profiles!member_grades_instructor_id_fkey(first_name, last_name)
+                `)
+                .eq('user_id', userId)
+                .order('awarded_at', { ascending: false })
 
-        if (error) {
-            console.error('Error fetching grades:', error)
-        } else {
+            if (error) throw error
             setGrades(data as any[])
+        } catch (error: any) {
+            console.error('Error fetching grades:', error)
+            import('sonner').then(({ toast }) => toast.error('Error al cargar graduaciones'))
+        } finally {
+            setLoading(false)
         }
-        setLoading(false)
     }
 
     useEffect(() => {
@@ -61,7 +77,7 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
     }, [userId])
 
     const getBeltStyle = (name: string) => {
-        const lower = name.toLowerCase()
+        const lower = (name || '').toLowerCase()
         for (const [key, value] of Object.entries(BELT_COLORS)) {
             if (lower.includes(key)) return value
         }
@@ -72,33 +88,51 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
         if (!newGrade) return
         setSubmitting(true)
 
-        const { data: { user } } = await supabase.auth.getUser()
+        try {
+            const { data: { user } } = await supabase.auth.getUser()
+            if (!user) throw new Error('No authenticado')
 
-        const { error } = await supabase
-            .from('member_grades')
-            .insert({
-                user_id: userId,
-                grade: newGrade,
-                awarded_at: newDate,
-                notes: newNotes,
-                instructor_id: user?.id
-            })
+            const { error } = await supabase
+                .from('member_grades')
+                .insert({
+                    user_id: userId,
+                    grade: newGrade,
+                    awarded_at: newDate,
+                    notes: newNotes,
+                    instructor_id: user.id
+                })
 
-        if (!error) {
+            if (error) throw error
+
+            const { toast } = await import('sonner')
+            toast.success('Graduación registrada con éxito')
             setShowAdd(false)
             setNewGrade('')
             setNewNotes('')
             fetchGrades()
-        } else {
-            alert('Error al guardar graduación')
+        } catch (error: any) {
+            console.error('Error saving grade:', error)
+            const { toast } = await import('sonner')
+            toast.error('Error al guardar graduación', { description: error.message })
+        } finally {
+            setSubmitting(false)
         }
-        setSubmitting(false)
     }
 
     const handleDelete = async (id: string) => {
-        if (!confirm('¿Borrar esta graduación?')) return
-        const { error } = await supabase.from('member_grades').delete().eq('id', id)
-        if (!error) fetchGrades()
+        if (!confirm('¿Estás seguro de que deseas eliminar esta graduación?')) return
+        try {
+            const { error } = await supabase.from('member_grades').delete().eq('id', id)
+            if (error) throw error
+
+            const { toast } = await import('sonner')
+            toast.success('Graduación eliminada')
+            fetchGrades()
+        } catch (error: any) {
+            console.error('Error deleting grade:', error)
+            const { toast } = await import('sonner')
+            toast.error('No se pudo eliminar la graduación')
+        }
     }
 
     if (loading) return (
@@ -138,7 +172,7 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
                         initial={{ opacity: 0, scale: 0.95, y: -20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -20 }}
-                        className="relative"
+                        className="relative z-20"
                     >
                         <div className="bg-white dark:bg-slate-900 rounded-[24px] p-8 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-6">
                             <div className="flex items-center justify-between mb-2">
@@ -148,13 +182,25 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Grado / Cinturón</label>
-                                    <input
-                                        type="text"
+                                    <select
                                         value={newGrade}
                                         onChange={e => setNewGrade(e.target.value)}
-                                        placeholder="Ej: Cinturón Azul"
-                                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold transition-all"
-                                    />
+                                        className="w-full h-12 px-4 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold transition-all appearance-none cursor-pointer"
+                                    >
+                                        <option value="">Seleccionar Grado...</option>
+                                        {BELT_OPTIONS.map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                        <option value="OTRO">Otro...</option>
+                                    </select>
+                                    {newGrade === 'OTRO' && (
+                                        <input
+                                            type="text"
+                                            placeholder="Especificar grado..."
+                                            className="w-full h-12 px-4 mt-2 rounded-2xl bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 outline-none focus:ring-2 focus:ring-blue-500 text-sm font-bold transition-all"
+                                            onChange={e => setNewGrade(e.target.value)}
+                                        />
+                                    )}
                                 </div>
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">Fecha de Entrega</label>
@@ -199,6 +245,7 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
                 ) : (
                     grades.map((g, i) => {
                         const style = getBeltStyle(g.grade)
+                        const isLatest = i === 0
                         return (
                             <motion.div
                                 key={g.id}
@@ -217,9 +264,11 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
                                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                             <div className="space-y-2">
                                                 <div className="flex items-center gap-3">
-                                                    <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${style.bg} ${style.text} ${style.border} border shadow-sm`}>
-                                                        Grado Actual
-                                                    </span>
+                                                    {isLatest && (
+                                                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${style.bg} ${style.text} ${style.border} border shadow-sm`}>
+                                                            Grado Actual
+                                                        </span>
+                                                    )}
                                                     <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5 uppercase tracking-tighter">
                                                         <Calendar className="w-3.5 h-3.5" />
                                                         {fmtDateShort(g.awarded_at)}
@@ -238,8 +287,11 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
 
                                             {!readOnly && (
                                                 <button
-                                                    onClick={() => handleDelete(g.id)}
-                                                    className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation()
+                                                        handleDelete(g.id)
+                                                    }}
+                                                    className="relative z-50 inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-red-50 dark:bg-red-500/10 text-red-500 opacity-0 group-hover:opacity-100 transition-all hover:bg-red-500 hover:text-white pointer-events-auto"
                                                 >
                                                     <Trash className="w-5 h-5" />
                                                 </button>
