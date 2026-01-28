@@ -12,7 +12,11 @@ import {
     Zap,
     Calendar,
     AlertCircle,
-    RefreshCw
+    RefreshCw,
+    Dumbbell,
+    Swords,
+    Shirt,
+    Target
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Card, CardContent } from '@/components/ui/card'
@@ -38,6 +42,14 @@ type AttendanceRecord = {
 }
 
 const DAY_MAP = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb']
+
+function getClassIcon(name: string) {
+    const n = name.toLowerCase()
+    if (n.includes('fisico') || n.includes('acondicionamiento')) return Dumbbell
+    if (n.includes('mma') || n.includes('muay thai') || n.includes('grappling')) return Swords
+    if (n.includes('bjj') || n.includes('jiu-jitsu') || n.includes('kids')) return Shirt
+    return Activity
+}
 
 export default function AsistenciaVivoPage() {
     const [classes, setClasses] = useState<ClassRow[]>([])
@@ -203,6 +215,7 @@ export default function AsistenciaVivoPage() {
                                     {activeClasses.map((cl) => {
                                         const attendees = attendance.filter(a => a.class_id === cl.id)
                                         const isExpanded = expandedClasses.includes(cl.id)
+                                        const Icon = getClassIcon(cl.name)
                                         return (
                                             <motion.div
                                                 key={cl.id}
@@ -221,7 +234,7 @@ export default function AsistenciaVivoPage() {
                                                             className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0"
                                                             style={{ backgroundColor: cl.color || '#3b82f6' }}
                                                         >
-                                                            <Zap className="w-5 h-5 fill-current" />
+                                                            <Icon className="w-5 h-5 fill-current" />
                                                         </div>
                                                         <div className="min-w-0">
                                                             <div className="flex items-center gap-2">
@@ -330,25 +343,30 @@ export default function AsistenciaVivoPage() {
                                 {futureClasses.length === 0 ? (
                                     <p className="text-slate-600 text-xs font-bold italic">No hay más clases por hoy.</p>
                                 ) : (
-                                    futureClasses.map((fcl) => (
-                                        <div
-                                            key={fcl.id}
-                                            className="p-5 rounded-3xl bg-slate-900/30 border border-white/5 flex items-center gap-4 group hover:bg-white/5 transition-all"
-                                        >
+                                    futureClasses.map((fcl) => {
+                                        const FutureIcon = getClassIcon(fcl.name)
+                                        return (
                                             <div
-                                                className="w-1.5 h-10 rounded-full shrink-0"
-                                                style={{ backgroundColor: fcl.color || '#3b82f6' }}
-                                            />
-                                            <div className="min-w-0 flex-1">
-                                                <p className="text-xs font-black text-white uppercase tracking-tight truncate">{fcl.name}</p>
-                                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
-                                                    <Clock className="w-3 h-3" />
-                                                    {fcl.start_time?.slice(0, 5)}
-                                                </p>
+                                                key={fcl.id}
+                                                className="p-5 rounded-3xl bg-slate-900/30 border border-white/5 flex items-center gap-4 group hover:bg-white/5 transition-all"
+                                            >
+                                                <div
+                                                    className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-white shrink-0 group-hover:bg-white/10 transition-colors"
+                                                    style={{ color: fcl.color || '#3b82f6' }}
+                                                >
+                                                    <FutureIcon className="w-5 h-5" />
+                                                </div>
+                                                <div className="min-w-0 flex-1">
+                                                    <p className="text-xs font-black text-white uppercase tracking-tight truncate">{fcl.name}</p>
+                                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1.5 mt-0.5">
+                                                        <Clock className="w-3 h-3" />
+                                                        {fcl.start_time?.slice(0, 5)}
+                                                    </p>
+                                                </div>
+                                                <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-blue-500 transition-colors">Hoy</div>
                                             </div>
-                                            <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-blue-500 transition-colors">Hoy</div>
-                                        </div>
-                                    ))
+                                        )
+                                    })
                                 )}
                             </div>
 
