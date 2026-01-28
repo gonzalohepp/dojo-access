@@ -48,22 +48,18 @@ type Profile = {
   avatar_url: string | null
 }
 
-const adminNav = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/qr', label: 'QR de Acceso', icon: QrCode },
-  { href: '/profile', label: 'Mi Perfil', icon: UserIcon },
-  { href: '/members', label: 'Miembros', icon: Users },
-  { href: '/admin/academies', label: 'Academias', icon: Building2 },
-  { href: '/classes', label: 'Clases', icon: GraduationCap },
-  { href: '/payments', label: 'Pagos', icon: DollarSign },
-  { href: '/metricas', label: 'Metricas', icon: ChartLine },
-  { href: '/reportes', label: 'Reportes', icon: ClipboardList },
-  { href: '/access-log', label: 'Historial de Accesos', icon: ClipboardList },
-]
-
-const userNav = [
-  { href: '/validate', label: 'Validar Acceso', icon: QrCode },
-  { href: '/profile', label: 'Mi Perfil', icon: UserIcon },
+const NAV_ITEMS = [
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, roles: ['admin'] },
+  { href: '/qr', label: 'QR de Acceso', icon: QrCode, roles: ['admin', 'instructor'] },
+  { href: '/validate', label: 'Validar Acceso', icon: QrCode, roles: ['admin', 'instructor', 'becado', 'member'] },
+  { href: '/profile', label: 'Mi Perfil', icon: UserIcon, roles: ['admin', 'instructor', 'becado', 'member'] },
+  { href: '/members', label: 'Miembros', icon: Users, roles: ['admin'] },
+  { href: '/admin/academies', label: 'Academias', icon: Building2, roles: ['admin'] },
+  { href: '/classes', label: 'Clases', icon: GraduationCap, roles: ['admin'] },
+  { href: '/payments', label: 'Pagos', icon: DollarSign, roles: ['admin'] },
+  { href: '/metricas', label: 'Metricas', icon: ChartLine, roles: ['admin'] },
+  { href: '/reportes', label: 'Reportes', icon: ClipboardList, roles: ['admin'] },
+  { href: '/access-log', label: 'Historial de Accesos', icon: ClipboardList, roles: ['admin'] },
 ]
 
 export default function AdminLayout({ children, active }: { children: React.ReactNode, active?: string }) {
@@ -269,8 +265,22 @@ export default function AdminLayout({ children, active }: { children: React.Reac
   // Moved to top
 
 
-  const isAdmin = profile?.role === 'admin' || profile?.role === 'instructor'
-  const nav = isAdmin ? adminNav : userNav
+  const role = profile?.role || 'member'
+  const nav = NAV_ITEMS.filter(item => item.roles.includes(role))
+  const isAdmin = role === 'admin' || role === 'instructor'
+
+  // Route protection
+  useEffect(() => {
+    if (loading) return
+    const currentPath = pathname
+    const isAllowed = nav.some(item => item.href === currentPath) || currentPath === '/validate' || currentPath === '/auth/callback'
+
+    // Especial case: /validate is always allowed for logged users if they have one of the roles
+    if (!isAllowed && currentPath !== '/login') {
+      const defaultPath = role === 'admin' ? '/admin' : '/profile'
+      router.replace(defaultPath)
+    }
+  }, [pathname, loading, nav, role, router])
 
   const displayName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') ||
@@ -302,7 +312,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
             <div>
               <h2 className="font-black text-lg text-foreground tracking-tight leading-tight">Beleza <span className="text-blue-600">Dojo</span></h2>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                {isAdmin ? 'Admin Panel' : 'Member Portal'}
+                {role === 'admin' ? 'Admin Panel' : role === 'instructor' ? 'Instructor Panel' : 'Member Portal'}
               </p>
             </div>
           </div>
@@ -321,7 +331,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
             {isAdmin ? 'Principal' : 'Menú'}
           </div>
           <nav className="space-y-1">
-            {nav.map((item) => {
+            {nav.map((item: any) => {
               const isActive = active === item.href || pathname === item.href
               const Icon = item.icon
               return (
