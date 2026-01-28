@@ -13,6 +13,7 @@ export type ClassRow = {
   capacity: number | null
   max_students: number | null
   color: string | null
+  category: string | null
   description: string | null
   price_principal: number | null
   price_additional: number | null
@@ -34,6 +35,11 @@ const COLOR_OPTIONS = [
   { label: 'Violeta', value: 'purple', bg: 'bg-purple-500' },
   { label: 'Naranja', value: 'orange', bg: 'bg-orange-500' },
   { label: 'Rosa', value: 'pink', bg: 'bg-pink-500' },
+  { label: 'Ámbar', value: 'amber', bg: 'bg-amber-500' },
+  { label: 'Teal', value: 'teal', bg: 'bg-teal-500' },
+  { label: 'Cian', value: 'cyan', bg: 'bg-cyan-500' },
+  { label: 'Indigo', value: 'indigo', bg: 'bg-indigo-500' },
+  { label: 'Rose', value: 'rose', bg: 'bg-rose-500' },
 ]
 
 function getInitialForm(initial?: ClassRow | null): ClassRow {
@@ -47,6 +53,7 @@ function getInitialForm(initial?: ClassRow | null): ClassRow {
       capacity: initial.capacity ?? initial.max_students ?? null,
       max_students: initial.max_students ?? initial.capacity ?? null,
       color: initial.color ?? 'blue',
+      category: initial.category ?? 'artes-marciales',
       description: initial.description ?? '',
       price_principal: initial.price_principal ?? initial.price ?? null,
       price_additional: initial.price_additional ?? null,
@@ -62,6 +69,7 @@ function getInitialForm(initial?: ClassRow | null): ClassRow {
     capacity: null,
     max_students: null,
     color: 'blue',
+    category: 'artes-marciales',
     description: '',
     price_principal: null,
     price_additional: null,
@@ -95,6 +103,7 @@ export default function ClassForm({ initial, onCancel, onSaved }: Props) {
       capacity: form.capacity ?? form.max_students ?? null,
       max_students: form.capacity ?? form.max_students ?? null,
       color: form.color || null,
+      category: form.category || 'artes-marciales',
       description: form.description?.trim() || null,
       price_principal: Number(form.price_principal),
       price_additional: form.price_additional === null ? null : Number(form.price_additional),
@@ -206,6 +215,32 @@ export default function ClassForm({ initial, onCancel, onSaved }: Props) {
                   placeholder="Instructor principal"
                   className={inputClass}
                 />
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+                <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-3 ml-1">Categoría de Clase</p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, category: 'artes-marciales' })}
+                    className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${form.category === 'artes-marciales'
+                      ? 'bg-slate-900 text-white shadow-lg'
+                      : 'bg-white border border-slate-200 text-slate-500'
+                      }`}
+                  >
+                    Artes Marciales
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, category: 'acondicionamiento-fisico' })}
+                    className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${form.category === 'acondicionamiento-fisico'
+                      ? 'bg-slate-900 text-white shadow-lg'
+                      : 'bg-white border border-slate-200 text-slate-500'
+                      }`}
+                  >
+                    Fitness
+                  </button>
+                </div>
               </div>
             </div>
           </section>

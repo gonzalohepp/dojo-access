@@ -14,6 +14,11 @@ const colorSchemes: Record<string, { bg: string, text: string, border: string, g
   purple: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200', glow: 'shadow-purple-500/40', icon: 'text-purple-500', color: '#8b5cf6' },
   orange: { bg: 'bg-orange-50', text: 'text-orange-700', border: 'border-orange-200', glow: 'shadow-orange-500/40', icon: 'text-orange-500', color: '#f97316' },
   pink: { bg: 'bg-pink-50', text: 'text-pink-700', border: 'border-pink-200', glow: 'shadow-pink-500/40', icon: 'text-pink-500', color: '#ec4899' },
+  amber: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200', glow: 'shadow-amber-500/40', icon: 'text-amber-500', color: '#f59e0b' },
+  teal: { bg: 'bg-teal-50', text: 'text-teal-700', border: 'border-teal-200', glow: 'shadow-teal-500/40', icon: 'text-teal-500', color: '#14b8a6' },
+  cyan: { bg: 'bg-cyan-50', text: 'text-cyan-700', border: 'border-cyan-200', glow: 'shadow-cyan-500/40', icon: 'text-cyan-500', color: '#06b6d4' },
+  indigo: { bg: 'bg-indigo-50', text: 'text-indigo-700', border: 'border-indigo-200', glow: 'shadow-indigo-500/40', icon: 'text-indigo-500', color: '#6366f1' },
+  rose: { bg: 'bg-rose-50', text: 'text-rose-700', border: 'border-rose-200', glow: 'shadow-rose-500/40', icon: 'text-rose-500', color: '#f43f5e' },
 }
 
 function fmtTime(t?: string | null) {
@@ -54,6 +59,9 @@ export default function ClassCard(props: Props) {
           <h3 className="text-2xl font-black text-slate-900 tracking-tight leading-none">
             {item?.name}
           </h3>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">
+            {item?.category === 'acondicionamiento-fisico' ? 'Fitness' : 'Artes Marciales'}
+          </p>
         </div>
 
         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">

@@ -12,15 +12,20 @@ export default function ClassesPage() {
   const [items, setItems] = useState<ClassRow[]>([])
   const [loading, setLoading] = useState(true)
   const [query, setQuery] = useState('')
-  const [colorFilter, setColorFilter] = useState<'all' | 'blue' | 'red' | 'green' | 'purple' | 'orange' | 'pink'>('all')
+  const [colorFilter, setColorFilter] = useState<string>('all')
+  const [categoryFilter, setCategoryFilter] = useState<'all' | 'artes-marciales' | 'acondicionamiento-fisico'>('all')
   const [showForm, setShowForm] = useState(false)
   const [editing, setEditing] = useState<ClassRow | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1)
+  const ITEMS_PER_PAGE = 6
+
   const load = useCallback(async () => {
     const { data, error } = await supabase
       .from('classes')
-      .select('id,name,instructor,days,start_time,end_time,capacity,max_students,color,description,price,price_principal,price_additional,created_at')
+      .select('id,name,instructor,days,start_time,end_time,capacity,max_students,color,category,description,price,price_principal,price_additional,created_at')
       .order('name', { ascending: true })
     if (!error && data) setItems(data as ClassRow[])
     setLoading(false)
@@ -39,9 +44,22 @@ export default function ClassesPage() {
         (c.instructor ?? '').toLowerCase().includes(q) ||
         (c.description ?? '').toLowerCase().includes(q)
       const colorOk = colorFilter === 'all' || (c.color ?? 'blue') === colorFilter
-      return inQuery && colorOk
+      const categoryOk = categoryFilter === 'all' || (c.category ?? 'artes-marciales') === categoryFilter
+      return inQuery && colorOk && categoryOk
     })
-  }, [items, query, colorFilter])
+  }, [items, query, colorFilter, categoryFilter])
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [query, colorFilter, categoryFilter])
+
+  const paginatedItems = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE
+    return filtered.slice(start, start + ITEMS_PER_PAGE)
+  }, [filtered, currentPage])
+
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
 
   const onCreate = () => { setEditing(null); setShowForm(true) }
   const onEdit = (row: ClassRow) => { setEditing(row); setShowForm(true) }
@@ -118,12 +136,28 @@ export default function ClassesPage() {
             />
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <div className="relative min-w-[200px]">
               <Layers className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <select
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value as any)}
+                className="h-14 w-full appearance-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-11 pr-10 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none ring-blue-500/10 transition-all focus:border-blue-500/50 focus:ring-4"
+              >
+                <option value="all">Todas las Categorías</option>
+                <option value="artes-marciales">Artes Marciales</option>
+                <option value="acondicionamiento-fisico">Fitness</option>
+              </select>
+              <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
+                <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+              </div>
+            </div>
+
+            <div className="relative min-w-[180px]">
+              <div className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border border-slate-300 pointer-events-none" />
+              <select
                 value={colorFilter}
-                onChange={(e) => setColorFilter(e.target.value as typeof colorFilter)}
+                onChange={(e) => setColorFilter(e.target.value)}
                 className="h-14 w-full appearance-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-11 pr-10 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none ring-blue-500/10 transition-all focus:border-blue-500/50 focus:ring-4"
               >
                 <option value="all">Todos los colores</option>
@@ -133,6 +167,11 @@ export default function ClassesPage() {
                 <option value="purple">Violeta</option>
                 <option value="orange">Naranja</option>
                 <option value="pink">Rosa</option>
+                <option value="amber">Ámbar</option>
+                <option value="teal">Teal</option>
+                <option value="cyan">Cian</option>
+                <option value="indigo">Indigo</option>
+                <option value="rose">Rose</option>
               </select>
               <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
                 <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
@@ -168,27 +207,63 @@ export default function ClassesPage() {
               <p className="text-slate-500 max-w-xs mt-1">Ajusta los filtros o crea una nueva clase para empezar.</p>
             </motion.div>
           ) : (
-            <motion.div
-              key="grid"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
-            >
-              {filtered.map((item, idx) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
-                >
-                  <ClassCard
-                    classItem={item}
-                    onEdit={() => onEdit(item)}
-                    onDelete={() => onDelete(item.id!)}
-                  />
-                </motion.div>
-              ))}
-            </motion.div>
+            <div className="space-y-12">
+              <motion.div
+                key="grid"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3"
+              >
+                {paginatedItems.map((item, idx) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                  >
+                    <ClassCard
+                      classItem={item}
+                      onEdit={() => onEdit(item)}
+                      onDelete={() => onDelete(item.id!)}
+                    />
+                  </motion.div>
+                ))}
+              </motion.div>
+
+              {/* Pagination Controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-2 pt-8">
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    className="h-12 w-12 rounded-xl border border-slate-200 flex items-center justify-center text-slate-600 disabled:opacity-30 hover:bg-slate-50 transition-all font-bold"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+                  </button>
+
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setCurrentPage(i + 1)}
+                      className={`h-12 w-12 rounded-xl font-black text-xs transition-all ${currentPage === i + 1
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                          : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
+                        }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    className="h-12 w-12 rounded-xl border border-slate-200 flex items-center justify-center text-slate-600 disabled:opacity-30 hover:bg-slate-50 transition-all font-bold"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </AnimatePresence>
       </div>
