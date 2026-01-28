@@ -155,10 +155,13 @@ export default function QRAcceso() {
   // ================= ACTIONS =================
 
   // ================= ACTIONS =================
-  const regenerate = async () => {
+  const regenerate = async (isAutoOverride?: boolean) => {
     const t = genToken()
+    // Use the override value if provided (for state transition), otherwise use current state
+    const currentAuto = isAutoOverride !== undefined ? isAutoOverride : autoRefresh
+
     // If autoRefresh is disabled, use a very long expiry (1 year)
-    const durationMs = autoRefresh ? 30 * 1000 : 365 * 24 * 60 * 60 * 1000
+    const durationMs = currentAuto ? 30 * 1000 : 365 * 24 * 60 * 60 * 1000
     const expiry = new Date(Date.now() + durationMs)
 
     const { error } = await supabase.from('qr_tokens').insert({
@@ -199,7 +202,7 @@ export default function QRAcceso() {
       ctx.fillStyle = '#ffffff'
       ctx.font = 'bold 36px sans-serif'
       ctx.textAlign = 'center'
-      ctx.fillText('ACCESO GIMNASIO', canvas.width / 2, 80)
+      ctx.fillText('ACCESO A BELEZA DOJO', canvas.width / 2, 80)
 
       ctx.fillStyle = '#94a3b8'
       ctx.font = '20px sans-serif'
@@ -218,16 +221,6 @@ export default function QRAcceso() {
       ctx.fillStyle = '#3b82f6'
       ctx.font = 'bold 28px sans-serif'
       ctx.fillText('Beleza Dojo', canvas.width / 2, 630)
-
-      if (nextRefreshAt) {
-        ctx.fillStyle = '#64748b'
-        ctx.font = '16px sans-serif'
-        ctx.fillText(
-          `Válido hasta: ${nextRefreshAt.toLocaleString('es-AR')}`,
-          canvas.width / 2,
-          680
-        )
-      }
 
       const pngUrl = canvas.toDataURL('image/png')
       const a = document.createElement('a')
@@ -276,7 +269,7 @@ export default function QRAcceso() {
         </head>
         <body>
           <div class="container">
-            <h1>ACCESO GIMNASIO</h1>
+            <h1>ACCESO A BELEZA DOJO</h1>
             <p>Escanea el código para validar tu ingreso</p>
             <img src="${qrApiUrl}" alt="QR de Acceso" />
             <div class="brand">Beleza Dojo</div>
@@ -329,8 +322,8 @@ export default function QRAcceso() {
                 const nextValue = !autoRefresh
                 setAutoRefresh(nextValue)
                 localStorage.setItem('qr_auto_refresh', JSON.stringify(nextValue))
-                // Regenerate when toggling to ensure proper expiry
-                setTimeout(() => regenerate(), 100)
+                // Pass the nextValue directly to avoid using stale state
+                regenerate(nextValue)
               }}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -427,22 +420,24 @@ export default function QRAcceso() {
 
 
 
-                  <div className="grid grid-cols-2 gap-3 w-full">
-                    <button
-                      onClick={downloadQR}
-                      className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/20"
-                    >
-                      <Download className="w-4 h-4" />
-                      Descargar
-                    </button>
-                    <button
-                      onClick={printQR}
-                      className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
-                    >
-                      <Printer className="w-4 h-4" />
-                      Imprimir
-                    </button>
-                  </div>
+                  {!autoRefresh && (
+                    <div className="grid grid-cols-2 gap-3 w-full">
+                      <button
+                        onClick={downloadQR}
+                        className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all shadow-xl shadow-slate-900/20"
+                      >
+                        <Download className="w-4 h-4" />
+                        Descargar
+                      </button>
+                      <button
+                        onClick={printQR}
+                        className="flex items-center justify-center gap-2 py-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white font-bold text-sm hover:scale-[1.02] active:scale-[0.98] transition-all"
+                      >
+                        <Printer className="w-4 h-4" />
+                        Imprimir
+                      </button>
+                    </div>
+                  )}
 
 
                   <button
@@ -648,15 +643,17 @@ export default function QRAcceso() {
                 </div>
               </div>
               <div className="pt-8">
-                <p className="text-slate-500 font-bold uppercase tracking-widest text-sm mb-2">Renovación automática segura</p>
+                <p className="text-slate-500 font-bold uppercase tracking-widest text-sm mb-2">
+                  {autoRefresh ? 'Renovación automática segura' : 'Código QR Fijo Permanente'}
+                </p>
                 <div className="text-5xl font-black text-white tabular-nums">
-                  {formatTimeLeft(nextRefreshAt, now)}
+                  {autoRefresh ? formatTimeLeft(nextRefreshAt, now) : '∞ PERMANENTE'}
                 </div>
               </div>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </AdminLayout>
+    </AdminLayout >
   )
 }
