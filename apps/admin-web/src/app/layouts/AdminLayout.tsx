@@ -239,28 +239,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
     }
   }, [profile?.user_id, profile?.role])
 
-  const logout = async () => {
-    await supabase.auth.signOut()
-    router.replace('/login')
-  }
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="w-20 h-20 mx-auto mb-4">
-            <img src="/logo.png" alt="Logo" className="w-20 h-20 object-contain animate-pulse" />
-          </div>
-          <p className="text-muted-foreground animate-pulse font-medium tracking-widest uppercase text-[10px]">Cargando…</p>
-        </div>
-      </div>
-    )
-  }
-
-  /* State for mobile sidebar */
-  // Moved to top
-
-
+  /* State and Hooks for Navigation & Protection */
   const role = profile?.role || 'member'
   const nav = useMemo(() => NAV_ITEMS.filter(item => item.roles.includes(role)), [role])
   const isAdmin = role === 'admin' || role === 'instructor'
@@ -284,6 +263,24 @@ export default function AdminLayout({ children, active }: { children: React.Reac
       }
     }
   }, [pathname, loading, profile, router])
+
+  const logout = async () => {
+    await supabase.auth.signOut()
+    router.replace('/login')
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-center">
+          <div className="w-20 h-20 mx-auto mb-4">
+            <img src="/logo.png" alt="Logo" className="w-20 h-20 object-contain animate-pulse" />
+          </div>
+          <p className="text-muted-foreground animate-pulse font-medium tracking-widest uppercase text-[10px]">Cargando…</p>
+        </div>
+      </div>
+    )
+  }
 
   const displayName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') ||
