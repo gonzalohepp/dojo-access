@@ -265,18 +265,25 @@ export default function AdminLayout({ children, active }: { children: React.Reac
   const nav = useMemo(() => NAV_ITEMS.filter(item => item.roles.includes(role)), [role])
   const isAdmin = role === 'admin' || role === 'instructor'
 
-  // Route protection
+  // Optimized Route protection
   useEffect(() => {
-    if (loading) return
-    const currentPath = pathname
-    const isAllowed = nav.some(item => item.href === currentPath) || currentPath === '/validate' || currentPath === '/auth/callback'
+    if (loading || !profile) return
 
-    // Especial case: /validate is always allowed for logged users if they have one of the roles
-    if (!isAllowed && currentPath !== '/login') {
-      const defaultPath = role === 'admin' ? '/admin' : '/profile'
-      router.replace(defaultPath)
+    const currentPath = pathname
+    // Public or special paths
+    if (currentPath === '/login' || currentPath === '/auth/callback') return
+
+    const userRole = profile.role || 'member'
+    const allowed = NAV_ITEMS.filter(item => item.roles.includes(userRole)).some(item => item.href === currentPath)
+
+    if (!allowed && currentPath !== '/validate') {
+      const defaultPath = userRole === 'admin' ? '/admin' : '/profile'
+      // Only replace if we are not already at the default path to prevent loops
+      if (currentPath !== defaultPath) {
+        router.replace(defaultPath)
+      }
     }
-  }, [pathname, loading, nav, role, router])
+  }, [pathname, loading, profile, router])
 
   const displayName =
     [profile?.first_name, profile?.last_name].filter(Boolean).join(' ') ||
