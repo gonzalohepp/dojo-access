@@ -69,6 +69,7 @@ type AttendanceRow = {
   scanned_at: string
   result: string
   reason: string | null
+  classes?: { name: string }[]
 }
 
 function daysDiff(a: Date, b: Date) { a.setHours(0, 0, 0, 0); b.setHours(0, 0, 0, 0); return Math.round((b.getTime() - a.getTime()) / 86400000) }
@@ -126,7 +127,27 @@ export default function ProfilePage() {
         .eq('user_id', vw.user_id)
         .order('scanned_at', { ascending: false })
         .limit(10)
-      setAttendance(att ?? [])
+
+      // Fetch specific class attendance for these logs
+      if (att && att.length > 0) {
+        const earliest = att[att.length - 1].scanned_at.split('T')[0]
+        const { data: classAtt } = await supabase
+          .from('class_attendance')
+          .select('date, created_at, classes(name)')
+          .eq('user_id', vw.user_id)
+          .gte('date', earliest)
+
+        const merged = att.map(a => {
+          const date = a.scanned_at.split('T')[0]
+          const matches = (classAtt || [])
+            .filter(ca => ca.date === date)
+            .map(ca => ca.classes)
+          return { ...a, classes: matches as any[] }
+        })
+        setAttendance(merged)
+      } else {
+        setAttendance([])
+      }
 
       setLoading(false)
     })()
@@ -454,7 +475,11 @@ export default function ProfilePage() {
                                       <p className="text-[10px] font-bold text-slate-400">{new Date(att.scanned_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
                                     </div>
                                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
-                                      {att.result?.toLowerCase().includes('autorizado') || att.result?.toLowerCase().includes('success') ? 'Acceso correcto' : 'DENEGADO'}
+                                      {att.result?.toLowerCase().includes('autorizado') || att.result?.toLowerCase().includes('success')
+                                        ? (att.classes && att.classes.length > 0
+                                          ? `Acceso a: ${att.classes.map(c => c.name).join(', ')}`
+                                          : 'Acceso correcto')
+                                        : 'DENEGADO'}
                                     </p>
                                   </div>
                                 </motion.div>
