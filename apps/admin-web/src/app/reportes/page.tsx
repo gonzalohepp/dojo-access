@@ -17,6 +17,7 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { exportToExcel } from '@/lib/excelExport'
+import Link from 'next/link'
 
 type Member = {
     user_id: string
@@ -109,6 +110,14 @@ export default function ReportesPage() {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3">
+                        <Link href="/reportes/asistencia">
+                            <Button
+                                className="bg-blue-600 hover:bg-blue-500 text-white rounded-2xl px-6 py-6 font-bold text-xs uppercase tracking-widest transition-all gap-2 shadow-xl shadow-blue-500/20"
+                            >
+                                <Calendar className="w-5 h-5" />
+                                Historial de Asistencia
+                            </Button>
+                        </Link>
                         <Button
                             onClick={() => exportToExcel(absentMembers, `Ausencias_${new Date().toISOString().slice(0, 10)}`)}
                             className="bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-2xl px-6 py-6 font-bold text-xs uppercase tracking-widest transition-all gap-2"
