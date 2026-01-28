@@ -29,6 +29,7 @@ import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import SubscriptionModal from '../components/profile/SubscriptionModal'
 import PhotoCropper from '../components/profile/PhotoCropper'
+import MemberGrades from '../components/profile/MemberGrades'
 import { fmtARS, fmtDate, fmtSchedule } from '@/lib/format'
 
 
@@ -441,6 +442,11 @@ export default function ProfilePage() {
                           )}
                         </div>
                       )}
+                    </div>
+
+                    {/* Graduations Section */}
+                    <div className="pt-8 border-t border-slate-100 dark:border-slate-800">
+                      <MemberGrades userId={member.user_id} readOnly={true} />
                     </div>
                   </div>
 
