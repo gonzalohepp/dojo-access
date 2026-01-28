@@ -60,7 +60,7 @@ export default function ClassCard(props: Props) {
             {item?.name}
           </h3>
           <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mt-2">
-            {item?.category === 'acondicionamiento-fisico' ? 'Fitness' : 'Artes Marciales'}
+            {item?.category === 'acondicionamiento-fisico' ? 'Fisico' : 'Artes Marciales'}
           </p>
         </div>
 

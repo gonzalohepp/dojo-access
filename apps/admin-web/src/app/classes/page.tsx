@@ -146,7 +146,7 @@ export default function ClassesPage() {
               >
                 <option value="all">Todas las Categorías</option>
                 <option value="artes-marciales">Artes Marciales</option>
-                <option value="acondicionamiento-fisico">Fitness</option>
+                <option value="acondicionamiento-fisico">Fisico</option>
               </select>
               <div className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2">
                 <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
@@ -246,8 +246,8 @@ export default function ClassesPage() {
                       key={i}
                       onClick={() => setCurrentPage(i + 1)}
                       className={`h-12 w-12 rounded-xl font-black text-xs transition-all ${currentPage === i + 1
-                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                          : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                        : 'bg-white border border-slate-200 text-slate-500 hover:border-slate-400'
                         }`}
                     >
                       {i + 1}

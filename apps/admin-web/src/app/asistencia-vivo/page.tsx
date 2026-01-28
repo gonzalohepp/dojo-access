@@ -44,6 +44,13 @@ export default function AsistenciaVivoPage() {
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
     const [loading, setLoading] = useState(true)
     const [currentTime, setCurrentTime] = useState(new Date())
+    const [expandedClasses, setExpandedClasses] = useState<number[]>([])
+
+    const toggleExpand = (id: number) => {
+        setExpandedClasses(prev =>
+            prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+        )
+    }
 
     // Actualizar la hora cada minuto
     useEffect(() => {
@@ -192,90 +199,104 @@ export default function AsistenciaVivoPage() {
                                     <p className="text-slate-600 text-[10px] mt-2 font-black uppercase tracking-tight">Monitorizando el siguiente horario...</p>
                                 </div>
                             ) : (
-                                <div className="grid gap-6">
+                                <div className="space-y-4">
                                     {activeClasses.map((cl) => {
                                         const attendees = attendance.filter(a => a.class_id === cl.id)
+                                        const isExpanded = expandedClasses.includes(cl.id)
                                         return (
                                             <motion.div
                                                 key={cl.id}
-                                                initial={{ opacity: 0, y: 20 }}
+                                                layout
+                                                initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
+                                                className="bg-slate-900/50 border border-white/10 backdrop-blur-xl rounded-[2rem] overflow-hidden shadow-xl"
                                             >
-                                                <Card className="bg-slate-900/50 border-white/10 backdrop-blur-xl rounded-[2.5rem] overflow-hidden shadow-2xl relative group">
-                                                    {/* Intensity Glow */}
-                                                    <div className="absolute inset-x-0 bottom-0 h-1 transition-all duration-500" style={{ backgroundColor: cl.color || '#3b82f6', filter: 'blur(8px)', opacity: 0.3 }} />
-
-                                                    <CardContent className="p-0">
-                                                        <div className="p-8 border-b border-white/5 flex flex-wrap items-start justify-between gap-6">
-                                                            <div className="space-y-3">
-                                                                <div className="flex items-center gap-3">
-                                                                    <div
-                                                                        className="w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-black/40"
-                                                                        style={{ backgroundColor: cl.color || '#3b82f6' }}
-                                                                    >
-                                                                        <Zap className="w-6 h-6 fill-current" />
-                                                                    </div>
-                                                                    <div>
-                                                                        <h3 className="text-3xl font-black text-white tracking-tight uppercase italic">{cl.name}</h3>
-                                                                        <p className="text-slate-400 font-bold flex items-center gap-1.5 text-xs uppercase tracking-widest mt-1">
-                                                                            <UserIcon className="w-3 h-3" />
-                                                                            {cl.instructor || 'Sin Instructor'}
-                                                                        </p>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <div className="flex items-center gap-6">
-                                                                <div className="text-center bg-white/5 px-6 py-4 rounded-3xl border border-white/5">
-                                                                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Presentes</p>
-                                                                    <div className="flex items-center gap-2 justify-center">
-                                                                        <Users className="w-5 h-5 text-blue-500" />
-                                                                        <span className="text-4xl font-black text-white leading-none">{attendees.length}</span>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="text-right">
-                                                                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 text-[10px] font-black uppercase tracking-widest mb-2 border border-blue-500/20">
-                                                                        <Clock className="w-3 h-3" />
-                                                                        {cl.start_time?.slice(0, 5)} - {cl.end_time?.slice(0, 5)}
-                                                                    </div>
-                                                                </div>
+                                                {/* Header / Trigger */}
+                                                <button
+                                                    onClick={() => toggleExpand(cl.id)}
+                                                    className="w-full text-left p-6 flex items-center justify-between gap-4 hover:bg-white/5 transition-all"
+                                                >
+                                                    <div className="flex items-center gap-4">
+                                                        <div
+                                                            className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0"
+                                                            style={{ backgroundColor: cl.color || '#3b82f6' }}
+                                                        >
+                                                            <Zap className="w-5 h-5 fill-current" />
+                                                        </div>
+                                                        <div className="min-w-0">
+                                                            <h3 className="text-xl font-black text-white tracking-tight uppercase italic truncate">{cl.name}</h3>
+                                                            <div className="flex items-center gap-3 mt-1">
+                                                                <p className="text-slate-500 font-bold flex items-center gap-1 text-[9px] uppercase tracking-widest">
+                                                                    <UserIcon className="w-2.5 h-2.5" />
+                                                                    {cl.instructor || 'Sin Instructor'}
+                                                                </p>
+                                                                <span className="w-1 h-1 rounded-full bg-slate-700" />
+                                                                <p className="text-blue-500 font-bold flex items-center gap-1 text-[9px] uppercase tracking-widest">
+                                                                    <Clock className="w-2.5 h-2.5" />
+                                                                    {cl.start_time?.slice(0, 5)} - {cl.end_time?.slice(0, 5)}
+                                                                </p>
                                                             </div>
                                                         </div>
+                                                    </div>
 
-                                                        <div className="p-8 bg-black/20">
-                                                            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
-                                                                <CheckCircle className="w-3 h-3 text-green-500" />
-                                                                Alumnos Registrados
-                                                            </p>
-
-                                                            {attendees.length === 0 ? (
-                                                                <p className="text-slate-600 font-bold italic text-sm py-4">Aún no se han registrado ingresos para esta clase.</p>
-                                                            ) : (
-                                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                                                    {attendees.map((a, idx) => (
-                                                                        <motion.div
-                                                                            key={idx}
-                                                                            initial={{ opacity: 0, x: -10 }}
-                                                                            animate={{ opacity: 1, x: 0 }}
-                                                                            transition={{ delay: idx * 0.05 }}
-                                                                            className="flex items-center gap-3 p-3 bg-white/2 rounded-2xl border border-white/5 group-hover:bg-white/5 transition-all"
-                                                                        >
-                                                                            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center font-black text-blue-500 text-[10px] uppercase border border-blue-500/20">
-                                                                                {a.profiles?.first_name?.[0] || '?'}{a.profiles?.last_name?.[0] || ''}
-                                                                            </div>
-                                                                            <div className="min-w-0">
-                                                                                <p className="text-sm font-bold text-white uppercase tracking-tight truncate">
-                                                                                    {a.profiles?.first_name} {a.profiles?.last_name}
-                                                                                </p>
-                                                                                <p className="text-[10px] text-slate-500 truncate">{a.profiles?.email}</p>
-                                                                            </div>
-                                                                        </motion.div>
-                                                                    ))}
-                                                                </div>
-                                                            )}
+                                                    <div className="flex items-center gap-4 shrink-0">
+                                                        <div className="flex flex-col items-center justify-center bg-white/5 w-14 h-14 rounded-2xl border border-white/5">
+                                                            <span className="text-lg font-black text-white leading-none">{attendees.length}</span>
+                                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Pres.</span>
                                                         </div>
-                                                    </CardContent>
-                                                </Card>
+                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border border-white/5 transition-transform duration-300 ${isExpanded ? 'rotate-180 bg-white/10' : ''}`}>
+                                                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                                        </div>
+                                                    </div>
+                                                </button>
+
+                                                {/* Expanded Content */}
+                                                <AnimatePresence>
+                                                    {isExpanded && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: 'auto', opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                                            className="overflow-hidden"
+                                                        >
+                                                            <div className="p-6 pt-0 bg-black/20 border-t border-white/5">
+                                                                <div className="pt-6 space-y-4">
+                                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
+                                                                        <CheckCircle className="w-3 h-3 text-green-500" />
+                                                                        Listado de Usuarios
+                                                                    </p>
+
+                                                                    {attendees.length === 0 ? (
+                                                                        <p className="text-slate-600 font-bold italic text-sm py-4">Aún no hay ingresos para esta clase.</p>
+                                                                    ) : (
+                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                            {attendees.map((a, idx) => (
+                                                                                <motion.div
+                                                                                    key={idx}
+                                                                                    initial={{ opacity: 0, x: -5 }}
+                                                                                    animate={{ opacity: 1, x: 0 }}
+                                                                                    transition={{ delay: idx * 0.05 }}
+                                                                                    className="flex items-center gap-3 p-3 bg-white/2 rounded-xl border border-white/5"
+                                                                                >
+                                                                                    <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center font-black text-blue-500 text-[9px] uppercase border border-blue-500/20">
+                                                                                        {a.profiles?.first_name?.[0] || '?'}{a.profiles?.last_name?.[0] || ''}
+                                                                                    </div>
+                                                                                    <div className="min-w-0">
+                                                                                        <p className="text-xs font-bold text-white uppercase tracking-tight truncate">
+                                                                                            {a.profiles?.first_name} {a.profiles?.last_name}
+                                                                                        </p>
+                                                                                        <p className="text-[9px] text-slate-500 truncate">{a.profiles?.email}</p>
+                                                                                    </div>
+                                                                                </motion.div>
+                                                                            ))}
+                                                                        </div>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
                                             </motion.div>
                                         )
                                     })}

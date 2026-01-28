@@ -238,7 +238,7 @@ export default function ClassForm({ initial, onCancel, onSaved }: Props) {
                       : 'bg-white border border-slate-200 text-slate-500'
                       }`}
                   >
-                    Fitness
+                    Fisico
                   </button>
                 </div>
               </div>
