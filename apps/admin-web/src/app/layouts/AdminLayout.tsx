@@ -57,7 +57,7 @@ const adminNav = [
   { href: '/classes', label: 'Clases', icon: GraduationCap },
   { href: '/payments', label: 'Pagos', icon: DollarSign },
   { href: '/metricas', label: 'Metricas', icon: ChartLine },
-  { href: '/reportes', label: 'Reportes de Ausencia', icon: ClipboardList },
+  { href: '/reportes', label: 'Reportes', icon: ClipboardList },
   { href: '/access-log', label: 'Historial de Accesos', icon: ClipboardList },
 ]
 
