@@ -116,8 +116,8 @@ export default function AsistenciaVivoPage() {
             const [sH, sM] = c.start_time.split(':').map(Number)
             const [eH, eM] = c.end_time.split(':').map(Number)
 
-            const startMinutes = sH * 60 + sM - 30 // 30 min antes
-            const endMinutes = eH * 60 + eM + 30   // 30 min despues
+            const startMinutes = sH * 60 + sM - 10 // 10 min antes
+            const endMinutes = eH * 60 + eM + 15   // 15 min despues
 
             return currentMinutes >= startMinutes && currentMinutes <= endMinutes
         })
@@ -133,7 +133,7 @@ export default function AsistenciaVivoPage() {
             if (!c.days?.includes(dayName) || !c.start_time) return false
             const [sH, sM] = c.start_time.split(':').map(Number)
             const startMinutes = sH * 60 + sM
-            return startMinutes > currentMinutes + 30
+            return startMinutes > currentMinutes + 10
         })
     }, [classes, currentTime])
 
@@ -224,7 +224,22 @@ export default function AsistenciaVivoPage() {
                                                             <Zap className="w-5 h-5 fill-current" />
                                                         </div>
                                                         <div className="min-w-0">
-                                                            <h3 className="text-xl font-black text-white tracking-tight uppercase italic truncate">{cl.name}</h3>
+                                                            <div className="flex items-center gap-2">
+                                                                <h3 className="text-xl font-black text-white tracking-tight uppercase italic truncate">{cl.name}</h3>
+                                                                {(() => {
+                                                                    const [sH, sM] = (cl.start_time || '00:00').split(':').map(Number)
+                                                                    const startMins = sH * 60 + sM
+                                                                    const currMins = currentTime.getHours() * 60 + currentTime.getMinutes()
+                                                                    if (currMins < startMins) {
+                                                                        return (
+                                                                            <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[8px] font-black uppercase tracking-widest whitespace-nowrap">
+                                                                                Por Iniciar
+                                                                            </span>
+                                                                        )
+                                                                    }
+                                                                    return null
+                                                                })()}
+                                                            </div>
                                                             <div className="flex items-center gap-3 mt-1">
                                                                 <p className="text-slate-500 font-bold flex items-center gap-1 text-[9px] uppercase tracking-widest">
                                                                     <UserIcon className="w-2.5 h-2.5" />
