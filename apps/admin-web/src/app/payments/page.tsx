@@ -24,6 +24,25 @@ type PaymentRow = {
   notes: string | null;
 };
 
+type PaymentFromDB = {
+  id: number;
+  user_id: string;
+  amount: number;
+  method: string;
+  paid_at: string | null;
+  payment_date?: string | null;
+  created_at?: string | null;
+  period_from: string | null;
+  period_to: string | null;
+  notes: string | null;
+  profiles: { first_name: string | null; last_name: string | null } | { first_name: string | null; last_name: string | null }[] | null;
+};
+
+type ClassFromDB = {
+  id: number;
+  name: string;
+};
+
 const ITEMS_PER_PAGE = 5;
 
 export default function PaymentsPage() {
@@ -72,8 +91,9 @@ export default function PaymentsPage() {
     }
 
     const nameMap: Record<string, string> = {};
-    const mapped: PaymentRow[] = (pays ?? []).map((r: any) => {
-      const name = [r.profiles?.first_name, r.profiles?.last_name].filter(Boolean).join(' ').trim() || '—';
+    const mapped: PaymentRow[] = (pays ?? []).map((r: PaymentFromDB) => {
+      const profile = Array.isArray(r.profiles) ? r.profiles[0] : r.profiles;
+      const name = [profile?.first_name, profile?.last_name].filter(Boolean).join(' ').trim() || '—';
       if (r.user_id) nameMap[r.user_id] = name;
       return {
         id: r.id,
@@ -96,7 +116,7 @@ export default function PaymentsPage() {
     );
 
     const { data: classes } = await supabase.from('classes').select('id,name').order('name', { ascending: true });
-    setClassOpts((classes ?? []).map((c: any) => ({ value: String(c.id), label: c.name })));
+    setClassOpts((classes ?? []).map((c: ClassFromDB) => ({ value: String(c.id), label: c.name })));
 
     const monthMap: Record<string, string> = {};
     mapped.forEach((r) => {

@@ -1,15 +1,15 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
+import { fmtARS } from '@/lib/format'
 import AdminLayout from '../layouts/AdminLayout'
 import StatsCard from '../components/dashboard/StatsCard'
 import RecentActivity from '../components/dashboard/RecentActivity'
 import ExpiringMembers from '../components/dashboard/ExpiringMembers'
 import RecentAccess from '../components/dashboard/RecentAccess'
-import { Users, UserCheck, UserX, DollarSign, ClipboardCheck, Plus, Clock, ArrowRight, Activity, UserPlus, CheckCircle, AlertTriangle, XCircle, Bell } from 'lucide-react'
+import { Users, UserCheck, UserX, DollarSign, ClipboardCheck, Plus, Clock, ArrowRight, Activity } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import RegistrationRequests from '../components/dashboard/RegistrationRequests'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
@@ -49,9 +49,6 @@ function normalizeResult(value: string | null | undefined): 'authorized' | 'deni
   if (['denegado', 'denied', 'reject', 'rejected'].includes(v)) return 'denied'
   return 'unknown'
 }
-
-const fmtARS = (n: number) =>
-  new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 2 }).format(n || 0)
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stats | null>(null)

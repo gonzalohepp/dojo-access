@@ -9,18 +9,36 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { CheckCircle, XCircle, RefreshCw, Camera, ShieldCheck, Zap } from 'lucide-react'
 import QRScannerHtml5 from '@/components/QRScannerHtml5'
 import { motion, AnimatePresence } from 'framer-motion'
+import { MemberRow as BaseMemberRow } from '@/types/member'
 
 export const dynamic = 'force-dynamic'
 
-type MemberRow = {
-  user_id: string
-  first_name: string | null
-  last_name: string | null
-  email: string | null
-  access_code: string | null
-  status?: string | null
-  estimated_monthly_fee?: number | null
+// Extend the base MemberRow with validate-specific fields
+type MemberRow = BaseMemberRow & {
   is_new_member?: boolean
+}
+
+type ClassCandidate = {
+  id: number
+  name: string
+  instructor: string | null
+  start_time: string | null
+  end_time: string | null
+  color: string | null
+}
+
+const DAY_MAP = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb']
+
+function isTimeBefore(current: string, target: string, minusMinutes: number = 0): boolean {
+  try {
+    const [cHours, cMins] = current.split(':').map(Number)
+    const [tHours, tMins] = target.split(':').map(Number)
+    const currentTotal = cHours * 60 + cMins
+    const targetTotal = tHours * 60 + tMins - minusMinutes
+    return currentTotal <= targetTotal
+  } catch {
+    return false
+  }
 }
 
 const fullName = (m: MemberRow | null) =>
@@ -50,6 +68,12 @@ function ValidateContent() {
   const [allowed, setAllowed] = useState<boolean | null>(null)
   const [resultMsg, setResultMsg] = useState('')
 
+  // Multi-Class selection
+  const [candidateClasses, setCandidateClasses] = useState<ClassCandidate[]>([])
+  const [selectedClassIds, setSelectedClassIds] = useState<Set<number>>(new Set())
+  const [showClassSelection, setShowClassSelection] = useState(false)
+  const [isFinalizing, setIsFinalizing] = useState(false)
+
   // Anti-loop
   const processingRef = useRef(false)
   const lastTextRef = useRef<string | null>(null)
@@ -75,6 +99,49 @@ function ValidateContent() {
       setMember((rows?.[0] as MemberRow) ?? null)
     })()
   }, [router])
+  // ========= Finalizar y Registrar =========
+  const finalizeAccess = useCallback(
+    async (m: MemberRow, success: boolean, reason: string, selectedIds: number[] = []) => {
+      setIsFinalizing(true)
+      try {
+        // 1) Registrar asistencia a clases si las hay
+        if (selectedIds.length > 0) {
+          const today = new Date().toISOString().slice(0, 10)
+          const { error: attErr } = await supabase.from('class_attendance').insert(
+            selectedIds.map((id) => ({
+              user_id: m.user_id,
+              class_id: id,
+              date: today,
+            }))
+          )
+          if (attErr) console.error('[validate] attendance error', attErr)
+        }
+
+        // 2) Log de acceso
+        await supabase.from('access_logs').insert({
+          user_id: m.user_id,
+          result: success ? 'autorizado' : 'denegado',
+          reason,
+          scanned_at: new Date().toISOString(),
+        })
+
+        // 3) Mostrar resultado
+        setAllowed(success)
+        setResultMsg(reason)
+        setOpenResult(true)
+
+        if (success) {
+          setTimeout(() => router.replace('/profile'), 1500)
+        }
+      } catch (e) {
+        console.error('[validate] finalize error', e)
+      } finally {
+        setIsFinalizing(false)
+        setShowClassSelection(false)
+      }
+    },
+    [router]
+  )
 
   // ========= Validación =========
   const validateAccess = useCallback(
@@ -83,8 +150,7 @@ function ValidateContent() {
       processingRef.current = true
 
       try {
-        // 1) Validar TOKEN contra la base de datos (SEGURIDAD CRÍTICA)
-        // Extraemos 't' de la URL manualmente si viene en rawText
+        // 1) Validar TOKEN contra la base de datos
         let token = ''
         try {
           const u = new URL(rawText)
@@ -98,24 +164,21 @@ function ValidateContent() {
           return
         }
 
-        // Consultamos la DB para ver si el token existe y es válido (no expirado)
         const { data: dbToken, error: tokenErr } = await supabase
           .from('qr_tokens')
           .select('*')
           .eq('token', token)
-          .gt('expires_at', new Date().toISOString()) // Solo tokens que expiran en el futuro
+          .gt('expires_at', new Date().toISOString())
           .maybeSingle()
 
         if (tokenErr || !dbToken) {
-          // Token invalido
           setAllowed(false)
           setResultMsg('El código QR ha expirado o no es válido. Escanea el de la pantalla nuevamente.')
           setOpenResult(true)
           return
         }
 
-        // 2) Verificación de membresía del usuario logueado
-        //    (Si llegaste acá, el QR pasó el filtro de dominio + token)
+        // 2) Verificación de membresía
         const emailToCheck = userEmail || member?.email || undefined
 
         if (!emailToCheck) {
@@ -132,59 +195,73 @@ function ValidateContent() {
           .limit(1)
           .maybeSingle()
 
-        if (error) {
-          console.error('[validate] query error', error)
-          throw error
-        }
+        if (error) throw error
 
         const m = (row as MemberRow) ?? null
-        let ok = false
-        let reason = 'No se encontró el miembro'
-
-        if (m) {
-          setMember(m)
-
-          if (m.status === 'activo') {
-            // 3) COOLDOWN CHECK: Evitar re-escaneo inmediato (2 min)
-            const twoMinsAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
-            const { data: recentEntries } = await supabase
-              .from('access_logs')
-              .select('id')
-              .eq('user_id', m.user_id)
-              .eq('result', 'autorizado')
-              .gt('scanned_at', twoMinsAgo)
-              .limit(1)
-
-            if (recentEntries && recentEntries.length > 0) {
-              ok = false
-              reason = 'Acceso ya registrado recientemente. Espera 2 minutos para volver a escanear.'
-            } else {
-              ok = true
-              reason = 'Acceso autorizado - ¡Bienvenido!'
-            }
-          } else {
-            ok = false
-            if (m.status === 'suspendido') reason = 'Membresía suspendida'
-            else if (m.status === 'vencido' || m.status === 'inactivo') reason = 'Cuota vencida o cuenta inactiva'
-            else reason = 'Cuenta pendiente de aprobación'
-          }
+        if (!m) {
+          setAllowed(false)
+          setResultMsg('No se encontró el miembro')
+          setOpenResult(true)
+          return
         }
 
-        // Log asíncrono
-        supabase.from('access_logs').insert({
-          user_id: m?.user_id ?? member?.user_id ?? null,
-          result: ok ? 'autorizado' : 'denegado',
-          reason,
-          scanned_at: new Date().toISOString(),
-          // opcional: token: site.token
-        }).then(() => { }, (err) => console.error('[validate] log error', err))
+        setMember(m)
 
-        setAllowed(ok)
-        setResultMsg(reason)
-        setOpenResult(true)
+        if (m.status !== 'activo') {
+          let reason = 'Cuenta pendiente de aprobación'
+          if (m.status === 'suspendido') reason = 'Membresía suspendida'
+          else if (m.status === 'vencido' || m.status === 'inactivo') reason = 'Cuota vencida o cuenta inactiva'
 
-        if (ok) {
-          setTimeout(() => router.replace('/profile'), 900)
+          await finalizeAccess(m, false, reason)
+          return
+        }
+
+        // 3) COOLDOWN CHECK
+        const twoMinsAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
+        const { data: recentEntries } = await supabase
+          .from('access_logs')
+          .select('id')
+          .eq('user_id', m.user_id)
+          .eq('result', 'autorizado')
+          .gt('scanned_at', twoMinsAgo)
+          .limit(1)
+
+        if (recentEntries && recentEntries.length > 0) {
+          setAllowed(false)
+          setResultMsg('Acceso ya registrado recientemente. Espera 2 minutos para volver a escanear.')
+          setOpenResult(true)
+          return
+        }
+
+        // 4) BUSCAR CLASES CANDIDATAS (Día y Horario)
+        const now = new Date()
+        const dayName = DAY_MAP[now.getDay()]
+        const currentTime = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
+
+        // Buscamos clases en las que está inscrito y que son HOY
+        const { data: enrollments, error: enrErr } = await supabase
+          .from('class_enrollments')
+          .select('class_id, classes(*)')
+          .eq('user_id', m.user_id)
+
+        if (enrErr) console.error('[validate] error fetching classes', enrErr)
+
+        const candidates = (enrollments || [])
+          .map((enr: any) => enr.classes)
+          .filter((cl: any) => {
+            if (!cl || !cl.days || !cl.end_time) return false
+            // Filtro de día
+            if (!cl.days.includes(dayName)) return false
+            // Filtro de horario: visible hasta 20 min antes del fin
+            return isTimeBefore(currentTime, cl.end_time, 20)
+          }) as ClassCandidate[]
+
+        if (candidates.length > 0) {
+          setCandidateClasses(candidates)
+          setSelectedClassIds(new Set())
+          setShowClassSelection(true) // Se abre el popup y se pausa el procesamiento
+        } else {
+          await finalizeAccess(m, true, 'Acceso autorizado - ¡Bienvenido!')
         }
       } catch (e) {
         console.error('[validate] unexpected error', e)
@@ -195,7 +272,7 @@ function ValidateContent() {
         processingRef.current = false
       }
     },
-    [member, router, userEmail]
+    [member, userEmail, finalizeAccess]
   )
 
   // ========= Callback del scanner (con debounce) =========
@@ -318,6 +395,79 @@ function ValidateContent() {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {showClassSelection && (
+          <Dialog open={showClassSelection} onOpenChange={(o) => {
+            if (!o) {
+              setShowClassSelection(false)
+              setPaused(false)
+            }
+          }}>
+            <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white rounded-3xl overflow-hidden p-0">
+              <div className="relative p-8">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-black text-white uppercase tracking-tight mb-2">
+                    ¿A qué clase vas a ingresar?
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-1 mb-6">
+                  <p className="text-slate-400 text-sm font-medium">Hemos detectado estas clases para ti hoy:</p>
+                </div>
+
+                <div className="space-y-3 mb-8">
+                  {candidateClasses.map((cl) => {
+                    const isSelected = selectedClassIds.has(cl.id)
+                    return (
+                      <button
+                        key={cl.id}
+                        onClick={() => {
+                          const next = new Set(selectedClassIds)
+                          if (next.has(cl.id)) next.delete(cl.id)
+                          else next.add(cl.id)
+                          setSelectedClassIds(next)
+                        }}
+                        className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${isSelected
+                            ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/20'
+                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                          }`}
+                      >
+                        <div className="text-left">
+                          <p className="font-bold text-white uppercase tracking-tight">{cl.name}</p>
+                          <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isSelected ? 'text-blue-100' : 'text-slate-500'}`}>
+                            {cl.start_time?.slice(0, 5)} - {cl.end_time?.slice(0, 5)} {cl.instructor && `• ${cl.instructor}`}
+                          </p>
+                        </div>
+                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-white border-white text-blue-600' : 'border-white/20'
+                          }`}>
+                          {isSelected && <CheckCircle className="w-4 h-4" />}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+
+                <Button
+                  onClick={() => {
+                    if (member) {
+                      finalizeAccess(member, true, 'Acceso autorizado - ¡Bienvenido!', Array.from(selectedClassIds))
+                    }
+                  }}
+                  disabled={isFinalizing}
+                  className="w-full py-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-sm shadow-xl shadow-blue-500/30 transition-all disabled:opacity-50"
+                >
+                  {isFinalizing ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    'CONFIRMAR INGRESO'
+                  )}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {openResult && (
