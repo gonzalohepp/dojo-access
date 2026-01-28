@@ -51,7 +51,13 @@ function ValidateContent() {
   const qp = useSearchParams()
 
   // Datos usuario / miembro
-  const [member, setMember] = useState<MemberRow | null>(null)
+  const [member, _setMember] = useState<MemberRow | null>(null)
+  const memberRef = useRef<MemberRow | null>(null)
+  const setMember = (m: MemberRow | null) => {
+    memberRef.current = m
+    _setMember(m)
+  }
+
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
   const multiplier = useMemo(() => {
@@ -179,7 +185,7 @@ function ValidateContent() {
         }
 
         // 2) Verificación de membresía
-        const emailToCheck = userEmail || member?.email || undefined
+        const emailToCheck = userEmail || memberRef.current?.email || undefined
 
         if (!emailToCheck) {
           setAllowed(false)
@@ -272,7 +278,7 @@ function ValidateContent() {
         processingRef.current = false
       }
     },
-    [member, userEmail, finalizeAccess]
+    [userEmail, finalizeAccess]
   )
 
   // ========= Callback del scanner (con debounce) =========
@@ -429,8 +435,8 @@ function ValidateContent() {
                           setSelectedClassIds(next)
                         }}
                         className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${isSelected
-                            ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/20'
-                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                          ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/20'
+                          : 'bg-white/5 border-white/10 hover:bg-white/10'
                           }`}
                       >
                         <div className="text-left">

@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
@@ -91,16 +91,12 @@ export default function AdminLayout({ children, active }: { children: React.Reac
   const fetchInitialNotifs = async () => {
     const dismissed = JSON.parse(localStorage.getItem('dismissed_notifs') || '[]')
 
-    // 1. Fetch Denied Access Logs
     const { data: logs } = await supabase
       .from('access_logs')
       .select('id, result, reason, scanned_at, profiles(first_name, last_name)')
       .eq('result', 'denegado')
       .order('scanned_at', { ascending: false })
-      .limit(20) // Fetch more to account for dismissed
-
-      .order('scanned_at', { ascending: false })
-      .limit(20) // Fetch more to account for dismissed
+      .limit(20)
 
     const mappedLogs: Notification[] = (logs || [])
       .filter(l => !dismissed.includes(l.id.toString()))
@@ -266,7 +262,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
 
 
   const role = profile?.role || 'member'
-  const nav = NAV_ITEMS.filter(item => item.roles.includes(role))
+  const nav = useMemo(() => NAV_ITEMS.filter(item => item.roles.includes(role)), [role])
   const isAdmin = role === 'admin' || role === 'instructor'
 
   // Route protection
