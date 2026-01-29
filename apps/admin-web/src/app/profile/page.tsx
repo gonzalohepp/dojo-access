@@ -259,8 +259,17 @@ export default function ProfilePage() {
   const fullName = useMemo(() => [member?.first_name, member?.last_name].filter(Boolean).join(' ').trim(), [member])
   const isActive = useMemo(() => {
     if (member?.role && ['admin', 'instructor', 'becado'].includes(member.role)) return true
-    return member?.status === 'activo'
-  }, [member?.status, member?.role])
+    if (member?.status === 'activo') return true
+
+    // Logic for grace period override
+    if (member?.next_payment_due) {
+      const today = new Date()
+      const due = new Date(member.next_payment_due + 'T12:00:00')
+      // If expired, but today is <= 20, visual status is Active
+      if (due < today && today.getDate() <= 20) return true
+    }
+    return false
+  }, [member?.status, member?.role, member?.next_payment_due])
   const daysLeft = useMemo(() => member?.next_payment_due ? daysDiff(new Date(), new Date(`${member.next_payment_due}T00:00:00`)) : null, [member])
 
   const ClassItem = ({ c, idx }: { c: ClassRow, idx: number }) => (
@@ -386,7 +395,9 @@ export default function ProfilePage() {
                               {isActive ? 'Activo' : 'Vencido'}
                             </div>
                             <p className="text-3xl font-black text-slate-900 dark:text-white tracking-tighter">
-                              {isActive ? 'Membresía al día' : 'Pago pendiente'}
+                              {isActive ? (
+                                member?.next_payment_due && new Date(member.next_payment_due + 'T12:00:00') < new Date() ? 'Pago pendiente' : 'Membresía al día'
+                              ) : 'Pago pendiente'}
                             </p>
                           </div>
                         </div>
@@ -412,7 +423,7 @@ export default function ProfilePage() {
                             <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                               <motion.div
                                 initial={{ width: 0 }}
-                                animate={{ width: daysLeft > 0 ? `${Math.min(100, (daysLeft / 30) * 100)}%` : '0%' }}
+                                animate={{ width: daysLeft > 0 ? `${Math.min(100, (daysLeft / 30) * 100)}%` : '100%' }}
                                 className={`h-full rounded-full ${daysLeft < 7 ? 'bg-red-500' : 'bg-blue-600'}`}
                               />
                             </div>
@@ -429,7 +440,7 @@ export default function ProfilePage() {
                                 if (due < today) {
                                   const day = today.getDate()
                                   if (day <= 10) return '¡Aprovechá! Pagá sin interés hasta el día 10.'
-                                  if (day <= 20) return 'Atención: Tu pago tendrá un 20% de recargo.'
+                                  if (day <= 20) return '+20% de interés por pago tardío.'
                                   return 'Acceso Bloqueado. Regularizá tu situación.'
                                 }
                               }

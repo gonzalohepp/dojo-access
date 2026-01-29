@@ -181,33 +181,51 @@ export default function AsistenciaVivoPage() {
 
     // Helper para determinar estado de pago y recargo del alumno
     const getMemberStatus = (m: any) => {
-        if (!m?.member_data) return { status: 'unknown', label: 'Sin datos', color: 'text-slate-500', bg: 'bg-slate-500/10' }
+        const tags: { label: string, color: string, bg: string }[] = []
+
+        if (!m?.member_data) {
+            return [{ label: 'Sin datos', color: 'text-slate-500', bg: 'bg-slate-500/10' }]
+        }
 
         const { next_payment_due, status } = m.member_data
 
-        // Si está marcado como inactivo o vencido en la DB
-        if (status !== 'activo') {
-            return { status: 'expired', label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' }
-        }
+        // Determinar "Si está al día"
+        let isUpToDate = status === 'activo'
+        let isLate = false
 
-        // Chequear fecha manualmente por si acaso
+        // Chequear fecha manualmente
         if (next_payment_due) {
             const today = new Date()
             today.setHours(0, 0, 0, 0)
             const due = new Date(next_payment_due + 'T12:00:00')
 
             if (due < today) {
-                // Vencido, chequear si aplica recargo del 10%
-                // Lógica: Si estamos después del día 10 del mes, mostrar alerta de recargo
+                isUpToDate = false // Vencido localmente
+                isLate = true
+
+                // Override visual Activo si estamos en los primeros 20 dias
                 const dayOfMonth = today.getDate()
-                if (dayOfMonth > 10) {
-                    return { status: 'late_fee', label: 'Paga +10%', color: 'text-amber-500', bg: 'bg-amber-500/10' }
+                if (dayOfMonth <= 20) {
+                    tags.push({ label: 'Activo', color: 'text-green-500', bg: 'bg-green-500/10' })
+                    tags.push({ label: 'No registra pago', color: 'text-amber-500', bg: 'bg-amber-500/10' })
+
+                    if (dayOfMonth > 10) {
+                        tags.push({ label: '+20% Pago Tardío', color: 'text-red-500', bg: 'bg-red-500/10' })
+                    }
+                    return tags
                 }
-                return { status: 'expired', label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' }
             }
         }
 
-        return { status: 'active', label: 'Al Día', color: 'text-green-500', bg: 'bg-green-500/10' }
+        if (status !== 'activo' && !isLate) {
+            return [{ label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' }]
+        }
+
+        if (isLate) {
+            return [{ label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' }]
+        }
+
+        return [{ label: 'Al Día', color: 'text-green-500', bg: 'bg-green-500/10' }]
     }
 
     return (
@@ -361,7 +379,7 @@ export default function AsistenciaVivoPage() {
                                                                     ) : (
                                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                                             {attendees.map((a, idx) => {
-                                                                                const st = getMemberStatus(a)
+                                                                                const tags = getMemberStatus(a)
                                                                                 return (
                                                                                     <motion.div
                                                                                         key={idx}
@@ -377,18 +395,14 @@ export default function AsistenciaVivoPage() {
                                                                                             <p className="text-xs font-bold text-white uppercase tracking-tight truncate leading-tight">
                                                                                                 {a.profiles?.first_name} {a.profiles?.last_name}
                                                                                             </p>
-                                                                                            <div className="flex items-center gap-2 mt-0.5">
-                                                                                                <div className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${st.bg} ${st.color} border border-white/5 shadow-sm`}>
-                                                                                                    {st.label}
-                                                                                                </div>
+                                                                                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                                                                {tags.map((t, idx2) => (
+                                                                                                    <div key={idx2} className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${t.bg} ${t.color} border border-white/5 shadow-sm whitespace-nowrap`}>
+                                                                                                        {t.label}
+                                                                                                    </div>
+                                                                                                ))}
                                                                                             </div>
                                                                                         </div>
-
-                                                                                        {st.status === 'late_fee' && (
-                                                                                            <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center animate-pulse" title="Aplicar recargo +10%">
-                                                                                                <Info className="w-3 h-3 text-amber-500" />
-                                                                                            </div>
-                                                                                        )}
                                                                                     </motion.div>
                                                                                 )
                                                                             })}
