@@ -13,13 +13,9 @@ import {
     Calendar,
     AlertCircle,
     RefreshCw,
-    Dumbbell,
-    Swords,
-    Shirt,
-    Target
+    Info
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Card, CardContent } from '@/components/ui/card'
 
 type ClassRow = {
     id: number
@@ -39,16 +35,23 @@ type AttendanceRecord = {
         last_name: string | null
         email: string | null
     }
+    member_data?: {
+        status: string | null
+        next_payment_due: string | null
+        role: string | null
+    }
 }
 
 const DAY_MAP = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb']
 
-function getClassIcon(name: string) {
+// Helper para iconos con Emojis según pedido
+function getClassEmoji(name: string) {
     const n = name.toLowerCase()
-    if (n.includes('fisico') || n.includes('acondicionamiento')) return Dumbbell
-    if (n.includes('mma') || n.includes('muay thai') || n.includes('grappling')) return Swords
-    if (n.includes('bjj') || n.includes('jiu-jitsu') || n.includes('kids')) return Shirt
-    return Activity
+    if (n.includes('fisico') || n.includes('acondicionamiento')) return '💪'
+    if (n.includes('mma') || n.includes('muay thai')) return '🥊'
+    if (n.includes('grappling')) return '🤼'
+    if (n.includes('bjj') || n.includes('jiu') || n.includes('judo') || n.includes('kids')) return '🥋'
+    return '🥋' // Default
 }
 
 export default function AsistenciaVivoPage() {
@@ -92,7 +95,34 @@ export default function AsistenciaVivoPage() {
         `)
                 .eq('date', today)
 
-            setAttendance((attData as any) || [])
+            const rawAttendance = (attData as any) || []
+
+            // 3. Fetch de status de los alumnos presentes
+            if (rawAttendance.length > 0) {
+                const userIds = Array.from(new Set(rawAttendance.map((r: any) => r.user_id)))
+
+                // Traemos info de members_with_status para ver vencimientos
+                const { data: membersData } = await supabase
+                    .from('members_with_status')
+                    .select('user_id, status, next_payment_due')
+                    .in('user_id', userIds)
+
+                const memberMap = new Map()
+                membersData?.forEach((m: any) => {
+                    memberMap.set(m.user_id, m)
+                })
+
+                // Mezclamos la data
+                const enrichedAttendance = rawAttendance.map((r: any) => ({
+                    ...r,
+                    member_data: memberMap.get(r.user_id) || null
+                }))
+
+                setAttendance(enrichedAttendance)
+            } else {
+                setAttendance([])
+            }
+
         } catch (error) {
             console.error('Error fetching live data:', error)
         } finally {
@@ -148,6 +178,37 @@ export default function AsistenciaVivoPage() {
             return startMinutes > currentMinutes + 10
         })
     }, [classes, currentTime])
+
+    // Helper para determinar estado de pago y recargo del alumno
+    const getMemberStatus = (m: any) => {
+        if (!m?.member_data) return { status: 'unknown', label: 'Sin datos', color: 'text-slate-500', bg: 'bg-slate-500/10' }
+
+        const { next_payment_due, status } = m.member_data
+
+        // Si está marcado como inactivo o vencido en la DB
+        if (status !== 'activo') {
+            return { status: 'expired', label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' }
+        }
+
+        // Chequear fecha manualmente por si acaso
+        if (next_payment_due) {
+            const today = new Date()
+            today.setHours(0, 0, 0, 0)
+            const due = new Date(next_payment_due + 'T12:00:00')
+
+            if (due < today) {
+                // Vencido, chequear si aplica recargo del 10%
+                // Lógica: Si estamos después del día 10 del mes, mostrar alerta de recargo
+                const dayOfMonth = today.getDate()
+                if (dayOfMonth > 10) {
+                    return { status: 'late_fee', label: 'Paga +10%', color: 'text-amber-500', bg: 'bg-amber-500/10' }
+                }
+                return { status: 'expired', label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' }
+            }
+        }
+
+        return { status: 'active', label: 'Al Día', color: 'text-green-500', bg: 'bg-green-500/10' }
+    }
 
     return (
         <AdminLayout active="/asistencia-vivo">
@@ -215,7 +276,7 @@ export default function AsistenciaVivoPage() {
                                     {activeClasses.map((cl) => {
                                         const attendees = attendance.filter(a => a.class_id === cl.id)
                                         const isExpanded = expandedClasses.includes(cl.id)
-                                        const Icon = getClassIcon(cl.name)
+                                        const emoji = getClassEmoji(cl.name)
                                         return (
                                             <motion.div
                                                 key={cl.id}
@@ -231,10 +292,10 @@ export default function AsistenciaVivoPage() {
                                                 >
                                                     <div className="flex items-center gap-4">
                                                         <div
-                                                            className="w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0"
-                                                            style={{ backgroundColor: cl.color || '#3b82f6' }}
+                                                            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-lg"
+                                                            style={{ backgroundColor: (cl.color as any) || '#3b82f6' }}
                                                         >
-                                                            <Icon className="w-5 h-5 fill-current" />
+                                                            {emoji}
                                                         </div>
                                                         <div className="min-w-0">
                                                             <div className="flex items-center gap-2">
@@ -292,32 +353,45 @@ export default function AsistenciaVivoPage() {
                                                                 <div className="pt-6 space-y-4">
                                                                     <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
                                                                         <CheckCircle className="w-3 h-3 text-green-500" />
-                                                                        Listado de Usuarios
+                                                                        Listado de Alumnos
                                                                     </p>
 
                                                                     {attendees.length === 0 ? (
                                                                         <p className="text-slate-600 font-bold italic text-sm py-4">Aún no hay ingresos para esta clase.</p>
                                                                     ) : (
                                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                            {attendees.map((a, idx) => (
-                                                                                <motion.div
-                                                                                    key={idx}
-                                                                                    initial={{ opacity: 0, x: -5 }}
-                                                                                    animate={{ opacity: 1, x: 0 }}
-                                                                                    transition={{ delay: idx * 0.05 }}
-                                                                                    className="flex items-center gap-3 p-3 bg-white/2 rounded-xl border border-white/5"
-                                                                                >
-                                                                                    <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center font-black text-blue-500 text-[9px] uppercase border border-blue-500/20">
-                                                                                        {a.profiles?.first_name?.[0] || '?'}{a.profiles?.last_name?.[0] || ''}
-                                                                                    </div>
-                                                                                    <div className="min-w-0">
-                                                                                        <p className="text-xs font-bold text-white uppercase tracking-tight truncate">
-                                                                                            {a.profiles?.first_name} {a.profiles?.last_name}
-                                                                                        </p>
-                                                                                        <p className="text-[9px] text-slate-500 truncate">{a.profiles?.email}</p>
-                                                                                    </div>
-                                                                                </motion.div>
-                                                                            ))}
+                                                                            {attendees.map((a, idx) => {
+                                                                                const st = getMemberStatus(a)
+                                                                                return (
+                                                                                    <motion.div
+                                                                                        key={idx}
+                                                                                        initial={{ opacity: 0, x: -5 }}
+                                                                                        animate={{ opacity: 1, x: 0 }}
+                                                                                        transition={{ delay: idx * 0.05 }}
+                                                                                        className="flex items-center gap-3 p-3 bg-white/2 rounded-xl border border-white/5 hover:bg-white/5 transition-colors"
+                                                                                    >
+                                                                                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center font-black text-blue-500 text-[10px] uppercase border border-blue-500/20">
+                                                                                            {a.profiles?.first_name?.[0] || '?'}{a.profiles?.last_name?.[0] || ''}
+                                                                                        </div>
+                                                                                        <div className="min-w-0 flex-1">
+                                                                                            <p className="text-xs font-bold text-white uppercase tracking-tight truncate leading-tight">
+                                                                                                {a.profiles?.first_name} {a.profiles?.last_name}
+                                                                                            </p>
+                                                                                            <div className="flex items-center gap-2 mt-0.5">
+                                                                                                <div className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${st.bg} ${st.color} border border-white/5 shadow-sm`}>
+                                                                                                    {st.label}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+
+                                                                                        {st.status === 'late_fee' && (
+                                                                                            <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center animate-pulse" title="Aplicar recargo +10%">
+                                                                                                <Info className="w-3 h-3 text-amber-500" />
+                                                                                            </div>
+                                                                                        )}
+                                                                                    </motion.div>
+                                                                                )
+                                                                            })}
                                                                         </div>
                                                                     )}
                                                                 </div>
@@ -344,17 +418,17 @@ export default function AsistenciaVivoPage() {
                                     <p className="text-slate-600 text-xs font-bold italic">No hay más clases por hoy.</p>
                                 ) : (
                                     futureClasses.map((fcl) => {
-                                        const FutureIcon = getClassIcon(fcl.name)
+                                        const emoji = getClassEmoji(fcl.name)
                                         return (
                                             <div
                                                 key={fcl.id}
                                                 className="p-5 rounded-3xl bg-slate-900/30 border border-white/5 flex items-center gap-4 group hover:bg-white/5 transition-all"
                                             >
                                                 <div
-                                                    className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-white shrink-0 group-hover:bg-white/10 transition-colors"
-                                                    style={{ color: fcl.color || '#3b82f6' }}
+                                                    className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-xl shrink-0 group-hover:bg-white/10 transition-colors shadow-lg"
+                                                    style={{ backgroundColor: (fcl.color as any) || '#3b82f6' }}
                                                 >
-                                                    <FutureIcon className="w-5 h-5" />
+                                                    {emoji}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-xs font-black text-white uppercase tracking-tight truncate">{fcl.name}</p>
