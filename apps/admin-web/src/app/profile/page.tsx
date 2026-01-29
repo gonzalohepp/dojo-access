@@ -68,6 +68,16 @@ const en2es: Record<string, string> = {
   mon: 'Lun', tue: 'Mar', wed: 'Mie', thu: 'Jue', fri: 'Vie', sat: 'Sáb', sun: 'Dom',
 }
 
+// Helper para iconos con Emojis (mismo que en AsistenciaVivo)
+function getClassEmoji(name: string) {
+  const n = name.toLowerCase()
+  if (n.includes('fisico') || n.includes('acondicionamiento')) return '💪'
+  if (n.includes('mma') || n.includes('muay thai')) return '🥊'
+  if (n.includes('grappling')) return '🤼'
+  if (n.includes('bjj') || n.includes('jiu') || n.includes('judo') || n.includes('kids')) return '🥋'
+  return '🥋' // Default
+}
+
 type AttendanceRow = {
   scanned_at: string
   result: string
@@ -262,8 +272,8 @@ export default function ProfilePage() {
       className="group p-5 rounded-3xl bg-white dark:bg-slate-800/50 dark:backdrop-blur-xl border border-slate-100 dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-none hover:shadow-xl transition-all"
     >
       <div className="flex items-start justify-between mb-4">
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ backgroundColor: (c.color as any) || '#3b82f6' }}>
-          <Zap className="w-5 h-5" />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shadow-lg" style={{ backgroundColor: (c.color as any) || '#3b82f6' }}>
+          {getClassEmoji(c.name)}
         </div>
         <div className="text-right">
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Costo mensual</p>
