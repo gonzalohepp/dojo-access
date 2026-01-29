@@ -21,7 +21,10 @@ import {
   Loader2,
   Shield,
   Plus,
-  DollarSign
+  DollarSign,
+  Edit2,
+  Save as SaveIcon,
+  X
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -91,6 +94,9 @@ export default function ProfilePage() {
   const [showPayModal, setShowPayModal] = useState(false)
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   const [tempImage, setTempImage] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState({ phone: '', emergency: '' })
+  const [isSaving, setIsSaving] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -108,6 +114,10 @@ export default function ProfilePage() {
 
       setMember({ ...vw, avatar_url: prof?.avatar_url } as MemberRow)
       setEmergency(prof?.emergency_phone ?? null)
+      setEditForm({
+        phone: vw.phone ?? '',
+        emergency: prof?.emergency_phone ?? ''
+      })
 
       const { data: enr } = await supabase
         .from('class_enrollments')
@@ -207,6 +217,32 @@ export default function ProfilePage() {
       toast.error('Error al actualizar la foto', { description: error.message })
     } finally {
       setUploading(false)
+    }
+  }
+
+  const handleSaveInfo = async () => {
+    try {
+      if (!member) return
+      setIsSaving(true)
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          phone: editForm.phone,
+          emergency_phone: editForm.emergency
+        })
+        .eq('user_id', member.user_id)
+
+      if (error) throw error
+
+      setMember(prev => prev ? { ...prev, phone: editForm.phone } : null)
+      setEmergency(editForm.emergency)
+      setIsEditing(false)
+      toast.success('Información actualizada correctamente')
+    } catch (error: any) {
+      toast.error('Error al guardar los cambios', { description: error.message })
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -501,19 +537,86 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Quick Info & Emergency */}
-                    <div className="p-8 rounded-3xl border border-white/10 bg-white dark:bg-slate-800/50 dark:backdrop-blur-xl dark:border-slate-700 shadow-xl space-y-6">
-                      <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                        <AlertCircle className="w-4 h-4 text-amber-500" />
-                        Info de Contacto
-                      </h3>
-                      <div>
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Teléfono</p>
-                        <p className="font-bold text-slate-900 dark:text-white">{member.phone || 'No registrado'}</p>
+                    <div className="p-8 rounded-3xl border border-white/10 bg-white dark:bg-slate-800/50 dark:backdrop-blur-xl dark:border-slate-700 shadow-xl space-y-6 relative overflow-hidden">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-amber-500" />
+                          Info de Contacto
+                        </h3>
+                        {!isEditing ? (
+                          <button
+                            onClick={() => setIsEditing(true)}
+                            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-blue-600 hover:text-white transition-all group"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setIsEditing(false)
+                                setEditForm({
+                                  phone: member.phone ?? '',
+                                  emergency: emergency ?? ''
+                                })
+                              }}
+                              className="p-2 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-red-500 hover:text-white transition-all"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            <button
+                              disabled={isSaving}
+                              onClick={handleSaveInfo}
+                              className="p-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all disabled:opacity-50"
+                            >
+                              {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <SaveIcon className="w-4 h-4" />}
+                            </button>
+                          </div>
+                        )}
                       </div>
-                      <div className="pt-6 border-t border-slate-100 dark:border-slate-700">
-                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Emergencias</p>
-                        <p className="font-black text-red-600 dark:text-red-400 uppercase tracking-tight">{emergency || 'Sin contacto definido'}</p>
+
+                      <div className="space-y-4">
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Teléfono</p>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 ring-blue-500/20 outline-none"
+                              value={editForm.phone}
+                              onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                              placeholder="Ej: +54 9 11 ..."
+                            />
+                          ) : (
+                            <p className="font-bold text-slate-900 dark:text-white">{member.phone || 'No registrado'}</p>
+                          )}
+                        </div>
+                        <div className="pt-6 border-t border-slate-100 dark:border-slate-700">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Emergencias</p>
+                          {isEditing ? (
+                            <input
+                              type="text"
+                              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm font-black text-red-600 dark:text-red-400 uppercase tracking-tight focus:ring-2 ring-blue-500/20 outline-none"
+                              value={editForm.emergency}
+                              onChange={(e) => setEditForm(prev => ({ ...prev, emergency: e.target.value }))}
+                              placeholder="Nombre y/o Teléfono"
+                            />
+                          ) : (
+                            <p className="font-black text-red-600 dark:text-red-400 uppercase tracking-tight">{emergency || 'Sin contacto definido'}</p>
+                          )}
+                        </div>
                       </div>
+
+                      {isEditing && (
+                        <motion.div
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          className="pt-4"
+                        >
+                          <p className="text-[9px] font-bold text-slate-400 italic">
+                            * Los cambios se guardarán automáticamente en tu ficha personal.
+                          </p>
+                        </motion.div>
+                      )}
                     </div>
                   </div>
                 </div>
