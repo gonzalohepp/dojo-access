@@ -40,6 +40,7 @@ type AttendanceRecord = {
     user_id: string
     class_id: number
     class_name: string
+    class_category: string
     member_name: string
     member_email: string
 }
@@ -72,8 +73,8 @@ export default function ReportesPage() {
                         <button
                             onClick={() => setActiveTab('asistencia')}
                             className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'asistencia'
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                                    : 'text-slate-500 hover:text-slate-300'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                : 'text-slate-500 hover:text-slate-300'
                                 }`}
                         >
                             Asistencia
@@ -81,8 +82,8 @@ export default function ReportesPage() {
                         <button
                             onClick={() => setActiveTab('ausencia')}
                             className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'ausencia'
-                                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                                    : 'text-slate-500 hover:text-slate-300'
+                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                                : 'text-slate-500 hover:text-slate-300'
                                 }`}
                         >
                             Ausencias
@@ -124,17 +125,18 @@ export default function ReportesPage() {
 function AsistenciaReport() {
     const [records, setRecords] = useState<AttendanceRecord[]>([])
     const [loading, setLoading] = useState(true)
-    const [classes, setClasses] = useState<{ id: number, name: string }[]>([])
+    const [classes, setClasses] = useState<{ id: number, name: string, category: string }[]>([])
 
     // Filters
     const [filterClass, setFilterClass] = useState<string>('')
     const [filterSearch, setFilterSearch] = useState('')
     const [filterMonth, setFilterMonth] = useState('')
+    const [filterCategory, setFilterCategory] = useState<string>('all')
 
     useEffect(() => {
         async function loadInitial() {
             setLoading(true)
-            const { data: cls } = await supabase.from('classes').select('id, name').order('name')
+            const { data: cls } = await supabase.from('classes').select('id, name, category').order('name')
             setClasses(cls || [])
 
             const { data: att, error } = await supabase
@@ -145,7 +147,7 @@ function AsistenciaReport() {
                     created_at,
                     user_id,
                     class_id,
-                    classes (name),
+                    classes (name, category),
                     profiles:user_id (first_name, last_name, email)
                 `)
                 .order('date', { ascending: false })
@@ -159,6 +161,7 @@ function AsistenciaReport() {
                     user_id: r.user_id,
                     class_id: r.class_id,
                     class_name: r.classes?.name || 'N/A',
+                    class_category: r.classes?.category || 'artes-marciales',
                     member_name: `${r.profiles?.first_name || ''} ${r.profiles?.last_name || ''}`.trim() || 'Desconocido',
                     member_email: r.profiles?.email || ''
                 }))
@@ -175,17 +178,28 @@ function AsistenciaReport() {
         return Array.from(months).sort().reverse()
     }, [records])
 
+    // Reset class filter if it doesn't belong to selected category
+    useEffect(() => {
+        if (filterCategory !== 'all' && filterClass) {
+            const selectedClass = classes.find(c => c.id === Number(filterClass))
+            if (selectedClass && selectedClass.category !== filterCategory) {
+                setFilterClass('')
+            }
+        }
+    }, [filterCategory, filterClass, classes])
+
     const filteredRecords = useMemo(() => {
         return records.filter(r => {
+            const matchesCategory = filterCategory === 'all' || r.class_category === filterCategory
             const matchesClass = !filterClass || r.class_id === Number(filterClass)
             const matchesMonth = !filterMonth || r.date.startsWith(filterMonth)
             const searchLower = filterSearch.toLowerCase()
-            return matchesClass && matchesMonth && (!filterSearch ||
+            return matchesCategory && matchesClass && matchesMonth && (!filterSearch ||
                 r.member_name.toLowerCase().includes(searchLower) ||
                 r.member_email.toLowerCase().includes(searchLower) ||
                 r.class_name.toLowerCase().includes(searchLower))
         })
-    }, [records, filterClass, filterMonth, filterSearch])
+    }, [records, filterCategory, filterClass, filterMonth, filterSearch])
 
     const handleExport = () => {
         const dataToExport = filteredRecords.map(r => ({
@@ -213,7 +227,19 @@ function AsistenciaReport() {
 
             <Card className="bg-slate-900 border-white/10 overflow-hidden">
                 <CardContent className="p-6">
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div className="relative group">
+                            <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors z-10" />
+                            <select
+                                value={filterCategory}
+                                onChange={(e) => setFilterCategory(e.target.value)}
+                                className="w-full pl-12 pr-4 py-3 bg-slate-950 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none font-bold text-sm"
+                            >
+                                <option value="all">Categorías</option>
+                                <option value="artes-marciales">Artes Marciales</option>
+                                <option value="acondicionamiento-fisico">Fisico</option>
+                            </select>
+                        </div>
                         <div className="relative group">
                             <Layers className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-blue-500 transition-colors z-10" />
                             <select
@@ -221,8 +247,11 @@ function AsistenciaReport() {
                                 onChange={(e) => setFilterClass(e.target.value)}
                                 className="w-full pl-12 pr-4 py-3 bg-slate-950 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none font-bold text-sm"
                             >
-                                <option value="">Todas las Clases</option>
-                                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                <option value="">Clases</option>
+                                {classes
+                                    .filter(c => filterCategory === 'all' || c.category === filterCategory)
+                                    .map(c => <option key={c.id} value={c.id}>{c.name}</option>)
+                                }
                             </select>
                         </div>
                         <div className="relative group">
@@ -232,7 +261,7 @@ function AsistenciaReport() {
                                 onChange={(e) => setFilterMonth(e.target.value)}
                                 className="w-full pl-12 pr-4 py-3 bg-slate-950 border border-white/10 rounded-2xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 appearance-none font-bold text-sm"
                             >
-                                <option value="">Todos los Meses</option>
+                                <option value="">Meses</option>
                                 {monthOptions.map(m => {
                                     const [y, mm] = m.split('-')
                                     const date = new Date(Number(y), Number(mm) - 1, 1)
