@@ -22,7 +22,7 @@ type MartialClass = {
   nombre: string
   subtitle?: string
   horario: string
-  tipo: "bjj" | "kids" | "muay" | "mma" | "grappling" | "judo" | "fem"
+  tipo: "bjj" | "kids" | "mma" | "grappling" | "judo" | "fem"
   col: number
   row: number
 }
@@ -57,7 +57,7 @@ const schedules: Record<"acondicionamiento" | "martiales", Schedule> = {
   martiales: {
     type: "martiales",
     title: "",
-    description: "Horarios de BJJ, Grappling, MMA, Muay Thai y Judo organizados por día para todos los niveles.",
+    description: "Horarios de BJJ, Grappling, MMA y Judo organizados por día para todos los niveles.",
     days: ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"],
     clases: [
       { nombre: 'BJJ', horario: '7:30 A 9:00', tipo: 'bjj', col: 2, row: 2 },
@@ -70,10 +70,6 @@ const schedules: Record<"acondicionamiento" | "martiales", Schedule> = {
       { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 1, row: 4 },
       { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 3, row: 4 },
       { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 5, row: 4 },
-      { nombre: 'MUAY THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 1, row: 5 },
-      { nombre: 'MUAY THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 2, row: 5 },
-      { nombre: 'MUAY THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 3, row: 5 },
-      { nombre: 'MUAY THAI', horario: '17:00 A 19:00', tipo: 'muay', col: 4, row: 5 },
       { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 1, row: 6 },
       { nombre: 'GRAPPLING', horario: '19:00 A 20:30', tipo: 'grappling', col: 2, row: 6 },
       { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 3, row: 6 },
@@ -95,11 +91,6 @@ const INFO_CLASES = {
     descripcion: "El Jiu-Jitsu Brasileño se centra en la lucha cuerpo a cuerpo en el suelo, usando palancas y estrangulaciones para someter al oponente sin necesidad de golpes.",
     requisitos: "Ropa deportiva o kimono (se puede conseguir en dojo). Protector bucal recomendado.",
     beneficios: "Mejora la fuerza funcional, la movilidad, la técnica, la concentración y la confianza, siendo apto tanto para defensa personal como para práctica recreativa y competitiva."
-  },
-  muay: {
-    descripcion: "El Muay Thai es un arte marcial de combate de pie que utiliza puños, codos, rodillas y patadas, con énfasis en técnica y resistencia.",
-    requisitos: "Ropa deportiva, vendas, guantes, protector bucal (los podes conseguir en el dojo).",
-    beneficios: "Mejora la condición física, la potencia, la coordinación y la confianza personal."
   },
   mma: {
     descripcion: "Las Artes Marciales Mixtas combinan golpeo, derribos y lucha en el suelo, integrando distintas disciplinas en un sistema completo de combate.",
@@ -145,7 +136,6 @@ export function ScheduleGrid() {
       bjj: 'from-blue-600 to-indigo-700 shadow-blue-500/20 border-blue-400/30',
       fem: 'from-pink-600 to-rose-700 shadow-pink-500/20 border-pink-400/30',
       kids: 'from-sky-500 to-blue-600 shadow-sky-500/20 border-sky-400/30',
-      muay: 'from-slate-700 to-indigo-900 shadow-indigo-500/20 border-indigo-400/30',
       mma: 'from-zinc-700 to-black shadow-slate-500/20 border-slate-500/30',
       grappling: 'from-indigo-600 to-violet-800 shadow-indigo-500/20 border-indigo-400/30',
       judo: 'from-blue-800 to-slate-900 shadow-blue-700/20 border-blue-600/30',
@@ -400,9 +390,9 @@ export function ScheduleGrid() {
                       className="w-full h-full object-cover"
                     />
                     <div className={`absolute inset-0 mix-blend-multiply ${selectedClass.tipo === 'grappling' ? 'bg-indigo-900/60' :
-                        selectedClass.tipo === 'fem' ? 'bg-pink-900/60' :
-                          selectedClass.tipo === 'mma' ? 'bg-red-900/60' :
-                            'bg-blue-900/60'
+                      selectedClass.tipo === 'fem' ? 'bg-pink-900/60' :
+                        selectedClass.tipo === 'mma' ? 'bg-red-900/60' :
+                          'bg-blue-900/60'
                       }`} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
                   </div>

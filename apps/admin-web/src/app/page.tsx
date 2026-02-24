@@ -231,7 +231,7 @@ export default function HomeLandingPage() {
             className="text-xl md:text-2xl text-slate-300 mb-10 max-w-3xl mx-auto font-medium leading-relaxed"
           >
             Entrená con los mejores en <span className="text-blue-400 font-bold">Quilmes</span>.
-            Jiu Jitsu · Grappling - MMA · Muay Thai· . Formación técnica, física y mental con enfoque en alto rendimiento y evolución real.
+            Jiu Jitsu · Grappling - MMA · . Formación técnica, física y mental con enfoque en alto rendimiento y evolución real.
           </motion.p>
 
           <motion.div

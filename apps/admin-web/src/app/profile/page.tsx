@@ -72,7 +72,7 @@ const en2es: Record<string, string> = {
 function getClassEmoji(name: string) {
   const n = name.toLowerCase()
   if (n.includes('fisico') || n.includes('acondicionamiento')) return '💪'
-  if (n.includes('mma') || n.includes('muay thai')) return '🥊'
+  if (n.includes('mma')) return '🥊'
   if (n.includes('grappling')) return '🤼'
   if (n.includes('bjj') || n.includes('jiu') || n.includes('judo') || n.includes('kids')) return '🥋'
   return '🥋' // Default
