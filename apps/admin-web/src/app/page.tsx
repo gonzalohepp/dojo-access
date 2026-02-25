@@ -414,9 +414,9 @@ export default function HomeLandingPage() {
             initial={{ opacity: 0, y: 40 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="rounded-[2.5rem] p-1.5 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl border border-white/10 overflow-hidden"
+            className="rounded-[2.5rem] p-1.5 bg-gradient-to-br from-slate-800 to-slate-900 shadow-2xl border border-white/10"
           >
-            <div className="rounded-[2rem] overflow-hidden aspect-[4/3] md:aspect-[21/9]">
+            <div className="rounded-[2rem] overflow-hidden h-[600px] md:h-[700px]">
               <AcademiesMapSection minimal={true} />
             </div>
           </motion.div>

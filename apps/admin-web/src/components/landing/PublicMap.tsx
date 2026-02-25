@@ -386,13 +386,13 @@ export default function PublicMap({
                             {/* Drawer Close Button */}
                             <button
                                 onClick={() => setSelected(null)}
-                                className="absolute top-4 left-4 z-10 p-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur rounded-full shadow-lg border border-slate-100 dark:border-slate-700 hover:bg-white dark:hover:bg-slate-700 transition-colors group"
+                                className="absolute top-6 right-6 z-50 p-2.5 bg-slate-950/80 backdrop-blur-xl rounded-full shadow-2xl border border-white/20 hover:bg-slate-900 transition-all hover:scale-110 active:scale-95 group"
                             >
-                                <X className="w-5 h-5 text-slate-500 group-hover:text-blue-500" />
+                                <X className="w-5 h-5 text-white group-hover:text-blue-400" />
                             </button>
 
                             {/* Drawer Content */}
-                            <div className="flex-1 overflow-y-auto scrollbar-hide">
+                            <div className="flex-1 overflow-y-auto">
                                 {/* Header Image */}
                                 <div className="h-48 relative bg-slate-100 dark:bg-slate-800">
                                     {selected.image_url ? (
