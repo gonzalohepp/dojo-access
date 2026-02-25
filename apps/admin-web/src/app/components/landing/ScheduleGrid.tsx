@@ -70,16 +70,16 @@ const schedules: Record<"acondicionamiento" | "martiales", Schedule> = {
       { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 1, row: 4 },
       { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 3, row: 4 },
       { nombre: 'BJJ', subtitle: 'KIDS', horario: '18:00 A 19:00', tipo: 'kids', col: 5, row: 4 },
-      { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 1, row: 6 },
-      { nombre: 'GRAPPLING', horario: '19:00 A 20:30', tipo: 'grappling', col: 2, row: 6 },
-      { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 3, row: 6 },
-      { nombre: 'GRAPPLING', horario: '19:00 A 20:30', tipo: 'grappling', col: 4, row: 6 },
-      { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 5, row: 6 },
-      { nombre: 'BJJ', horario: '20:00 A 21:30', tipo: 'bjj', col: 1, row: 7 },
-      { nombre: 'JUDO', horario: '20:30 A 22:00', tipo: 'judo', col: 2, row: 7 },
-      { nombre: 'BJJ', horario: '20:00 A 21:30', tipo: 'bjj', col: 3, row: 7 },
-      { nombre: 'JUDO', horario: '20:30 A 22:00', tipo: 'judo', col: 4, row: 7 },
-      { nombre: 'BJJ', horario: '20:00 A 21:30', tipo: 'bjj', col: 5, row: 7 },
+      { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 1, row: 5 },
+      { nombre: 'GRAPPLING', horario: '19:00 A 20:30', tipo: 'grappling', col: 2, row: 5 },
+      { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 3, row: 5 },
+      { nombre: 'GRAPPLING', horario: '19:00 A 20:30', tipo: 'grappling', col: 4, row: 5 },
+      { nombre: 'MMA', horario: '19:00 A 20:00', tipo: 'mma', col: 5, row: 5 },
+      { nombre: 'BJJ', horario: '20:00 A 21:30', tipo: 'bjj', col: 1, row: 6 },
+      { nombre: 'JUDO', horario: '20:30 A 22:00', tipo: 'judo', col: 2, row: 6 },
+      { nombre: 'BJJ', horario: '20:00 A 21:30', tipo: 'bjj', col: 3, row: 6 },
+      { nombre: 'JUDO', horario: '20:30 A 22:00', tipo: 'judo', col: 4, row: 6 },
+      { nombre: 'BJJ', horario: '20:00 A 21:30', tipo: 'bjj', col: 5, row: 6 },
     ],
   },
 }
@@ -214,8 +214,8 @@ export function ScheduleGrid() {
                   </div>
                 ))}
 
-                {/* Full Grid Rendering (Rows 2 to 7) */}
-                {Array.from({ length: 6 }).map((_, rowIndex) => {
+                {/* Full Grid Rendering (Rows 2 to 6) */}
+                {Array.from({ length: 5 }).map((_, rowIndex) => {
                   const currentRow = rowIndex + 2
                   return currentSchedule.days.map((_, colIndex) => {
                     const currentCol = colIndex + 1
