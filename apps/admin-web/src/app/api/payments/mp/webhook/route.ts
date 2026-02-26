@@ -5,12 +5,28 @@ import { createClient } from '@supabase/supabase-js'
 export async function POST(req: Request) {
     try {
         const url = new URL(req.url)
-        const topic = url.searchParams.get('topic') || url.searchParams.get('type')
-        const id = url.searchParams.get('id') || url.searchParams.get('data.id')
+        let topic = url.searchParams.get('topic') || url.searchParams.get('type')
+        let id = url.searchParams.get('id') || url.searchParams.get('data.id')
+
+        // Si no están en la URL, buscamos en el body (Mercado Pago a veces manda JSON)
+        try {
+            const body = await req.json()
+            if (!id) id = body.data?.id || body.id
+            if (!topic) topic = body.type || body.topic || body.action
+        } catch (e) {
+            // No hay body JSON o no se pudo leer, seguimos con lo que hay en URL
+        }
+
+        console.log(`Webhook Received: topic=${topic}, id=${id}`)
 
         // Solo procesamos si es un pago
-        if (topic !== 'payment' && topic !== 'payment_intent') {
+        if (topic !== 'payment' && topic !== 'payment_intent' && !String(topic).includes('payment')) {
             return NextResponse.json({ received: true })
+        }
+
+        if (!id || id === '123456') {
+            console.log('Test notification or missing ID received.')
+            return NextResponse.json({ received: true, message: 'Test ignore' })
         }
 
         const accessToken = process.env.MP_ACCESS_TOKEN
@@ -20,7 +36,15 @@ export async function POST(req: Request) {
         const payment = new Payment(client)
 
         // Obtener detalles del pago
-        const paymentData = await payment.get({ id: String(id) })
+        let paymentData;
+        try {
+            paymentData = await payment.get({ id: String(id) })
+        } catch (err) {
+            console.error('Error fetching payment from MP (might be a test ID):', err)
+            // Respondemos 200 igual para que MP no reintente eternamente con un ID falso
+            return NextResponse.json({ received: true, error: 'Payment not found' })
+        }
+
         const { status, external_reference } = paymentData
 
         if (status === 'approved' && external_reference) {
