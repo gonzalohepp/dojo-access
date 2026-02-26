@@ -2,6 +2,14 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+    const { pathname } = request.nextUrl
+
+    // 0. Las rutas de API son públicas (Mercado Pago, etc.)
+    // Retornamos inmediatamente para evitar redirecciones o chequeos de auth
+    if (pathname.startsWith('/api')) {
+        return NextResponse.next()
+    }
+
     let response = NextResponse.next({
         request: {
             headers: request.headers,
@@ -58,7 +66,7 @@ export async function middleware(request: NextRequest) {
         data: { user },
     } = await supabase.auth.getUser()
 
-    const { pathname } = request.nextUrl
+    // const { pathname } = request.nextUrl // Remove duplicate
 
     const host = request.headers.get('x-forwarded-host') || request.headers.get('host')
     const protocol = request.headers.get('x-forwarded-proto') || 'http'
@@ -79,9 +87,7 @@ export async function middleware(request: NextRequest) {
     const isPathProtected = isPathAdmin || pathname.startsWith('/app') || pathname.startsWith('/validate') || pathname.startsWith('/profile')
 
     // 0. Las rutas de API son públicas (Mercado Pago, etc.)
-    if (pathname.startsWith('/api')) {
-        return response
-    }
+    // (Ya manejado al principio de la función)
 
     // 1. Si no hay usuario y trata de acceder a rutas protegidas
     if (!user && isPathProtected) {
