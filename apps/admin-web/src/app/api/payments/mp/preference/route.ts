@@ -3,10 +3,14 @@ import MercadoPagoConfig, { Preference } from "mercadopago";
 
 export async function POST(req: Request) {
     try {
-        const { items, payer_email } = await req.json();
+        const { items, payer_email, user_id, principal_id, additional_ids } = await req.json();
 
         if (!items || !Array.isArray(items) || items.length === 0) {
             return NextResponse.json({ error: "No items provided" }, { status: 400 });
+        }
+
+        if (!user_id) {
+            return NextResponse.json({ error: "User ID is required" }, { status: 400 });
         }
 
         const accessToken = process.env.MP_ACCESS_TOKEN;
@@ -47,8 +51,12 @@ export async function POST(req: Request) {
                 },
                 auto_return: "approved",
 
-                // Quitar por ahora para evitar errores en test/habilitación
-                // statement_descriptor: "BELEZA DOJO",
+                // Guardamos metadata para el webhook
+                external_reference: JSON.stringify({
+                    user_id,
+                    principal_id,
+                    additional_ids
+                }),
             },
         });
 

@@ -530,7 +530,10 @@ function ValidateContent() {
                                     title: `Cuota Mensual - Beleza Dojo ${multiplier > 1 ? '(Recargo 20%)' : ''}`,
                                     price: finalPrice
                                   }],
-                                  payer_email: member?.email || userEmail
+                                  payer_email: member?.email || userEmail,
+                                  user_id: member?.user_id,
+                                  principal_id: candidateClasses.find(c => (c as any).is_principal)?.id || undefined,
+                                  additional_ids: candidateClasses.filter(c => !(c as any).is_principal).map(c => c.id)
                                 })
                               })
                               const data = await res.json()

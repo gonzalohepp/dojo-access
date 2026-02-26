@@ -135,7 +135,10 @@ export default function SubscriptionModal({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     items,
-                    payer_email: user?.email
+                    payer_email: user?.email,
+                    user_id: user?.id,
+                    principal_id: principalClass,
+                    additional_ids: additionalClasses
                 })
             })
 
