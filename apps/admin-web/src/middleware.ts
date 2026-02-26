@@ -78,6 +78,11 @@ export async function middleware(request: NextRequest) {
     const isPathAdmin = adminPaths.some(p => pathname.startsWith(p))
     const isPathProtected = isPathAdmin || pathname.startsWith('/app') || pathname.startsWith('/validate') || pathname.startsWith('/profile')
 
+    // 0. Las rutas de API son públicas (Mercado Pago, etc.)
+    if (pathname.startsWith('/api')) {
+        return response
+    }
+
     // 1. Si no hay usuario y trata de acceder a rutas protegidas
     if (!user && isPathProtected) {
         return NextResponse.redirect(new URL('/login', origin))
