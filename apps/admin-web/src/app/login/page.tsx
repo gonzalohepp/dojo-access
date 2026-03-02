@@ -5,7 +5,8 @@ import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 import { motion } from 'framer-motion'
-import { ArrowRight, Loader2 } from 'lucide-react'
+import { ArrowRight, Loader2, Smartphone } from 'lucide-react'
+import Link from 'next/link'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -143,7 +144,14 @@ export default function LoginPage() {
                 )}
               </button>
 
-              <div className="mt-8 text-center">
+              <div className="mt-8 text-center space-y-4">
+                <Link
+                  href="/instalar"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold uppercase tracking-widest hover:bg-blue-500/20 transition-all"
+                >
+                  <Smartphone className="w-4 h-4" />
+                  Descargar App Oficial
+                </Link>
                 <p className="text-xs text-slate-500">
                   ¿Problemas para ingresar? <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Contacta soporte</a>
                 </p>
