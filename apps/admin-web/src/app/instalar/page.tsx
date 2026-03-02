@@ -62,11 +62,8 @@ export default function InstallPage() {
                             <div className="w-16 h-16 bg-emerald-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xl shadow-emerald-500/30">
                                 <CheckCircle2 className="w-10 h-10 text-white" />
                             </div>
-                            <h2 className="text-2xl font-black mb-2 uppercase italic">¡App Instalada!</h2>
-                            <p className="text-emerald-400 font-bold mb-6">Ya podés usar Beleza Dojo directo desde tu pantalla de inicio.</p>
-                            <Button asChild className="w-full h-14 rounded-2xl bg-white text-slate-950 hover:bg-slate-100 font-black uppercase tracking-widest text-sm">
-                                <Link href="/login">Ir al Login <ArrowRight className="w-5 h-5 ml-2" /></Link>
-                            </Button>
+                            <h2 className="text-xl font-black mb-2 uppercase italic leading-tight">En unos minutos comenzará la descarga de tu app</h2>
+                            <p className="text-emerald-400 font-bold mb-0 text-sm">Ya podés cerrar esta ventana y buscar el ícono en tu pantalla de inicio.</p>
                         </motion.div>
                     ) : (
                         <div className="w-full space-y-6">
