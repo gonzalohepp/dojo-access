@@ -674,7 +674,6 @@ export default function ProfilePage() {
                 <CheckCircle2 className="w-14 h-14 text-blue-500 relative z-10" />
               </div>
               <h2 className="text-3xl md:text-4xl font-black text-white tracking-tight uppercase italic leading-none">¡Foto Actualizada!</h2>
-              <p className="text-blue-400 font-bold text-lg italic uppercase tracking-wider">Tu perfil se ve increíble</p>
               <div className="pt-6">
                 <Button
                   onClick={() => setShowSuccessModal(false)}
