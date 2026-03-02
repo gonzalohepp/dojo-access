@@ -451,10 +451,13 @@ export default function ProfilePage() {
                             <div className="mt-6">
                               <button
                                 onClick={() => setShowPayModal(true)}
-                                className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#009EE3] text-white font-black uppercase tracking-widest text-sm shadow-lg shadow-[#009EE3]/30 hover:bg-[#008ED0] transition-all hover:scale-105 active:scale-95"
+                                className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                               >
-                                <DollarSign className="w-5 h-5" />
-                                Pagar Suscripción
+                                <img
+                                  src="/mp_button.png"
+                                  alt="Pagar Suscripción"
+                                  className="h-16 w-auto object-contain"
+                                />
                               </button>
                             </div>
                           )}
