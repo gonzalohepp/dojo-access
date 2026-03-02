@@ -9,6 +9,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
+import { Button } from '@/components/ui/button'
+import Image from 'next/image'
+import { toast } from 'sonner'
 import MemberFilters from '../components/members/MemberFilters'
 import MemberList from '../components/members/MemberList'
 import MemberModal from '../components/members/MemberModal'
@@ -217,9 +220,10 @@ function MembersContent() {
       setConfirmingId(null)
       await load()
       setSuccessMsg('Miembro eliminado correctamente')
+      toast.success('Miembro eliminado correctamente')
     } catch (error: any) {
       console.error('[Members] onDelete error:', error)
-      alert('Error eliminando miembro: ' + error.message)
+      toast.error('Error eliminando miembro: ' + error.message)
     } finally {
       setDeletingId(null)
     }
@@ -244,116 +248,104 @@ function MembersContent() {
 
   /** Paso 4.2: upsert de membresía con onConflict: 'member_id' */
   const onSubmit = async (payload: MemberPayload) => {
-
     const [first_name, ...rest] = payload.full_name.trim().split(/\s+/)
     const last_name = rest.join(' ')
     const access_code =
       payload.access_code?.trim() || (await generateAccessCode(payload.full_name))
 
-    // EDITAR (o actualizar usuario existente)
-    // Importante: si pasamos `editing` con datos, se comporta como editar.
-    // Pero en el modal actual, si pasamos `editing` con datos, se comporta como editar.
-    // Usaremos el endpoint de creación para todo lo que no sea una edición de un Miembro ya Activo/Inactivo
-    if (editing && editing.status) {
-      const userId = editing.user_id
+    const isUpdate = !!(editing && editing.status)
 
-      // perfiles
-      const { error: upErr } = await supabase
-        .from('profiles')
-        .update({
-          first_name,
-          last_name,
-          email: payload.email,
-          phone: payload.phone ?? null,
-          emergency_phone: payload.emergency_contact ?? null,
-          notes: payload.notes ?? null,
-          access_code: payload.access_code?.trim() || null,
-          role: (payload as any).role || 'member'
-        })
-        .eq('user_id', userId)
-      if (upErr) {
-        alert('Error actualizando perfil: ' + upErr.message)
-        return
-      }
-
-      // membresía (upsert 1 por member_id)
-      // Fetch existing membership to preserve start_date
-      const { data: existingMem } = await supabase
-        .from('memberships')
-        .select('start_date')
-        .eq('member_id', userId)
-        .maybeSingle()
-
-      const { error: memErr } = await supabase
-        .from('memberships')
-        .upsert(
-          {
-            member_id: userId,
-            type: 'monthly',
-            start_date: existingMem?.start_date || payload.last_payment_date || new Date().toISOString().slice(0, 10),
-            last_payment_date: payload.last_payment_date || new Date().toISOString().slice(0, 10),
-            end_date: payload.next_payment_due ?? null
-          },
-          { onConflict: 'member_id' }
-        )
-      if (memErr) {
-        alert('Error actualizando membresía: ' + memErr.message)
-        return
-      }
-
-      // clases: simple (borrar e insertar)
-      await supabase.from('class_enrollments').delete().eq('user_id', userId)
-      if (payload.classes?.length) {
-        await supabase
-          .from('class_enrollments')
-          .insert(payload.classes.map((c) => ({
-            user_id: userId,
-            class_id: c.class_id,
-            is_principal: c.is_principal
-          })))
-      }
-
-      setOpen(false)
-      await load()
-      setSuccessMsg('Cambios guardados')
-      return
-    }
-
-    // CREAR
     try {
-      const res = await fetch('/api/members/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          first_name,
-          last_name,
-          email: payload.email,
-          phone: payload.phone ?? null,
-          emergency_phone: payload.emergency_contact ?? null,
-          notes: payload.notes ?? null,
-          access_code,
-          last_payment_date: payload.last_payment_date,
-          next_payment_due: payload.next_payment_due,
-          classes: payload.classes,
-          role: (payload as any).role || 'member'
+      if (isUpdate) {
+        const userId = editing!.user_id
+
+        // 1. Actualizar perfil
+        const { error: upErr } = await supabase
+          .from('profiles')
+          .update({
+            first_name,
+            last_name,
+            email: payload.email,
+            phone: payload.phone ?? null,
+            emergency_phone: payload.emergency_contact ?? null,
+            notes: payload.notes ?? null,
+            access_code: payload.access_code?.trim() || null,
+            role: (payload as any).role || 'member'
+          })
+          .eq('user_id', userId)
+
+        if (upErr) throw upErr
+
+        // 2. Actualizar membresía
+        const { data: existingMem } = await supabase
+          .from('memberships')
+          .select('start_date')
+          .eq('member_id', userId)
+          .maybeSingle()
+
+        const { error: memErr } = await supabase
+          .from('memberships')
+          .upsert(
+            {
+              member_id: userId,
+              type: 'monthly',
+              start_date: existingMem?.start_date || payload.last_payment_date || new Date().toISOString().slice(0, 10),
+              last_payment_date: payload.last_payment_date || new Date().toISOString().slice(0, 10),
+              end_date: payload.next_payment_due ?? null
+            },
+            { onConflict: 'member_id' }
+          )
+
+        if (memErr) throw memErr
+
+        // 3. Actualizar inscripciones
+        await supabase.from('class_enrollments').delete().eq('user_id', userId)
+        if (payload.classes?.length) {
+          const { error: enrollErr } = await supabase
+            .from('class_enrollments')
+            .insert(payload.classes.map((c) => ({
+              user_id: userId,
+              class_id: c.class_id,
+              is_principal: c.is_principal
+            })))
+          if (enrollErr) throw enrollErr
+        }
+
+        toast.success('Cambios guardados')
+      } else {
+        // CREAR NUEVO
+        const res = await fetch('/api/members/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            first_name,
+            last_name,
+            email: payload.email,
+            phone: payload.phone ?? null,
+            emergency_phone: payload.emergency_contact ?? null,
+            notes: payload.notes ?? null,
+            access_code,
+            last_payment_date: payload.last_payment_date,
+            next_payment_due: payload.next_payment_due,
+            classes: payload.classes,
+            role: (payload as any).role || 'member'
+          })
         })
-      })
 
-      const data = await res.json()
+        if (!res.ok) {
+          const data = await res.json()
+          throw new Error(data.error || 'Error al crear el miembro')
+        }
 
-      if (!res.ok) {
-        throw new Error(data.error || 'Error desconocido')
+        toast.success('Usuario creado correctamente')
       }
 
       setOpen(false)
-      await load()
-      setSuccessMsg('Usuario creado correctamente')
+      load()
     } catch (error: any) {
-      alert('Error creando miembro: ' + error.message)
+      console.error('[Members] onSubmit error:', error)
+      toast.error('Error: ' + error.message)
     }
-
-    setOpen(false)
-    await load()
   }
 
   return (

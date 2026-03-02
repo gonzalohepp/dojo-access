@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { CheckCircle, XCircle, RefreshCw, Camera, ShieldCheck, Zap } from 'lucide-react'
 import QRScannerHtml5 from '@/components/QRScannerHtml5'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
+import { toast } from 'sonner'
 import { MemberRow as BaseMemberRow } from '@/types/member'
 
 export const dynamic = 'force-dynamic'
@@ -544,11 +546,14 @@ function ValidateContent() {
                           }}
                           className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50 border-none bg-[#009EE3] p-0 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20"
                         >
-                          <img
-                            src="/mp_button.png"
-                            alt="Pagar con Mercado Pago"
-                            className="h-16 w-full object-contain"
-                          />
+                          <div className="relative h-16 w-full">
+                            <Image
+                              src="/mp_button.png"
+                              alt="Pagar con Mercado Pago"
+                              fill
+                              className="object-contain"
+                            />
+                          </div>
                         </button>
                       )}
 

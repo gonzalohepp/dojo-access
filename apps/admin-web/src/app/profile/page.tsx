@@ -30,6 +30,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import Image from 'next/image'
 import SubscriptionModal from '../components/profile/SubscriptionModal'
 import PhotoCropper from '../components/profile/PhotoCropper'
 import MemberGrades from '../components/profile/MemberGrades'
@@ -451,12 +452,13 @@ export default function ProfilePage() {
                             <div className="mt-6">
                               <button
                                 onClick={() => setShowPayModal(true)}
-                                className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20 bg-[#009EE3]"
+                                className="w-full h-16 relative transition-all hover:scale-105 active:scale-95 disabled:opacity-50 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20 bg-[#009EE3]"
                               >
-                                <img
+                                <Image
                                   src="/mp_button.png"
                                   alt="Pagar Suscripción"
-                                  className="h-16 w-full object-contain"
+                                  fill
+                                  className="object-contain"
                                 />
                               </button>
                             </div>

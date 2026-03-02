@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Shield, Plus, Check, DollarSign, Loader2 } from 'lucide-react'
+import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
 
 type ClassOption = {
@@ -321,11 +322,12 @@ export default function SubscriptionModal({
                                             <Loader2 className="w-5 h-5 animate-spin" />
                                         </div>
                                     ) : (
-                                        <div className="rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20 bg-[#009EE3] w-full flex justify-center">
-                                            <img
+                                        <div className="rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20 bg-[#009EE3] w-full h-16 relative flex justify-center">
+                                            <Image
                                                 src="/mp_button.png"
                                                 alt="Pagar con Mercado Pago"
-                                                className="h-16 w-full object-contain"
+                                                fill
+                                                className="object-contain"
                                             />
                                         </div>
                                     )}
