@@ -399,7 +399,7 @@ function ValidateContent() {
 
           {/* Footer decorativo */}
           <div className="mt-auto pt-12 text-center opacity-40">
-            <p className="text-xs text-slate-500 font-medium tracking-widest uppercase">Beleza Dojo - Control de Acceso</p>
+            <p className="text-xs text-slate-500 font-medium tracking-widest uppercase">Beleza dojo</p>
           </div>
         </div>
       </div>
