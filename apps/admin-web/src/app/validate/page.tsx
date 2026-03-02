@@ -542,12 +542,12 @@ function ValidateContent() {
                               console.error('Payment error', e)
                             }
                           }}
-                          className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50 border-none bg-transparent p-0 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20"
+                          className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50 border-none bg-[#009EE3] p-0 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20"
                         >
                           <img
                             src="/mp_button.png"
                             alt="Pagar con Mercado Pago"
-                            className="h-16 w-auto object-contain"
+                            className="h-16 w-full object-contain"
                           />
                         </button>
                       )}
