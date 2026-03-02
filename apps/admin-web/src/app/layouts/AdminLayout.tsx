@@ -17,9 +17,7 @@ import {
   Bell,
   AlertTriangle,
   ShieldAlert,
-  UserPlus,
   ArrowRight,
-  Check,
   Wifi,
   WifiOff,
   Activity
@@ -95,7 +93,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
 
     const { data: logs } = await supabase
       .from('access_logs')
-      .select('id, result, reason, scanned_at, profiles(first_name, last_name)')
+      .select('id, result, reason, scanned_at, profiles!inner(first_name, last_name)')
       .eq('result', 'denegado')
       .order('scanned_at', { ascending: false })
       .limit(20)
@@ -106,7 +104,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
         id: l.id.toString(),
         type: 'access_denied',
         title: 'Acceso Denegado',
-        description: `${(l.profiles as any)?.first_name || 'Usuario'} ${(l.profiles as any)?.last_name || ''}: ${l.reason || ''}`,
+        description: `${(l.profiles as unknown as { first_name: string, last_name: string }).first_name || 'Usuario'} ${(l.profiles as unknown as { first_name: string, last_name: string }).last_name || ''}: ${l.reason || ''}`,
         timestamp: l.scanned_at,
         read: true
       }))

@@ -158,7 +158,7 @@ export default function SubscriptionModal({
                 throw new Error('No se recibió link de pago')
             }
 
-        } catch (error) {
+        } catch (error: unknown) {
             const msg = error instanceof Error ? error.message : 'Error desconocido'
             console.error(error)
             alert(msg)

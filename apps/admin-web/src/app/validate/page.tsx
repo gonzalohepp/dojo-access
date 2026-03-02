@@ -10,7 +10,6 @@ import { CheckCircle, XCircle, RefreshCw, Camera, ShieldCheck, Zap } from 'lucid
 import QRScannerHtml5 from '@/components/QRScannerHtml5'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { toast } from 'sonner'
 import { MemberRow as BaseMemberRow } from '@/types/member'
 
 export const dynamic = 'force-dynamic'
@@ -27,6 +26,7 @@ type ClassCandidate = {
   start_time: string | null
   end_time: string | null
   color: string | null
+  days: string[] | null
 }
 
 const DAY_MAP = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb']
@@ -255,14 +255,14 @@ function ValidateContent() {
         if (enrErr) console.error('[validate] error fetching classes', enrErr)
 
         const candidates = (enrollments || [])
-          .map((enr: any) => enr.classes)
-          .filter((cl: any) => {
+          .map((enr) => enr.classes as unknown as ClassCandidate)
+          .filter((cl) => {
             if (!cl || !cl.days || !cl.end_time) return false
             // Filtro de día
             if (!cl.days.includes(dayName)) return false
             // Filtro de horario: visible hasta 20 min antes del fin
             return isTimeBefore(currentTime, cl.end_time, 20)
-          }) as ClassCandidate[]
+          })
 
         if (candidates.length > 0) {
           setCandidateClasses(candidates)
@@ -534,8 +534,8 @@ function ValidateContent() {
                                   }],
                                   payer_email: member?.email || userEmail,
                                   user_id: member?.user_id,
-                                  principal_id: candidateClasses.find(c => (c as any).is_principal)?.id || undefined,
-                                  additional_ids: candidateClasses.filter(c => !(c as any).is_principal).map(c => c.id)
+                                  principal_id: candidateClasses.find(c => (c as unknown as { is_principal: boolean }).is_principal)?.id || undefined,
+                                  additional_ids: candidateClasses.filter(c => !(c as unknown as { is_principal: boolean }).is_principal).map(c => c.id)
                                 })
                               })
                               const data = await res.json()

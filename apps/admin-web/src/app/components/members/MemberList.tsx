@@ -2,6 +2,7 @@
 
 import { Calendar, Mail, Phone, Pencil, Trash2, User as UserIcon, Shield, Hash, Clock, MessageCircle } from 'lucide-react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import { MemberRow } from '@/types/member'
 
 export default function MemberList({
@@ -64,7 +65,14 @@ export default function MemberList({
                 <div className="relative">
                   <div className="w-16 h-16 rounded-2xl overflow-hidden bg-slate-100 border border-slate-200 flex items-center justify-center shadow-inner">
                     {m.avatar_url ? (
-                      <img src={m.avatar_url} alt={fullName} className="w-full h-full object-cover" />
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={m.avatar_url}
+                          alt={fullName}
+                          className="object-cover"
+                          fill
+                        />
+                      </div>
                     ) : (
                       <UserIcon className="w-8 h-8 text-slate-400" />
                     )}

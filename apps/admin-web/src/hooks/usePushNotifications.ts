@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
 export function usePushNotifications() {
-    const [isSupported, setIsSupported] = useState(false)
+    const [isSupported] = useState(typeof window !== 'undefined' && 'serviceWorker' in navigator && 'PushManager' in window)
     const [subscription, setSubscription] = useState<PushSubscription | null>(null)
 
     const registerServiceWorker = async () => {
@@ -17,15 +17,14 @@ export function usePushNotifications() {
     }
 
     useEffect(() => {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
-        setIsSupported(true)
+        if (!isSupported) return
 
         let mounted = true
         navigator.serviceWorker.ready.then(() => {
             if (mounted) registerServiceWorker()
         })
         return () => { mounted = false }
-    }, [])
+    }, [isSupported])
 
     const subscribeUser = async (vapidPublicKey: string) => {
         try {

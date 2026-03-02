@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { addMonths, lastDayOfMonth } from 'date-fns'
 import { motion } from 'framer-motion'
 import { User, Mail, Phone, Hash, Shield, Calendar, BookOpen, AlertCircle, Save, Plus, Award, UserPlus } from 'lucide-react'
+import { toast } from 'sonner'
 import { supabase } from '@/lib/supabaseClient'
 import { MemberRow, MemberPayload, ClassOption } from '@/types/member'
 
@@ -181,7 +182,7 @@ export default function MemberForm({
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.principal_class) return alert('Debes seleccionar una clase principal')
+    if (!form.principal_class) return toast.error('Debes seleccionar una clase principal')
     setIsSubmitting(true)
     try {
       // Map to the new format expected by members/page.tsx

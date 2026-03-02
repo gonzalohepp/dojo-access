@@ -62,7 +62,7 @@ type LandingEvent = {
   created_at: string
   metadata?: {
     ip?: string
-    [key: string]: any
+    [key: string]: string | number | boolean | undefined
   }
 }
 
@@ -744,7 +744,7 @@ function KpiCard({ label, value, icon, color, loading, trend, description }: {
 
 function CustomTooltip({ active, payload, label }: {
   active?: boolean
-  payload?: any[]
+  payload?: { value: number }[]
   label?: string
 }) {
   if (active && payload && payload.length) {
@@ -789,21 +789,21 @@ function LandingMetricsCard({ events, loading, activeWindow, onWindowChange }: {
     if (window === '7d') cutoff = d7
     if (window === 'month') cutoff = startMonth
 
-    const filtered = events.filter((e: any) => new Date(e.created_at) >= cutoff)
-    const visits = filtered.filter((e: any) => e.event_type === 'page_view').length
-    const clicks = filtered.filter((e: any) => e.event_type !== 'page_view').length
-    return { visits, clicks, conversion: visits > 0 ? ((clicks / visits) * 100).toFixed(1) : 0 }
+    const filtered = events.filter((e) => new Date(e.created_at) >= cutoff)
+    const visits = filtered.filter((e) => e.event_type === 'page_view').length
+    const clicks = filtered.filter((e) => e.event_type !== 'page_view').length
+    return { visits, clicks, conversion: visits > 0 ? Number(((clicks / visits) * 100).toFixed(1)) : 0 }
   }
 
   const currentData = getFilteredData(activeWindow || '24h')
 
-  const clicksWsp = events.filter((e: any) => e.event_type === 'click_whatsapp' && new Date(e.created_at) >= (activeWindow === '24h' ? h24 : activeWindow === '7d' ? d7 : startMonth)).length
-  const clicksInsta = events.filter((e: any) => e.event_type === 'click_instagram' && new Date(e.created_at) >= (activeWindow === '24h' ? h24 : activeWindow === '7d' ? d7 : startMonth)).length
+  const clicksWsp = events.filter((e) => e.event_type === 'click_whatsapp' && new Date(e.created_at) >= (activeWindow === '24h' ? h24 : activeWindow === '7d' ? d7 : startMonth)).length
+  const clicksInsta = events.filter((e) => e.event_type === 'click_instagram' && new Date(e.created_at) >= (activeWindow === '24h' ? h24 : activeWindow === '7d' ? d7 : startMonth)).length
 
   const recentIPs = Array.from(new Set(events
-    .filter((e: any) => e.metadata?.ip && e.event_type === 'page_view')
-    .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .map((e: any) => e.metadata.ip)
+    .filter((e) => e.metadata?.ip && e.event_type === 'page_view')
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .map((e) => e.metadata?.ip as string)
   )).slice(0, 5)
 
   return (

@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { Search, User as UserIcon, Check, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 
 interface User {
     user_id: string
@@ -79,9 +80,9 @@ export default function UserSearch({ onSelect, selectedUser }: UserSearchProps) 
             {selectedUser ? (
                 <div className="flex items-center justify-between bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-xl p-3">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center overflow-hidden">
+                        <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-800 flex items-center justify-center overflow-hidden relative">
                             {selectedUser.avatar_url ? (
-                                <img src={selectedUser.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                <Image src={selectedUser.avatar_url} alt="Avatar" className="object-cover" fill />
                             ) : (
                                 <UserIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                             )}
@@ -138,9 +139,9 @@ export default function UserSearch({ onSelect, selectedUser }: UserSearchProps) 
                                 }}
                                 className="w-full flex items-center gap-3 p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors text-left"
                             >
-                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+                                <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-900 flex items-center justify-center overflow-hidden relative">
                                     {user.avatar_url ? (
-                                        <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+                                        <Image src={user.avatar_url} alt="Avatar" className="object-cover" fill />
                                     ) : (
                                         <UserIcon className="w-5 h-5 text-slate-400" />
                                     )}

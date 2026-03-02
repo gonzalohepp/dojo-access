@@ -1,6 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import { CheckCircle2, XCircle, Clock } from 'lucide-react'
+import Image from 'next/image'
 
 type AccessRow = {
   scanned_at: string
@@ -64,7 +65,14 @@ export default function RecentAccess({ rows, loading }: { rows: AccessRow[]; loa
               <div className={`w-10 h-10 rounded-full flex items-center justify-center overflow-hidden ${ok ? 'bg-green-500/10 text-green-600' : 'bg-red-500/10 text-red-600'
                 }`}>
                 {r.profiles?.avatar_url ? (
-                  <img src={r.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
+                  <div className="relative w-full h-full">
+                    <Image
+                      src={r.profiles.avatar_url}
+                      className="object-cover"
+                      alt={name}
+                      fill
+                    />
+                  </div>
                 ) : (
                   ok ? <CheckCircle2 className="w-5 h-5" /> : <XCircle className="w-5 h-5" />
                 )}

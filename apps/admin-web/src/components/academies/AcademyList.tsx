@@ -1,7 +1,7 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabaseClient'
-import { MapPin, Edit2, Trash2, Globe, Clock, ChevronLeft, ChevronRight, Info } from 'lucide-react'
+import { MapPin, Edit2, Trash2, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 
@@ -45,16 +45,17 @@ export default function AcademyList({ search, onEdit }: { search: string, onEdit
 
     // Pagination
     const totalPages = Math.ceil(filteredAcademies.length / ITEMS_PER_PAGE)
-    const paginatedAcademies = useMemo(() => {
-        const start = (currentPage - 1) * ITEMS_PER_PAGE
-        return filteredAcademies.slice(start, start + ITEMS_PER_PAGE)
-    }, [filteredAcademies, currentPage])
 
-    // Reset to first page when search changes
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setCurrentPage(1)
-    }, [search])
+    // Adjust current page if it is out of bounds due to search changes
+    const effectivePage = useMemo(() => {
+        if (currentPage > totalPages && totalPages > 0) return 1
+        return currentPage
+    }, [currentPage, totalPages])
+
+    const paginatedAcademies = useMemo(() => {
+        const start = (effectivePage - 1) * ITEMS_PER_PAGE
+        return filteredAcademies.slice(start, start + ITEMS_PER_PAGE)
+    }, [filteredAcademies, effectivePage])
 
     if (isLoading) return <div className="text-center py-20 text-slate-500 font-medium">Cargando academias...</div>
 
@@ -180,8 +181,8 @@ export default function AcademyList({ search, onEdit }: { search: string, onEdit
                                         key={pageNum}
                                         onClick={() => setCurrentPage(pageNum as number)}
                                         className={`w-10 h-10 rounded-xl text-xs font-black transition-all ${isActive
-                                                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                                                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-500/50'
+                                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                                            : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 hover:border-blue-500/50'
                                             }`}
                                     >
                                         {pageNum}

@@ -385,7 +385,7 @@ export default function PaymentModal({
                     <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-white transition-colors z-10" />
                     <select
                       value={method}
-                      onChange={(e) => setMethod(e.target.value as any)}
+                      onChange={(e) => setMethod(e.target.value as 'efectivo' | 'transferencia' | 'mercadopago')}
                       className="w-full h-full bg-white/5 border border-white/10 rounded-xl pl-12 pr-10 text-white font-bold appearance-none cursor-pointer hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                     >
                       <option value="efectivo" className="text-slate-900">Efectivo 💵</option>

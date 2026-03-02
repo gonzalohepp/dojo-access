@@ -204,7 +204,7 @@ export default function PaymentsPage() {
               Registro de <span className="text-emerald-600 dark:text-emerald-400">Pagos</span>
             </h1>
             <p className="max-w-md text-slate-500 dark:text-slate-400 font-medium italic">
-              "El orden financiero es el cimiento de la disciplina."
+              &quot;El orden financiero es el cimiento de la disciplina.&quot;
             </p>
           </motion.div>
 

@@ -1,6 +1,7 @@
 'use client'
 import { motion } from 'framer-motion'
 import { DollarSign } from 'lucide-react'
+import Image from 'next/image'
 type Row = {
   amount: number
   method: string | null
@@ -37,9 +38,14 @@ export default function RecentActivity({ rows, loading }: { rows: Row[]; loading
           className="group flex items-center justify-between p-4 rounded-2xl border border-white/10 bg-white dark:bg-slate-800/50 dark:backdrop-blur-xl dark:border-slate-700 shadow-lg shadow-slate-200/50 dark:shadow-none hover:shadow-xl hover:scale-[1.01] transition-all"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform overflow-hidden">
+            <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center text-green-600 group-hover:scale-110 transition-transform overflow-hidden relative">
               {r.profiles?.avatar_url ? (
-                <img src={r.profiles.avatar_url} className="w-full h-full object-cover" alt="" />
+                <Image
+                  src={r.profiles.avatar_url}
+                  className="object-cover"
+                  alt={r.profiles?.first_name || 'Miembro'}
+                  fill
+                />
               ) : (
                 <DollarSign className="w-6 h-6" />
               )}
