@@ -321,11 +321,13 @@ export default function SubscriptionModal({
                                             <Loader2 className="w-5 h-5 animate-spin" />
                                         </div>
                                     ) : (
-                                        <img
-                                            src="/mp_button.png"
-                                            alt="Pagar con Mercado Pago"
-                                            className="h-16 w-auto object-contain"
-                                        />
+                                        <div className="rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20">
+                                            <img
+                                                src="/mp_button.png"
+                                                alt="Pagar con Mercado Pago"
+                                                className="h-16 w-full object-cover"
+                                            />
+                                        </div>
                                     )}
                                 </button>
                             </div>

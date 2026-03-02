@@ -451,12 +451,12 @@ export default function ProfilePage() {
                             <div className="mt-6">
                               <button
                                 onClick={() => setShowPayModal(true)}
-                                className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+                                className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20"
                               >
                                 <img
                                   src="/mp_button.png"
                                   alt="Pagar Suscripción"
-                                  className="h-16 w-auto object-contain"
+                                  className="h-16 w-full object-cover"
                                 />
                               </button>
                             </div>

@@ -314,7 +314,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
             <div>
               <h2 className="font-black text-lg text-foreground tracking-tight leading-tight">Beleza <span className="text-blue-600">Dojo</span></h2>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
-                {role === 'admin' ? 'Admin Panel' : role === 'instructor' ? 'Instructor Panel' : 'Member Portal'}
+                {role === 'admin' ? 'Admin Panel' : role === 'instructor' ? 'Instructor Panel' : 'Portal de Alumno'}
               </p>
             </div>
           </div>
