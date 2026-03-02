@@ -547,7 +547,7 @@ function ValidateContent() {
                           <img
                             src="/mp_button.png"
                             alt="Pagar con Mercado Pago"
-                            className="h-16 w-full object-cover"
+                            className="h-16 w-auto object-contain"
                           />
                         </button>
                       )}

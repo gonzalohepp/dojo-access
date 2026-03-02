@@ -456,7 +456,7 @@ export default function ProfilePage() {
                                 <img
                                   src="/mp_button.png"
                                   alt="Pagar Suscripción"
-                                  className="h-16 w-full object-cover"
+                                  className="h-16 w-auto object-contain"
                                 />
                               </button>
                             </div>
