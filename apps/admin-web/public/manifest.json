@@ -10,14 +10,7 @@
         {
             "src": "/logo.png",
             "sizes": "192x192 512x512",
-            "type": "image/png",
-            "purpose": "any"
-        },
-        {
-            "src": "/logo.png",
-            "sizes": "192x192 512x512",
-            "type": "image/png",
-            "purpose": "maskable"
+            "type": "image/png"
         }
     ],
     "prefer_related_applications": false,

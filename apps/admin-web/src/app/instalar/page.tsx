@@ -152,27 +152,11 @@ export default function InstallPage() {
                                 </motion.div>
                             )}
 
-                            {/* Continue to web */}
-                            <div className="pt-4">
-                                <Link
-                                    href="/login"
-                                    className="text-slate-500 hover:text-white transition-colors text-xs font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2"
-                                >
-                                    Continuar a la Versión Web <ChevronRight className="w-4 h-4" />
-                                </Link>
-                            </div>
                         </div>
                     )}
                 </AnimatePresence>
 
-                {/* Footer */}
-                <div className="mt-20 opacity-30">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.3em] flex items-center gap-3">
-                        <span className="w-8 h-px bg-white/50" />
-                        Beleza Dojo PWA Experience
-                        <span className="w-8 h-px bg-white/50" />
-                    </p>
-                </div>
+                {/* Footer removed */}
             </div>
         </div>
     )
