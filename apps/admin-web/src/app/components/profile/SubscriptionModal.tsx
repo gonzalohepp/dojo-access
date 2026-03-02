@@ -314,9 +314,19 @@ export default function SubscriptionModal({
                                 <button
                                     disabled={!principalClass || total === 0 || processing}
                                     onClick={handlePayment}
-                                    className="w-full md:w-auto h-16 px-8 rounded-2xl bg-[#009EE3] hover:bg-[#008ED0] text-white font-black uppercase tracking-widest text-sm shadow-xl shadow-[#009EE3]/20 transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-3"
+                                    className="w-full md:w-auto transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
                                 >
-                                    {processing ? <Loader2 className="w-5 h-5 animate-spin" /> : <span>Pagar con Mercado Pago</span>}
+                                    {processing ? (
+                                        <div className="h-16 px-8 rounded-2xl bg-[#009EE3] flex items-center justify-center text-white">
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        </div>
+                                    ) : (
+                                        <img
+                                            src="/mp_button.png"
+                                            alt="Pagar con Mercado Pago"
+                                            className="h-16 w-auto object-contain"
+                                        />
+                                    )}
                                 </button>
                             </div>
                         </div>

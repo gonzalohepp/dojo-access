@@ -516,7 +516,7 @@ function ValidateContent() {
 
                     <div className="pt-6 flex flex-col gap-3">
                       {(member?.status === 'vencido' || member?.status === 'inactivo' || resultMsg.includes('vencida') || resultMsg.includes('inactive')) && (
-                        <Button
+                        <button
                           onClick={async () => {
                             try {
                               const basePrice = member?.estimated_monthly_fee || 15000
@@ -542,10 +542,14 @@ function ValidateContent() {
                               console.error('Payment error', e)
                             }
                           }}
-                          className="w-full py-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold animate-shimmer"
+                          className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50 border-none bg-transparent p-0"
                         >
-                          PAGAR CUOTA AHORA {member?.is_new_member ? '(Precio de Bienvenida)' : multiplier > 1 ? '(+20% Recargo)' : ''}
-                        </Button>
+                          <img
+                            src="/mp_button.png"
+                            alt="Pagar con Mercado Pago"
+                            className="h-16 w-auto object-contain"
+                          />
+                        </button>
                       )}
 
                       <Button
