@@ -178,10 +178,7 @@ function MembersContent() {
     return filtered.slice(startIndex, endIndex)
   }, [filtered, currentPage, ITEMS_PER_PAGE])
 
-  // Reset to page 1 when filters or search changes
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [filters, q])
+  // No separate useEffect needed for pagination reset
 
   // --- ACCIONES ---
   const onCreate = () => {
@@ -393,11 +390,11 @@ function MembersContent() {
                 <input
                   placeholder="Buscar por nombre, email, teléfono o código…"
                   value={q}
-                  onChange={(e) => setQ(e.target.value)}
+                  onChange={(e) => { setQ(e.target.value); setCurrentPage(1); }}
                   className="h-12 w-full bg-transparent border-none px-4 focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium"
                 />
                 {q && (
-                  <button onClick={() => setQ('')} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-400 transition-colors mr-2">
+                  <button onClick={() => { setQ(''); setCurrentPage(1); }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-400 transition-colors mr-2">
                     <X className="w-5 h-5" />
                   </button>
                 )}
@@ -409,7 +406,7 @@ function MembersContent() {
                 <Filter className="w-4 h-4" />
                 <span className="text-xs font-bold uppercase tracking-widest">Filtros</span>
               </div>
-              <MemberFilters value={filters} onChange={setFilters} classes={classes} />
+              <MemberFilters value={filters} onChange={(v) => { setFilters(v); setCurrentPage(1); }} classes={classes} />
             </div>
           </div>
 

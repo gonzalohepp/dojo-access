@@ -60,6 +60,25 @@ type EnrollmentRow = { user_id: string; class_id: number }
 type LandingEvent = {
   event_type: string
   created_at: string
+  metadata?: {
+    ip?: string
+    [key: string]: any
+  }
+}
+
+type AccessWithProfile = {
+  user_id: string
+  scanned_at: string
+  result: string
+  profiles: {
+    first_name: string | null
+    last_name: string | null
+    avatar_url: string | null
+  } | {
+    first_name: string | null
+    last_name: string | null
+    avatar_url: string | null
+  }[] | null
 }
 
 /* =============== página =============== */
@@ -72,8 +91,8 @@ export default function MetricasPage() {
   const [activeMembers, setActiveMembers] = useState(0)
   const [activeUserIds, setActiveUserIds] = useState<Set<string>>(new Set())
   const [accessLogsToday, setAccessLogsToday] = useState<number>(0)
-  const [recentAccesses, setRecentAccesses] = useState<any[]>([])
-  const [landingEvents, setLandingEvents] = useState<any[]>([])
+  const [recentAccesses, setRecentAccesses] = useState<AccessWithProfile[]>([])
+  const [landingEvents, setLandingEvents] = useState<LandingEvent[]>([])
 
   const [classes, setClasses] = useState<ClassRow[]>([])
   const [enrollments, setEnrollments] = useState<EnrollmentRow[]>([])
@@ -131,7 +150,7 @@ export default function MetricasPage() {
           )
         `)
         .gte('scanned_at', addDays(today(), -30).toISOString())
-      setRecentAccesses((recentAcc || []) as any[])
+      setRecentAccesses((recentAcc || []) as AccessWithProfile[])
 
       const { data: cls } = await supabase
         .from('classes')
@@ -148,7 +167,7 @@ export default function MetricasPage() {
         .from('landing_events')
         .select('event_type,created_at,metadata')
         .gte('created_at', ninetyDaysAgo.toISOString())
-      setLandingEvents((lnd ?? []) as any[])
+      setLandingEvents((lnd ?? []) as LandingEvent[])
 
       setLoading(false)
     }
@@ -223,9 +242,9 @@ export default function MetricasPage() {
     filteredUsersForRanking.forEach(a => {
       if (!a.user_id) return
       if (!counts[a.user_id]) {
-        const p = a.profiles
+        const p = Array.isArray(a.profiles) ? a.profiles[0] : a.profiles
         const name = p ? `${p.first_name ?? ''} ${p.last_name ?? ''}`.trim() : 'Ficticio'
-        counts[a.user_id] = { count: 0, name: name || a.user_id.slice(0, 8), avatar: p?.avatar_url }
+        counts[a.user_id] = { count: 0, name: name || a.user_id.slice(0, 8), avatar: p?.avatar_url || null }
       }
       counts[a.user_id].count++
     })
@@ -630,7 +649,7 @@ export default function MetricasPage() {
             events={landingEvents}
             loading={loading}
             activeWindow={landingWindow}
-            onWindowChange={setLandingWindow}
+            onWindowChange={(val) => setLandingWindow(val)}
           />
 
           {/* Quick Stats Summary */}
@@ -672,8 +691,16 @@ export default function MetricasPage() {
 
 /* ======================== Components ======================== */
 
-function KpiCard({ label, value, icon, color, loading, trend, description }: any) {
-  const colors: any = {
+function KpiCard({ label, value, icon, color, loading, trend, description }: {
+  label: string
+  value: string | number
+  icon: React.ReactNode
+  color: 'indigo' | 'emerald' | 'rose'
+  loading?: boolean
+  trend?: number
+  description?: string
+}) {
+  const colors: Record<string, string> = {
     indigo: 'bg-indigo-50 text-indigo-600 ring-indigo-500/10 dark:bg-indigo-900/30 dark:text-indigo-400 dark:ring-indigo-500/30',
     emerald: 'bg-emerald-50 text-emerald-600 ring-emerald-500/10 dark:bg-emerald-900/30 dark:text-emerald-400 dark:ring-emerald-500/30',
     rose: 'bg-rose-50 text-rose-600 ring-rose-500/10 dark:bg-rose-900/30 dark:text-rose-400 dark:ring-rose-500/30'
@@ -715,7 +742,11 @@ function KpiCard({ label, value, icon, color, loading, trend, description }: any
   )
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: {
+  active?: boolean
+  payload?: any[]
+  label?: string
+}) {
   if (active && payload && payload.length) {
     return (
       <div className="bg-slate-900 text-white text-xs font-bold px-3 py-2 rounded-lg shadow-xl">
@@ -731,7 +762,12 @@ function CustomTooltip({ active, payload, label }: any) {
   return null
 }
 
-function LandingMetricsCard({ events, loading, activeWindow, onWindowChange }: any) {
+function LandingMetricsCard({ events, loading, activeWindow, onWindowChange }: {
+  events: LandingEvent[]
+  loading: boolean
+  activeWindow: '24h' | '7d' | 'month'
+  onWindowChange: (val: '24h' | '7d' | 'month') => void
+}) {
   if (loading) return (
     <div className="w-full h-40 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-[32px]" />
   )
@@ -742,10 +778,10 @@ function LandingMetricsCard({ events, loading, activeWindow, onWindowChange }: a
   }
 
   const artNow = getARTDate()
-  const todayStr = artNow.toISOString().slice(0, 10)
+  const nowTs = artNow.getTime()
 
-  const h24 = new Date(Date.now() - 24 * 60 * 60 * 1000)
-  const d7 = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+  const h24 = new Date(nowTs - 24 * 60 * 60 * 1000)
+  const d7 = new Date(nowTs - 7 * 24 * 60 * 60 * 1000)
   const startMonth = new Date(artNow.getFullYear(), artNow.getMonth(), 1)
 
   const getFilteredData = (window: string) => {
@@ -800,7 +836,7 @@ function LandingMetricsCard({ events, loading, activeWindow, onWindowChange }: a
             ].map((win) => (
               <button
                 key={win.id}
-                onClick={() => onWindowChange(win.id)}
+                onClick={() => onWindowChange(win.id as '24h' | '7d' | 'month')}
                 className={`px-4 py-2 text-xs font-black uppercase tracking-widest rounded-xl transition-all ${activeWindow === win.id ? 'bg-white text-slate-900 shadow-xl' : 'text-slate-400 hover:text-white'
                   }`}
               >
@@ -850,7 +886,7 @@ function LandingMetricsCard({ events, loading, activeWindow, onWindowChange }: a
           <div className="p-4 bg-black/20 rounded-2xl border border-white/5">
             <p className="text-[10px] uppercase font-black text-slate-500 mb-3">Últimas IPs detectadas</p>
             <div className="flex flex-wrap gap-2">
-              {recentIPs.map((ip: any) => (
+              {recentIPs.map((ip) => (
                 <span key={ip} className="px-2 py-1 bg-white/5 rounded-lg text-[10px] font-mono text-slate-400 border border-white/5">
                   {ip}
                 </span>
@@ -863,7 +899,7 @@ function LandingMetricsCard({ events, loading, activeWindow, onWindowChange }: a
   )
 }
 
-function StatLine({ label, value, icon }: any) {
+function StatLine({ label, value, icon }: { label: string, value: string | number, icon: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between group cursor-default">
       <div className="flex items-center gap-3">

@@ -59,10 +59,10 @@ export default function AccessLogPage() {
         console.error('Error fetching logs:', error)
         setLogs([])
       } else {
-        const mapped = (data || []).map((l: any) => ({
+        const mapped: LogRow[] = (data || []).map((l: any) => ({
           id: l.id,
           scanned_at: l.scanned_at,
-          member_name: l.profiles ? `${l.profiles.first_name || ''} ${l.profiles.last_name || ''}`.trim() : 'Desconocido',
+          member_name: l.profiles && !Array.isArray(l.profiles) ? `${l.profiles.first_name || ''} ${l.profiles.last_name || ''}`.trim() : 'Desconocido',
           result: l.result,
           reason: l.reason,
           member_id: l.user_id

@@ -21,7 +21,10 @@ export default function SubscriptionModal({
 }: {
     open: boolean
     onClose: () => void
-    initialData?: any
+    initialData?: {
+        principal?: number | null
+        additional?: number[]
+    }
 }) {
     const [classes, setClasses] = useState<ClassOption[]>([])
     const [principalClass, setPrincipalClass] = useState<number | null>(null)
@@ -155,9 +158,10 @@ export default function SubscriptionModal({
                 throw new Error('No se recibió link de pago')
             }
 
-        } catch (error: any) {
+        } catch (error) {
+            const msg = error instanceof Error ? error.message : 'Error desconocido'
             console.error(error)
-            alert(error.message || 'Error desconocido')
+            alert(msg)
             setProcessing(false)
         }
     }

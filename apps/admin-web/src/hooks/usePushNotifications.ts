@@ -17,10 +17,14 @@ export function usePushNotifications() {
     }
 
     useEffect(() => {
-        if ('serviceWorker' in navigator && 'PushManager' in window) {
-            setIsSupported(true)
-            registerServiceWorker()
-        }
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return
+        setIsSupported(true)
+
+        let mounted = true
+        navigator.serviceWorker.ready.then(() => {
+            if (mounted) registerServiceWorker()
+        })
+        return () => { mounted = false }
     }, [])
 
     const subscribeUser = async (vapidPublicKey: string) => {

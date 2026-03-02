@@ -45,10 +45,6 @@ export default function PaymentModal({
   // Initial Data Fetch
   useEffect(() => {
     if (!open) return;
-    setUserId('');
-    setPrincipalClass(null);
-    setAdditionalClasses([]);
-    setMethod('efectivo');
 
     (async () => {
       // Load classes
@@ -62,7 +58,7 @@ export default function PaymentModal({
         .order('last_name', { ascending: true, nullsFirst: true });
 
       if (data) {
-        const opts = data.map((p: any) => ({
+        const opts: MemberOpt[] = data.map(p => ({
           user_id: p.user_id,
           name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim(),
           is_new_member: p.is_new_member,
@@ -149,7 +145,7 @@ export default function PaymentModal({
 
     // 2. Update Enrollments
     await supabase.from('class_enrollments').delete().eq('user_id', userId)
-    const newEnrollments: any[] = []
+    const newEnrollments: { user_id: string, class_id: number, is_principal: boolean }[] = []
     if (principalClass) newEnrollments.push({ user_id: userId, class_id: principalClass, is_principal: true })
     additionalClasses.forEach(id => newEnrollments.push({ user_id: userId, class_id: id, is_principal: false }))
     if (newEnrollments.length > 0) {

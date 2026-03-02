@@ -49,10 +49,7 @@ export default function ClassesPage() {
     })
   }, [items, query, colorFilter, categoryFilter])
 
-  // Reset page when filters change
-  useEffect(() => {
-    setCurrentPage(1)
-  }, [query, colorFilter, categoryFilter])
+  // No separate useEffect needed for pagination reset
 
   const paginatedItems = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE
@@ -132,7 +129,7 @@ export default function ClassesPage() {
               className="h-14 w-full rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white pl-12 pr-4 font-medium shadow-sm outline-none ring-blue-500/10 transition-all focus:border-blue-500/50 focus:ring-4"
               placeholder="Buscar por nombre, instructor o descripción..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => { setQuery(e.target.value); setCurrentPage(1); }}
             />
           </div>
 
@@ -141,7 +138,7 @@ export default function ClassesPage() {
               <Layers className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <select
                 value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value as any)}
+                onChange={(e) => { setCategoryFilter(e.target.value as any); setCurrentPage(1); }}
                 className="h-14 w-full appearance-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-11 pr-10 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none ring-blue-500/10 transition-all focus:border-blue-500/50 focus:ring-4"
               >
                 <option value="all">Todas las Categorías</option>
@@ -157,7 +154,7 @@ export default function ClassesPage() {
               <div className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 rounded-full border border-slate-300 pointer-events-none" />
               <select
                 value={colorFilter}
-                onChange={(e) => setColorFilter(e.target.value)}
+                onChange={(e) => { setColorFilter(e.target.value); setCurrentPage(1); }}
                 className="h-14 w-full appearance-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-11 pr-10 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none ring-blue-500/10 transition-all focus:border-blue-500/50 focus:ring-4"
               >
                 <option value="all">Todos los colores</option>

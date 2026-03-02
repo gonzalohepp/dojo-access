@@ -35,7 +35,7 @@ export default function MemberForm({
   const [manualCode, setManualCode] = useState(false)
 
   useEffect(() => {
-    supabase.from('classes').select('id,name,price_principal,price_additional,color').then(({ data }) => setClasses(data as any ?? []))
+    supabase.from('classes').select('id,name,price_principal,price_additional,color').then(({ data }) => setClasses((data as unknown as ClassOption[]) ?? []))
   }, [])
 
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function MemberForm({
         next_payment_due: member.end_date ? new Date(member.end_date).toISOString().slice(0, 10) : new Date(addMonths(new Date(), 1)).toISOString().slice(0, 10),
         emergency_contact: member.emergency_phone ?? '',
         notes: member.notes ?? '',
-        role: (member as any).role ?? 'member',
+        role: member.role ?? 'member',
       }))
 
       // 1. Fetch exact enrollment status (principal vs additional)
@@ -104,7 +104,7 @@ export default function MemberForm({
     const timeout = setTimeout(async () => {
       const initial = parts[0][0]
       const lastname = parts.slice(1).join('')
-      let suggested = (initial + lastname).replace(/[^a-z0-9]/g, '')
+      const suggested = (initial + lastname).replace(/[^a-z0-9]/g, '')
 
       let unique = suggested
       let counter = 2
@@ -192,7 +192,6 @@ export default function MemberForm({
           ...form.additional_classes.map(id => ({ class_id: id, is_principal: false }))
         ]
       }
-      // @ts-ignore - updating types later
       await onSubmit(payload)
     } finally {
       setIsSubmitting(false)
@@ -281,7 +280,7 @@ export default function MemberForm({
                 <button
                   key={r.id}
                   type="button"
-                  onClick={() => setForm({ ...form, role: r.id as any })}
+                  onClick={() => setForm({ ...form, role: r.id as 'admin' | 'member' | 'instructor' | 'becado' })}
                   className={`flex items-center gap-3 p-3 rounded-2xl border transition-all ${form.role === r.id
                     ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20'
                     : 'bg-white border-slate-100 text-slate-600 hover:border-slate-300'

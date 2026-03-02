@@ -41,8 +41,8 @@ export default function PhotoCropper({ image, onCancel, onCropComplete }: PhotoC
                     onCropComplete(croppedImage)
                 }
             }
-        } catch (e) {
-            console.error(e)
+        } catch (error) {
+            console.error(error)
         } finally {
             setLoading(false)
         }

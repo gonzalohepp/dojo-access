@@ -14,7 +14,10 @@ type Grade = {
     instructor: {
         first_name: string
         last_name: string
-    } | null
+    } | {
+        first_name: string
+        last_name: string
+    }[] | null
 }
 
 const BELT_COLORS: Record<string, { bg: string, text: string, border: string, dot: string }> = {
@@ -63,8 +66,8 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
                 .order('awarded_at', { ascending: false })
 
             if (error) throw error
-            setGrades(data as any[])
-        } catch (error: any) {
+            setGrades(data as Grade[])
+        } catch (error) {
             console.error('Error fetching grades:', error)
             import('sonner').then(({ toast }) => toast.error('Error al cargar graduaciones'))
         } finally {
@@ -110,10 +113,11 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
             setNewGrade('')
             setNewNotes('')
             fetchGrades()
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error saving grade:', error)
             const { toast } = await import('sonner')
-            toast.error('Error al guardar graduación', { description: error.message })
+            const msg = error instanceof Error ? error.message : 'Error desconocido'
+            toast.error('Error al guardar graduación', { description: msg })
         } finally {
             setSubmitting(false)
         }
@@ -128,7 +132,7 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
             const { toast } = await import('sonner')
             toast.success('Graduación eliminada')
             fetchGrades()
-        } catch (error: any) {
+        } catch (error) {
             console.error('Error deleting grade:', error)
             const { toast } = await import('sonner')
             toast.error('No se pudo eliminar la graduación')
@@ -277,12 +281,15 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
                                                 <h4 className="text-2xl md:text-3xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-tight">
                                                     {g.grade}
                                                 </h4>
-                                                {g.instructor && (
-                                                    <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border border-slate-100 dark:border-slate-700/50">
-                                                        <User className="w-3 h-3 text-blue-500" />
-                                                        Entregado por {g.instructor.first_name} {g.instructor.last_name}
-                                                    </div>
-                                                )}
+                                                {(() => {
+                                                    const p = Array.isArray(g.instructor) ? g.instructor[0] : g.instructor
+                                                    return p ? (
+                                                        <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/50 rounded-xl text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest border border-slate-100 dark:border-slate-700/50">
+                                                            <User className="w-3 h-3 text-blue-500" />
+                                                            Entregado por {p.first_name} {p.last_name}
+                                                        </div>
+                                                    ) : null
+                                                })()}
                                             </div>
 
                                             {!readOnly && (
