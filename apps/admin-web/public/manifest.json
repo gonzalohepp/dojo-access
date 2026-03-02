@@ -10,7 +10,37 @@
         {
             "src": "/logo.png",
             "sizes": "192x192 512x512",
-            "type": "image/png"
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/logo.png",
+            "sizes": "192x192 512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "prefer_related_applications": false,
+    "shortcuts": [
+        {
+            "name": "Mi Perfil",
+            "url": "/profile",
+            "icons": [
+                {
+                    "src": "/logo.png",
+                    "sizes": "192x192"
+                }
+            ]
+        },
+        {
+            "name": "Validar Acceso",
+            "url": "/validate",
+            "icons": [
+                {
+                    "src": "/logo.png",
+                    "sizes": "192x192"
+                }
+            ]
         }
     ]
 }
