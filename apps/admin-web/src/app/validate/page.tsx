@@ -457,10 +457,46 @@ function ValidateContent() {
                 </div>
 
                 <Button
-                  onClick={() => {
-                    if (member) {
-                      finalizeAccess(member, true, 'Acceso autorizado - ¡Bienvenido!', Array.from(selectedClassIds))
+                  onClick={async () => {
+                    if (!member) return;
+
+                    // If member is not active, redirect to MP instead of finalizing access
+                    if (member.status !== 'activo') {
+                      try {
+                        setIsFinalizing(true);
+                        const basePrice = member.estimated_monthly_fee || 15000;
+                        const finalPrice = Math.round(basePrice * multiplier);
+
+                        const res = await fetch('/api/payments/mp/preference', {
+                          method: 'POST',
+                          body: JSON.stringify({
+                            items: [{
+                              id: 'cuota_mensual',
+                              title: `Cuota Mensual - Beleza Dojo ${multiplier > 1 ? '(Recargo 20%)' : ''}`,
+                              price: finalPrice
+                            }],
+                            payer_email: member.email || userEmail,
+                            user_id: member.user_id,
+                            principal_id: candidateClasses.find(c => (c as any).is_principal || selectedClassIds.has(c.id))?.id,
+                            additional_ids: Array.from(selectedClassIds)
+                          })
+                        });
+
+                        const data = await res.json();
+                        if (data.init_point) {
+                          window.location.href = data.init_point;
+                        } else if (data.sandbox_init_point) {
+                          window.location.href = data.sandbox_init_point;
+                        }
+                      } catch (e) {
+                        console.error('Payment error', e);
+                      } finally {
+                        setIsFinalizing(false);
+                      }
+                      return;
                     }
+
+                    finalizeAccess(member, true, 'Acceso autorizado - ¡Bienvenido!', Array.from(selectedClassIds))
                   }}
                   disabled={isFinalizing}
                   className="w-full py-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-sm shadow-xl shadow-blue-500/30 transition-all disabled:opacity-50"
@@ -468,7 +504,7 @@ function ValidateContent() {
                   {isFinalizing ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                   ) : (
-                    'CONFIRMAR INGRESO'
+                    member?.status !== 'activo' ? 'PAGAR Y ENTRAR' : 'CONFIRMAR INGRESO'
                   )}
                 </Button>
               </div>
@@ -520,34 +556,27 @@ function ValidateContent() {
                       {(member?.status === 'vencido' || member?.status === 'inactivo' || resultMsg.includes('vencida') || resultMsg.includes('inactive')) && (
                         <button
                           onClick={async () => {
-                            try {
-                              const basePrice = member?.estimated_monthly_fee || 15000
-                              const finalPrice = Math.round(basePrice * multiplier)
+                            // Cerrar resultado y mostrar selección de clases primero
+                            setOpenResult(false)
 
-                              const res = await fetch('/api/payments/mp/preference', {
-                                method: 'POST',
-                                body: JSON.stringify({
-                                  items: [{
-                                    id: 'cuota_mensual',
-                                    title: `Cuota Mensual - Beleza Dojo ${multiplier > 1 ? '(Recargo 20%)' : ''}`,
-                                    price: finalPrice
-                                  }],
-                                  payer_email: member?.email || userEmail,
-                                  user_id: member?.user_id,
-                                  principal_id: candidateClasses.find(c => (c as unknown as { is_principal: boolean }).is_principal)?.id || undefined,
-                                  additional_ids: candidateClasses.filter(c => !(c as unknown as { is_principal: boolean }).is_principal).map(c => c.id)
-                                })
-                              })
-                              const data = await res.json()
-                              // Prioritize production init_point
-                              if (data.init_point) {
-                                window.location.href = data.init_point
-                              } else if (data.sandbox_init_point) {
-                                window.location.href = data.sandbox_init_point
+                            // Cargar las clases del miembro si no están cargadas
+                            if (candidateClasses.length === 0 && member) {
+                              const { data } = await supabase
+                                .from('class_enrollments')
+                                .select(`class_id, is_principal, classes(id, name, instructor, start_time, end_time, color, days)`)
+                                .eq('user_id', member.user_id)
+
+                              if (data) {
+                                const mapped = data
+                                  .filter(e => e.classes)
+                                  .map(e => e.classes as unknown as ClassCandidate)
+                                setCandidateClasses(mapped)
+                                setSelectedClassIds(new Set(mapped.map(c => c.id)))
                               }
-                            } catch (e) {
-                              console.error('Payment error', e)
                             }
+
+                            // Mostrar selección de clases → desde ahí el usuario confirma → ahí sí va a MP
+                            setShowClassSelection(true)
                           }}
                           className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50 border-none bg-[#009EE3] p-0 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20"
                         >

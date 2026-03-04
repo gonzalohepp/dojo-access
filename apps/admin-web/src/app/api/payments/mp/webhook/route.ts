@@ -59,7 +59,9 @@ export async function POST(req: Request) {
 
             // 1. Calcular nueva fecha de vencimiento (Mes Calendario, igual que en /payments)
             // Replicamos la lógica de PaymentModal.tsx: lastDayOfMonth(addMonths(today, 0))
-            const today = new Date();
+            const today = new Date(new Date().toLocaleString('en-US', {
+                timeZone: 'America/Argentina/Buenos_Aires'
+            }))
             const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Último día del mes actual
 
             const fromStr = today.toISOString().slice(0, 10);
