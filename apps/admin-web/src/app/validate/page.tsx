@@ -539,7 +539,12 @@ function ValidateContent() {
                                 })
                               })
                               const data = await res.json()
-                              if (data.init_point) window.location.href = data.init_point
+                              // Prioritize production init_point
+                              if (data.init_point) {
+                                window.location.href = data.init_point
+                              } else if (data.sandbox_init_point) {
+                                window.location.href = data.sandbox_init_point
+                              }
                             } catch (e) {
                               console.error('Payment error', e)
                             }

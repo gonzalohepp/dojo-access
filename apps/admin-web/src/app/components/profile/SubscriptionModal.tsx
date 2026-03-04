@@ -149,11 +149,11 @@ export default function SubscriptionModal({
             if (!res.ok) throw new Error('Error al crear preferencia de pago')
 
             const data = await res.json()
-            // Prefer sandbox_init_point if available (especially for test credentials)
-            if (data.sandbox_init_point) {
-                window.location.href = data.sandbox_init_point
-            } else if (data.init_point) {
+            // Prioritize production init_point over sandbox
+            if (data.init_point) {
                 window.location.href = data.init_point
+            } else if (data.sandbox_init_point) {
+                window.location.href = data.sandbox_init_point
             } else {
                 throw new Error('No se recibió link de pago')
             }
