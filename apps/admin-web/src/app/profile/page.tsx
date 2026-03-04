@@ -448,8 +448,6 @@ export default function ProfilePage() {
                               return 'Tu tiempo ha expirado'
                             })()}
                           </p>
-                          {/* Oculto a pedido del usuario */}
-                          {/* 
                           {(!member.role || !['admin', 'instructor', 'becado'].includes(member.role)) && (
                             <div className="mt-6">
                               <button
@@ -465,7 +463,6 @@ export default function ProfilePage() {
                               </button>
                             </div>
                           )}
-                          */}
                         </div>
                       </motion.div>
                     </div>
