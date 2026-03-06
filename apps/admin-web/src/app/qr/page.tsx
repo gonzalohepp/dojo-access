@@ -62,12 +62,36 @@ export default function QRAcceso() {
   const [now, setNow] = useState(Date.now())
   const [autoRefresh, setAutoRefresh] = useState(true)
 
-  // Load autoRefresh state from localStorage on mount
+  // Load autoRefresh state from localStorage on mount and init token
   useEffect(() => {
-    const saved = localStorage.getItem('qr_auto_refresh')
-    if (saved !== null) {
-      setAutoRefresh(JSON.parse(saved))
+    const savedAuto = localStorage.getItem('qr_auto_refresh')
+    const isAuto = savedAuto !== null ? JSON.parse(savedAuto) : true
+    setAutoRefresh(isAuto)
+
+    if (!isAuto) {
+      // Modo fijo: buscar token fijo activo en Supabase
+      supabase
+        .from('qr_tokens')
+        .select('token, expires_at')
+        .eq('is_fixed', true)
+        .gt('expires_at', new Date().toISOString())
+        .order('expires_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            // Token fijo existente, reusar
+            setToken(data.token)
+            setNextRefreshAt(new Date(data.expires_at))
+          } else {
+            // No hay token fijo, generar uno nuevo
+            regenerate(false)
+          }
+        })
+    } else {
+      regenerate(true)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // UI State for Guest Access
@@ -93,14 +117,6 @@ export default function QRAcceso() {
       accessUrl
     )}&bgcolor=e2e8f0&color=0f172a`
   }, [accessUrl])
-
-  // ================= EFFECTS =================
-
-  // Init
-  useEffect(() => {
-    regenerate()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   // Timer Ticker & Auto-Refresh loop
   useEffect(() => {
@@ -166,7 +182,8 @@ export default function QRAcceso() {
 
     const { error } = await supabase.from('qr_tokens').insert({
       token: t,
-      expires_at: expiry.toISOString()
+      expires_at: expiry.toISOString(),
+      is_fixed: !currentAuto
     })
 
     if (error) {
@@ -318,12 +335,32 @@ export default function QRAcceso() {
             </motion.div>
 
             <motion.button
-              onClick={() => {
+              onClick={async () => {
                 const nextValue = !autoRefresh
                 setAutoRefresh(nextValue)
                 localStorage.setItem('qr_auto_refresh', JSON.stringify(nextValue))
-                // Pass the nextValue directly to avoid using stale state
-                regenerate(nextValue)
+
+                if (!nextValue) {
+                  // Cambiando a fijo: buscar si ya hay uno activo en Supabase
+                  const { data } = await supabase
+                    .from('qr_tokens')
+                    .select('token, expires_at')
+                    .eq('is_fixed', true)
+                    .gt('expires_at', new Date().toISOString())
+                    .order('expires_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle()
+
+                  if (data) {
+                    setToken(data.token)
+                    setNextRefreshAt(new Date(data.expires_at))
+                  } else {
+                    regenerate(false)
+                  }
+                } else {
+                  // Cambiando a auto: generar token nuevo normal
+                  regenerate(true)
+                }
               }}
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
