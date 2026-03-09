@@ -24,6 +24,7 @@ import {
   X,
   ChevronRight,
   CreditCard,
+  Award,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -457,22 +458,19 @@ export default function ProfilePage() {
                   {/* Membresía card mobile */}
                   <div className="rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 shadow-sm p-4 mb-4">
                     <div className="flex items-center justify-between">
-                      <div>
+                      <div className="flex-1">
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> Vencimiento
+                          <Clock className="w-3 h-3" /> Próximo Vencimiento
                         </p>
                         <p className={`text-base font-black tracking-tight ${!isActive && !isSpecialRole && !isLifetime ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>
                           {vencimientoLabel}
+                          {daysLeft !== null && !isSpecialRole && !isLifetime && (
+                            <span className={`ml-2 text-xs font-bold ${daysLeft < 7 ? 'text-red-500' : 'text-slate-400'}`}>
+                              (Quedan {daysLeft > 0 ? daysLeft : 0} días)
+                            </span>
+                          )}
                         </p>
                       </div>
-                      {daysLeft !== null && !isSpecialRole && !isLifetime && (
-                        <div className="text-right">
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Días</p>
-                          <p className={`text-2xl font-black tabular-nums ${daysLeft < 7 ? 'text-red-500' : 'text-blue-600 dark:text-blue-400'}`}>
-                            {daysLeft > 0 ? daysLeft : 0}
-                          </p>
-                        </div>
-                      )}
                     </div>
 
                     {/* Progress bar */}
@@ -487,7 +485,7 @@ export default function ProfilePage() {
                     )}
                   </div>
 
-                  {/* Pay button mobile — siempre visible si no es admin/instructor/becado */}
+                  {/* Pay button mobile — OCULTO POR AHORA
                   {!isSpecialRole && !isLifetime && (
                     <button
                       onClick={() => setShowPayModal(true)}
@@ -496,6 +494,7 @@ export default function ProfilePage() {
                       <Image src="/mp_button.png" alt="Pagar con Mercado Pago" fill className="object-contain" />
                     </button>
                   )}
+                  */}
 
                   {/* Section buttons mobile */}
                   <div className="space-y-3">
@@ -514,7 +513,7 @@ export default function ProfilePage() {
                       accent="emerald"
                     />
                     <SectionButton
-                      icon={<Shield className="w-5 h-5" />}
+                      icon={<Award className="w-5 h-5" />}
                       label="Mis Graduaciones"
                       sublabel="Cinturones y logros"
                       onClick={() => setSheetGraduaciones(true)}
@@ -635,6 +634,7 @@ export default function ProfilePage() {
                               daysLeft !== null && daysLeft > 0 ? `Quedan ${daysLeft} días de entrenamiento` :
                                 'Tu tiempo ha expirado'}
                           </p>
+                          {/* BOTÓN OCULTO POR AHORA
                           {!isSpecialRole && !isLifetime && (
                             <div className="mt-4">
                               <button onClick={() => setShowPayModal(true)} className="w-full h-14 relative transition-all hover:scale-105 active:scale-95 rounded-2xl overflow-hidden shadow-lg bg-[#009EE3]">
@@ -642,6 +642,7 @@ export default function ProfilePage() {
                               </button>
                             </div>
                           )}
+                          */}
                         </motion.div>
                       </div>
 
