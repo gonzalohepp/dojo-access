@@ -378,7 +378,7 @@ export default function ProfilePage() {
   /* ---- Render ---- */
   return (
     <AdminLayout active="/profile">
-      <div className="relative min-h-screen">
+      <div className="relative min-h-screen overflow-x-hidden">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
 
