@@ -76,10 +76,7 @@ function MembersContent() {
     if (error) console.error('[members] load error:', error)
 
     const rawMembers = data ?? []
-
-    // Performance Fix: Batch fetch avatars instead of N+1 loop
     const userIds = rawMembers.map((m: any) => m.user_id).filter(Boolean)
-
     let avatarMap: Record<string, string | null> = {}
 
     if (userIds.length > 0) {
@@ -89,9 +86,7 @@ function MembersContent() {
         .in('user_id', userIds)
 
       if (profiles) {
-        profiles.forEach((p: any) => {
-          avatarMap[p.user_id] = p.avatar_url
-        })
+        profiles.forEach((p: any) => { avatarMap[p.user_id] = p.avatar_url })
       }
     }
 
@@ -104,22 +99,16 @@ function MembersContent() {
     setLoading(false)
   }
 
-  useEffect(() => {
-    load()
-  }, [])
+  useEffect(() => { load() }, [])
 
   useEffect(() => {
     const loadClasses = async () => {
-      const { data } = await supabase
-        .from('classes')
-        .select('id,name')
-        .order('name')
+      const { data } = await supabase.from('classes').select('id,name').order('name')
       setClasses((data ?? []) as ClassRow[])
     }
     loadClasses()
   }, [])
 
-  // --- DETECTAR REQUISICIÓN DE NUEVO MIEMBRO (desde Dashboard) ---
   useEffect(() => {
     const newId = searchParams.get('new_id')
     const newEmail = searchParams.get('new_email')
@@ -128,13 +117,7 @@ function MembersContent() {
     if (newId && newEmail) {
       const [first, ...rest] = (newName || '').split(' ')
       const last = rest.join(' ')
-
       setEditing(null)
-      // Pasamos un objeto que MemberModal pueda interpretar para pre-rellenar
-      // Aunque editing sea null, podemos pasar valores iniciales si quisiéramos, 
-      // pero el Modal usa `member` prop para rellenar campos.
-      // Si member es null, están vacíos.
-      // Mejor pasamos un objeto "mock" para que el modal lo tome como punto de partida.
       setEditing({
         user_id: newId,
         email: newEmail,
@@ -156,9 +139,7 @@ function MembersContent() {
       const full = [m.first_name, m.last_name].filter(Boolean).join(' ').trim()
       const derived = m.status || 'vencido'
       const statusOk = filters.status === 'todos' || filters.status === derived
-      const classOk =
-        filters.className === 'todas' ||
-        (m.class_names ?? []).some((n) => n === filters.className)
+      const classOk = filters.className === 'todas' || (m.class_names ?? []).some((n) => n === filters.className)
       const roleOk = filters.role === 'todos' || m.role === filters.role
       const qOk =
         !q ||
@@ -170,36 +151,20 @@ function MembersContent() {
     })
   }, [members, filters, q])
 
-  // Pagination logic
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
   const paginatedMembers = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
-    const endIndex = startIndex + ITEMS_PER_PAGE
-    return filtered.slice(startIndex, endIndex)
-  }, [filtered, currentPage, ITEMS_PER_PAGE])
-
-  // No separate useEffect needed for pagination reset
+    return filtered.slice(startIndex, startIndex + ITEMS_PER_PAGE)
+  }, [filtered, currentPage])
 
   // --- ACCIONES ---
-  const onCreate = () => {
-    setEditing(null)
-    setOpen(true)
-  }
-  const onEdit = (m: Row) => {
-    setEditing(m)
-    setOpen(true)
-  }
-
-  /** Paso 4.1: eliminar con API */
-  const onDelete = async (user_id: string) => {
-
-    setConfirmingId(user_id)
-  }
+  const onCreate = () => { setEditing(null); setOpen(true) }
+  const onEdit = (m: Row) => { setEditing(m); setOpen(true) }
+  const onDelete = async (user_id: string) => { setConfirmingId(user_id) }
 
   const actuallyDelete = async () => {
     if (!confirmingId) return
     const user_id = confirmingId
-
     try {
       setDeletingId(user_id)
       const res = await fetch('/api/members/delete', {
@@ -207,13 +172,8 @@ function MembersContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id })
       })
-
       const data = await res.json()
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Error desconocido')
-      }
-
+      if (!res.ok) throw new Error(data.error || 'Error desconocido')
       setConfirmingId(null)
       await load()
       setSuccessMsg('Miembro eliminado correctamente')
@@ -226,16 +186,12 @@ function MembersContent() {
     }
   }
 
-  // genera access_code único
   const generateAccessCode = async (full_name: string) => {
     const parts = full_name.trim().toLowerCase().split(/\s+/).filter(Boolean)
     if (!parts.length) return ''
     const base = parts[0][0] + parts.slice(1).join('')
     const baseCode = base.replace(/[^a-z0-9]/g, '')
-    const { data } = await supabase
-      .from('profiles')
-      .select('access_code')
-      .not('access_code', 'is', null)
+    const { data } = await supabase.from('profiles').select('access_code').not('access_code', 'is', null)
     const used = new Set((data ?? []).map((d) => (d.access_code as string).toLowerCase()))
     if (!used.has(baseCode)) return baseCode
     let i = 2
@@ -243,25 +199,20 @@ function MembersContent() {
     return baseCode + i
   }
 
-  /** Paso 4.2: upsert de membresía con onConflict: 'member_id' */
   const onSubmit = async (payload: MemberPayload) => {
     const [first_name, ...rest] = payload.full_name.trim().split(/\s+/)
     const last_name = rest.join(' ')
-    const access_code =
-      payload.access_code?.trim() || (await generateAccessCode(payload.full_name))
-
+    const access_code = payload.access_code?.trim() || (await generateAccessCode(payload.full_name))
     const isUpdate = !!(editing && editing.status)
 
     try {
       if (isUpdate) {
         const userId = editing!.user_id
 
-        // 1. Actualizar perfil
         const { error: upErr } = await supabase
           .from('profiles')
           .update({
-            first_name,
-            last_name,
+            first_name, last_name,
             email: payload.email,
             phone: payload.phone ?? null,
             emergency_phone: payload.emergency_contact ?? null,
@@ -270,10 +221,8 @@ function MembersContent() {
             role: (payload as any).role || 'member'
           })
           .eq('user_id', userId)
-
         if (upErr) throw upErr
 
-        // 2. Actualizar membresía
         const { data: existingMem } = await supabase
           .from('memberships')
           .select('start_date')
@@ -292,10 +241,8 @@ function MembersContent() {
             },
             { onConflict: 'member_id' }
           )
-
         if (memErr) throw memErr
 
-        // 3. Actualizar inscripciones
         await supabase.from('class_enrollments').delete().eq('user_id', userId)
         if (payload.classes?.length) {
           const { error: enrollErr } = await supabase
@@ -310,13 +257,11 @@ function MembersContent() {
 
         toast.success('Cambios guardados')
       } else {
-        // CREAR NUEVO
         const res = await fetch('/api/members/create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            first_name,
-            last_name,
+            first_name, last_name,
             email: payload.email,
             phone: payload.phone ?? null,
             emergency_phone: payload.emergency_contact ?? null,
@@ -328,12 +273,10 @@ function MembersContent() {
             role: (payload as any).role || 'member'
           })
         })
-
         if (!res.ok) {
           const data = await res.json()
           throw new Error(data.error || 'Error al crear el miembro')
         }
-
         toast.success('Usuario creado correctamente')
       }
 
@@ -352,17 +295,19 @@ function MembersContent() {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-        <div className="relative z-10 p-6 md:p-8">
-          <header className="mb-10 flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div className="relative z-10 p-4 md:p-8">
+
+          {/* Header */}
+          <header className="mb-6 md:mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold tracking-widest uppercase mb-4">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold tracking-widest uppercase mb-3">
                 <Users className="w-3 h-3" />
                 ADMINISTRACIÓN
               </div>
-              <h1 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight md:text-5xl">
+              <h1 className="text-3xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight">
                 Gestión de <span className="text-blue-600 dark:text-blue-400">Miembros</span>
               </h1>
-              <p className="mt-2 text-slate-500 dark:text-slate-400 font-medium">
+              <p className="mt-1 text-slate-500 dark:text-slate-400 font-medium text-sm md:text-base">
                 Visualiza, filtra y gestiona todos los alumnos del Dojo al instante.
               </p>
             </div>
@@ -371,7 +316,7 @@ function MembersContent() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={onCreate}
-              className="group relative overflow-hidden rounded-2xl bg-blue-600 px-8 py-4 text-white shadow-xl shadow-blue-500/30 transition-all hover:bg-blue-700"
+              className="group relative overflow-hidden rounded-2xl bg-blue-600 px-6 py-4 text-white shadow-xl shadow-blue-500/30 transition-all hover:bg-blue-700 w-full md:w-auto"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-500" />
               <span className="relative flex items-center justify-center gap-3 font-black uppercase tracking-wider text-sm">
@@ -382,31 +327,36 @@ function MembersContent() {
           </header>
 
           {/* Buscador y Filtros */}
-          <div className="mb-8 space-y-4">
-            <div className="group relative">
-              <div className="absolute inset-0 bg-blue-500/5 rounded-2xl blur-xl group-focus-within:bg-blue-500/10 transition-colors" />
-              <div className="relative flex items-center bg-white/70 dark:bg-slate-800/50 backdrop-blur-md border border-slate-200 dark:border-slate-700 rounded-2xl p-2 shadow-sm focus-within:border-blue-500/50 focus-within:ring-4 focus-within:ring-blue-500/5 transition-all">
-                <Search className="ml-4 h-6 w-6 text-slate-400" />
-                <input
-                  placeholder="Buscar por nombre, email, teléfono o código…"
-                  value={q}
-                  onChange={(e) => { setQ(e.target.value); setCurrentPage(1); }}
-                  className="h-12 w-full bg-transparent border-none px-4 focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium"
-                />
-                {q && (
-                  <button onClick={() => { setQ(''); setCurrentPage(1); }} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-400 transition-colors mr-2">
-                    <X className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
+          <div className="mb-6 space-y-3">
+            <div className="relative flex items-center bg-white dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl p-2 shadow-sm focus-within:border-blue-500/50 focus-within:ring-4 focus-within:ring-blue-500/5 transition-all">
+              <Search className="ml-3 h-5 w-5 text-slate-400 shrink-0" />
+              <input
+                placeholder="Buscar por nombre, email, teléfono o código…"
+                value={q}
+                onChange={(e) => { setQ(e.target.value); setCurrentPage(1) }}
+                className="h-11 w-full bg-transparent border-none px-3 focus:ring-0 text-slate-900 dark:text-white placeholder:text-slate-400 font-medium text-sm"
+              />
+              {q && (
+                <button
+                  onClick={() => { setQ(''); setCurrentPage(1) }}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-xl text-slate-400 transition-colors mr-1"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
             </div>
 
-            <div className="flex items-center gap-3 overflow-x-auto pb-2 custom-scrollbar">
-              <div className="flex items-center gap-2 px-3 py-2 bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400">
-                <Filter className="w-4 h-4" />
+            {/* Filtros — scroll horizontal en mobile */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-1 -mx-4 px-4 md:mx-0 md:px-0 no-scrollbar">
+              <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-100/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700 rounded-xl text-slate-500 dark:text-slate-400 shrink-0">
+                <Filter className="w-3.5 h-3.5" />
                 <span className="text-xs font-bold uppercase tracking-widest">Filtros</span>
               </div>
-              <MemberFilters value={filters} onChange={(v) => { setFilters(v); setCurrentPage(1); }} classes={classes} />
+              <MemberFilters
+                value={filters}
+                onChange={(v) => { setFilters(v); setCurrentPage(1) }}
+                classes={classes}
+              />
             </div>
           </div>
 
@@ -418,7 +368,7 @@ function MembersContent() {
             <MemberList members={paginatedMembers} loading={loading} onEdit={onEdit} onDelete={onDelete} />
           </motion.div>
 
-          {/* Pagination Controls */}
+          {/* Paginación */}
           {!loading && filtered.length > 0 && totalPages > 1 && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -436,26 +386,17 @@ function MembersContent() {
 
               <div className="flex items-center gap-2">
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => {
-                  // Show first page, last page, current page, and pages around current
-                  const showPage = page === 1 ||
-                    page === totalPages ||
-                    Math.abs(page - currentPage) <= 1
-
-                  if (!showPage && page === currentPage - 2) {
-                    return <span key={page} className="px-2 text-slate-400">...</span>
-                  }
-                  if (!showPage && page === currentPage + 2) {
-                    return <span key={page} className="px-2 text-slate-400">...</span>
-                  }
+                  const showPage = page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1
+                  if (!showPage && page === currentPage - 2) return <span key={page} className="px-2 text-slate-400">...</span>
+                  if (!showPage && page === currentPage + 2) return <span key={page} className="px-2 text-slate-400">...</span>
                   if (!showPage) return null
-
                   return (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
                       className={`min-w-[44px] h-11 rounded-xl font-bold text-sm transition-all ${page === currentPage
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
-                        : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30'
+                          : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700'
                         }`}
                     >
                       {page}
@@ -474,18 +415,18 @@ function MembersContent() {
             </motion.div>
           )}
 
-          {/* Results summary */}
+          {/* Resumen */}
           {!loading && filtered.length > 0 && (
             <div className="mt-4 text-center">
               <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">
-                Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} de {filtered.length} miembros
+                Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filtered.length)} de {filtered.length} miembros
               </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Custom Confirmation Modal */}
+      {/* Modal confirmación de eliminación */}
       <AnimatePresence>
         {confirmingId && (
           <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
@@ -507,7 +448,7 @@ function MembersContent() {
               </div>
               <h3 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight mb-2 uppercase">¿Estás seguro?</h3>
               <p className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-8">
-                Esta acción eliminará permanentemente al miembro, sus inscripciones y su historial. Esta acción no se puede deshacer.
+                Esta acción eliminará permanentemente al miembro, sus inscripciones y su historial. No se puede deshacer.
               </p>
               <div className="flex flex-col gap-3">
                 <button
@@ -516,10 +457,7 @@ function MembersContent() {
                   className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-red-600 text-white font-black uppercase tracking-widest text-xs shadow-lg shadow-red-500/30 hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
                 >
                   {deletingId ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      ELIMINANDO...
-                    </>
+                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />ELIMINANDO...</>
                   ) : (
                     'SÍ, ELIMINAR MIEMBRO'
                   )}
@@ -555,7 +493,7 @@ function MembersContent() {
 
 export default function MembersPage() {
   return (
-    <Suspense fallback={<div className="p-8 text-center">Cargando...</div>}>
+    <Suspense fallback={<div className="p-8 text-center text-slate-400">Cargando...</div>}>
       <MembersContent />
     </Suspense>
   )

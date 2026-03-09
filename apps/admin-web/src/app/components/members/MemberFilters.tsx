@@ -8,6 +8,17 @@ type Filters = {
 
 type ClassOpt = { id: number; name: string }
 
+const selectClass = `
+  h-9 md:h-10 rounded-xl border border-slate-200 dark:border-slate-700
+  bg-white dark:bg-slate-800 px-3 md:px-4
+  text-[11px] md:text-xs font-bold uppercase tracking-wider
+  text-slate-600 dark:text-slate-300
+  focus:outline-none focus:ring-2 focus:ring-blue-500/20
+  transition-all cursor-pointer appearance-none
+  hover:bg-slate-50 dark:hover:bg-slate-700
+  shrink-0
+`.replace(/\s+/g, ' ').trim()
+
 export default function MemberFilters({
   value,
   onChange,
@@ -18,10 +29,9 @@ export default function MemberFilters({
   classes: ClassOpt[]
 }) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {/* Estado */}
+    <>
       <select
-        className="h-10 rounded-xl border border-slate-200 bg-white/50 backdrop-blur-sm px-4 text-xs font-bold uppercase tracking-wider text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer appearance-none hover:bg-white"
+        className={selectClass}
         value={value.status}
         onChange={(e) => onChange({ ...value, status: e.target.value as Filters['status'] })}
       >
@@ -30,24 +40,19 @@ export default function MemberFilters({
         <option value="vencido">Vencidos</option>
       </select>
 
-
-      {/* Clase (dinámico) */}
       <select
-        className="h-10 rounded-xl border border-slate-200 bg-white/50 backdrop-blur-sm px-4 text-xs font-bold uppercase tracking-wider text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer appearance-none hover:bg-white"
+        className={selectClass}
         value={value.className}
         onChange={(e) => onChange({ ...value, className: e.target.value as Filters['className'] })}
       >
         <option value="todas">Todas las Clases</option>
         {classes.map((c) => (
-          <option key={c.id} value={c.name}>
-            {c.name}
-          </option>
+          <option key={c.id} value={c.name}>{c.name}</option>
         ))}
       </select>
 
-      {/* Rol */}
       <select
-        className="h-10 rounded-xl border border-slate-200 bg-white/50 backdrop-blur-sm px-4 text-xs font-bold uppercase tracking-wider text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all cursor-pointer appearance-none hover:bg-white"
+        className={selectClass}
         value={value.role}
         onChange={(e) => onChange({ ...value, role: e.target.value as Filters['role'] })}
       >
@@ -57,6 +62,6 @@ export default function MemberFilters({
         <option value="becado">Becados</option>
         <option value="admin">Administrador</option>
       </select>
-    </div>
+    </>
   )
 }
