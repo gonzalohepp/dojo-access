@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback } from 'react'
 import AdminLayout from '../layouts/AdminLayout'
 import { supabase } from '@/lib/supabaseClient'
 import {
@@ -13,6 +13,7 @@ import {
     Calendar,
     AlertCircle,
     RefreshCw,
+    X,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getPaymentMultiplier } from '@/lib/pricing'
@@ -54,12 +55,220 @@ function getClassEmoji(name: string) {
     return '🥋'
 }
 
+const getMemberStatus = (a: AttendanceRecord) => {
+    const tags: { label: string; color: string; bg: string }[] = []
+    if (!a.member_data) {
+        return [{ label: 'Sin datos', color: 'text-slate-500', bg: 'bg-slate-500/10' }]
+    }
+    const { status, next_payment_due, role, is_new_member } = a.member_data
+    const isActive = status === 'activo'
+
+    if (isActive) {
+        tags.push({ label: 'Activo', color: 'text-green-500', bg: 'bg-green-500/10' })
+        if (next_payment_due) {
+            const due = new Date(next_payment_due + 'T12:00:00')
+            if (new Date() > due) {
+                tags.push({ label: 'Sin pago del mes', color: 'text-amber-500', bg: 'bg-amber-500/10' })
+            }
+        }
+    } else {
+        tags.push({ label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' })
+    }
+
+    const multiplier = getPaymentMultiplier(next_payment_due, is_new_member ?? false, role)
+    if (multiplier > 1) {
+        tags.push({ label: '+20% Recargo', color: 'text-orange-500', bg: 'bg-orange-500/10' })
+    }
+    return tags
+}
+
+/* ── Bottom Sheet mobile ── */
+function BottomSheet({
+    open,
+    onClose,
+    cl,
+    attendees,
+}: {
+    open: boolean
+    onClose: () => void
+    cl: ClassRow | null
+    attendees: AttendanceRecord[]
+}) {
+    useEffect(() => {
+        if (!open) return
+        const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+        window.addEventListener('keydown', handler)
+        return () => window.removeEventListener('keydown', handler)
+    }, [open, onClose])
+
+    return (
+        <AnimatePresence>
+            {open && cl && (
+                <>
+                    <motion.div
+                        key="backdrop"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+                        onClick={onClose}
+                    />
+                    <motion.div
+                        key="sheet"
+                        initial={{ y: '100%' }}
+                        animate={{ y: 0 }}
+                        exit={{ y: '100%' }}
+                        transition={{ type: 'spring', damping: 28, stiffness: 280 }}
+                        className="fixed bottom-0 left-0 right-0 z-50 bg-slate-950 border-t border-white/10 rounded-t-[2rem] max-h-[80vh] flex flex-col"
+                    >
+                        {/* Handle */}
+                        <div className="flex justify-center pt-3 pb-1 shrink-0">
+                            <div className="w-10 h-1 rounded-full bg-white/20" />
+                        </div>
+
+                        {/* Header */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 shrink-0">
+                            <div className="flex items-center gap-3">
+                                <div
+                                    className="w-9 h-9 rounded-xl flex items-center justify-center text-lg shadow shrink-0"
+                                    style={{ backgroundColor: cl.color || '#3b82f6' }}
+                                >
+                                    {getClassEmoji(cl.name)}
+                                </div>
+                                <div>
+                                    <p className="text-sm font-black text-white uppercase tracking-tight">{cl.name}</p>
+                                    <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest">
+                                        {cl.start_time?.slice(0, 5)} – {cl.end_time?.slice(0, 5)}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={onClose}
+                                className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center shrink-0"
+                            >
+                                <X className="w-4 h-4 text-white" />
+                            </button>
+                        </div>
+
+                        {/* Lista scrollable */}
+                        <div className="overflow-y-auto flex-1 px-4 py-4 space-y-2">
+                            {attendees.length === 0 ? (
+                                <div className="py-12 text-center">
+                                    <p className="text-slate-500 font-bold italic text-sm">
+                                        Aún no hay ingresos registrados.
+                                    </p>
+                                </div>
+                            ) : (
+                                attendees.map((a, idx) => {
+                                    const tags = getMemberStatus(a)
+                                    return (
+                                        <motion.div
+                                            key={idx}
+                                            initial={{ opacity: 0, y: 6 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: idx * 0.04 }}
+                                            className="flex items-center gap-3 p-3 bg-white/5 rounded-2xl border border-white/5"
+                                        >
+                                            <div className="w-9 h-9 rounded-xl bg-blue-500/10 flex items-center justify-center font-black text-blue-400 text-[11px] uppercase border border-blue-500/20 shrink-0">
+                                                {a.profiles?.first_name?.[0] || '?'}{a.profiles?.last_name?.[0] || ''}
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-xs font-bold text-white uppercase tracking-tight truncate">
+                                                    {a.profiles?.first_name} {a.profiles?.last_name}
+                                                </p>
+                                                <div className="flex flex-wrap gap-1.5 mt-1">
+                                                    {tags.map((t, i) => (
+                                                        <span key={i} className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${t.bg} ${t.color}`}>
+                                                            {t.label}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )
+                                })
+                            )}
+                        </div>
+
+                        {/* Footer */}
+                        <div className="px-6 py-4 border-t border-white/5 shrink-0">
+                            <p className="text-center text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                                {attendees.length} {attendees.length === 1 ? 'alumno presente' : 'alumnos presentes'}
+                            </p>
+                        </div>
+                    </motion.div>
+                </>
+            )}
+        </AnimatePresence>
+    )
+}
+
+/* ── Card de clase mobile ── */
+function MobileClassCard({
+    cl,
+    attendees,
+    currentTime,
+    onTap,
+}: {
+    cl: ClassRow
+    attendees: AttendanceRecord[]
+    currentTime: Date
+    onTap: () => void
+}) {
+    const emoji = getClassEmoji(cl.name)
+    const [sH, sM] = (cl.start_time || '00:00').split(':').map(Number)
+    const currMins = currentTime.getHours() * 60 + currentTime.getMinutes()
+    const isAboutToStart = currMins < sH * 60 + sM
+
+    return (
+        <motion.button
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={onTap}
+            className="w-full text-left bg-slate-900/60 border border-white/10 rounded-2xl p-4 flex items-center gap-4 active:bg-white/5 transition-colors"
+        >
+            <div
+                className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 shadow"
+                style={{ backgroundColor: cl.color || '#3b82f6' }}
+            >
+                {emoji}
+            </div>
+            <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-black text-white uppercase tracking-tight truncate">{cl.name}</p>
+                    {isAboutToStart && (
+                        <span className="px-1.5 py-0.5 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[8px] font-black uppercase tracking-widest whitespace-nowrap">
+                            Por iniciar
+                        </span>
+                    )}
+                </div>
+                <p className="text-[10px] text-blue-400 font-bold uppercase tracking-widest mt-0.5">
+                    {cl.start_time?.slice(0, 5)} – {cl.end_time?.slice(0, 5)}
+                </p>
+                {cl.instructor && (
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-0.5 flex items-center gap-1">
+                        <UserIcon className="w-2.5 h-2.5" />
+                        {cl.instructor}
+                    </p>
+                )}
+            </div>
+            <div className="flex flex-col items-center justify-center bg-white/5 w-12 h-12 rounded-xl border border-white/5 shrink-0">
+                <span className="text-lg font-black text-white leading-none">{attendees.length}</span>
+                <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest">Pres.</span>
+            </div>
+        </motion.button>
+    )
+}
+
+/* ── Página principal ── */
 export default function AsistenciaVivoPage() {
     const [classes, setClasses] = useState<ClassRow[]>([])
     const [attendance, setAttendance] = useState<AttendanceRecord[]>([])
     const [loading, setLoading] = useState(true)
     const [currentTime, setCurrentTime] = useState(new Date())
     const [expandedClasses, setExpandedClasses] = useState<number[]>([])
+    const [sheetClass, setSheetClass] = useState<ClassRow | null>(null)
 
     const toggleExpand = (id: number) => {
         setExpandedClasses(prev =>
@@ -72,7 +281,7 @@ export default function AsistenciaVivoPage() {
         return () => clearInterval(timer)
     }, [])
 
-    const fetchData = async () => {
+    const fetchData = useCallback(async () => {
         setLoading(true)
         try {
             const { data: clsData } = await supabase
@@ -99,23 +308,18 @@ export default function AsistenciaVivoPage() {
 
             if (rawAttendance.length > 0) {
                 const userIds = Array.from(new Set(rawAttendance.map(r => r.user_id)))
-
                 const { data: membersData } = await supabase
                     .from('members_with_status')
                     .select('user_id, status, next_payment_due, role, is_new_member')
                     .in('user_id', userIds)
 
                 const memberMap = new Map<string, AttendanceRecord['member_data']>()
-                membersData?.forEach(m => {
-                    memberMap.set(m.user_id, m)
-                })
+                membersData?.forEach(m => memberMap.set(m.user_id, m))
 
-                const enrichedAttendance = rawAttendance.map(r => ({
+                setAttendance(rawAttendance.map(r => ({
                     ...r,
                     member_data: memberMap.get(r.user_id) ?? undefined
-                }))
-
-                setAttendance(enrichedAttendance)
+                })))
             } else {
                 setAttendance([])
             }
@@ -124,27 +328,20 @@ export default function AsistenciaVivoPage() {
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
 
     useEffect(() => {
         fetchData()
-
         const channel = supabase
             .channel('live_attendance')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'class_attendance' }, () => {
-                fetchData()
-            })
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'class_attendance' }, fetchData)
             .subscribe()
-
         return () => { supabase.removeChannel(channel) }
-    }, [])
+    }, [fetchData])
 
     const activeClasses = useMemo(() => {
         const dayName = DAY_MAP[currentTime.getDay()]
-        const h = currentTime.getHours()
-        const m = currentTime.getMinutes()
-        const currentMinutes = h * 60 + m
-
+        const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes()
         return classes.filter(c => {
             if (!c.days?.includes(dayName) || !c.start_time || !c.end_time) return false
             const [sH, sM] = c.start_time.split(':').map(Number)
@@ -155,10 +352,7 @@ export default function AsistenciaVivoPage() {
 
     const futureClasses = useMemo(() => {
         const dayName = DAY_MAP[currentTime.getDay()]
-        const h = currentTime.getHours()
-        const m = currentTime.getMinutes()
-        const currentMinutes = h * 60 + m
-
+        const currentMinutes = currentTime.getHours() * 60 + currentTime.getMinutes()
         return classes.filter(c => {
             if (!c.days?.includes(dayName) || !c.start_time) return false
             const [sH, sM] = c.start_time.split(':').map(Number)
@@ -166,74 +360,40 @@ export default function AsistenciaVivoPage() {
         })
     }, [classes, currentTime])
 
-    // Usa status de la view (fuente de verdad) y getPaymentMultiplier de lib/pricing
-    const getMemberStatus = (a: AttendanceRecord) => {
-        const tags: { label: string; color: string; bg: string }[] = []
-
-        if (!a.member_data) {
-            return [{ label: 'Sin datos', color: 'text-slate-500', bg: 'bg-slate-500/10' }]
-        }
-
-        const { status, next_payment_due, role, is_new_member } = a.member_data
-
-        // Confiamos en el status de la view — no replicamos la lógica de gracia aquí
-        const isActive = status === 'activo'
-
-        if (isActive) {
-            tags.push({ label: 'Activo', color: 'text-green-500', bg: 'bg-green-500/10' })
-
-            // Activo pero en período de gracia (venció pero aún puede ingresar)
-            if (next_payment_due) {
-                const due = new Date(next_payment_due + 'T12:00:00')
-                if (new Date() > due) {
-                    tags.push({ label: 'Sin pago del mes', color: 'text-amber-500', bg: 'bg-amber-500/10' })
-                }
-            }
-        } else {
-            tags.push({ label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' })
-        }
-
-        // Recargo — usa la función centralizada con los 3 parámetros correctos
-        const multiplier = getPaymentMultiplier(next_payment_due, is_new_member ?? false, role)
-        if (multiplier > 1) {
-            tags.push({ label: '+20% Pago Tardío', color: 'text-orange-500', bg: 'bg-orange-500/10' })
-        }
-
-        return tags
-    }
+    const sheetAttendees = useMemo(
+        () => sheetClass ? attendance.filter(a => a.class_id === sheetClass.id) : [],
+        [sheetClass, attendance]
+    )
 
     return (
         <AdminLayout active="/asistencia-vivo">
-            <div className="max-w-7xl mx-auto space-y-8 p-4 md:p-0">
+            <div className="max-w-7xl mx-auto p-4 md:p-0 space-y-6 md:space-y-8">
 
                 {/* Header */}
-                <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-blue-500 font-bold text-xs uppercase tracking-widest">
                             <Activity className="w-4 h-4 animate-pulse" />
                             Monitor en Tiempo Real
                         </div>
-                        <h1 className="text-4xl font-black tracking-tight text-white uppercase italic">
+                        <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white uppercase italic">
                             Asistencia <span className="text-blue-500">en Vivo</span>
                         </h1>
-                        <p className="text-slate-400 font-medium italic">
-                            Control de alumnos presentes por clase en este momento.
-                        </p>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                        <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 px-6 py-3 rounded-2xl flex items-center gap-3 shadow-2xl">
-                            <Clock className="w-5 h-5 text-blue-500" />
-                            <div className="text-right">
-                                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Hora Actual</p>
-                                <p className="text-xl font-black text-white leading-none">
+                    <div className="flex items-center gap-3 w-full md:w-auto">
+                        <div className="flex-1 md:flex-none bg-slate-900/80 backdrop-blur-xl border border-white/10 px-5 py-3 rounded-2xl flex items-center gap-3 shadow-2xl">
+                            <Clock className="w-4 h-4 text-blue-500 shrink-0" />
+                            <div>
+                                <p className="text-[9px] font-black text-slate-500 uppercase tracking-widest leading-none mb-0.5">Hora Actual</p>
+                                <p className="text-lg font-black text-white leading-none">
                                     {currentTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </p>
                             </div>
                         </div>
                         <button
                             onClick={fetchData}
-                            className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95"
+                            className="p-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all shadow-lg shadow-blue-500/20 active:scale-95 shrink-0"
                         >
                             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
                         </button>
@@ -248,166 +408,227 @@ export default function AsistenciaVivoPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid lg:grid-cols-3 gap-8">
+                    <>
+                        {/* ══ MOBILE ══ */}
+                        <div className="lg:hidden space-y-6">
 
-                        {/* Clases Activas */}
-                        <div className="lg:col-span-2 space-y-6">
-                            <div className="flex items-center gap-3 mb-2">
-                                <div className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
-                                <h2 className="text-lg font-black text-white uppercase tracking-tight">Clases en Curso</h2>
-                            </div>
-
-                            {activeClasses.length === 0 ? (
-                                <div className="p-12 text-center rounded-[2.5rem] border-2 border-dashed border-white/5 bg-white/2 backdrop-blur-sm">
-                                    <AlertCircle className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-                                    <p className="text-slate-400 font-bold uppercase tracking-widest text-sm italic">No hay clases programadas para este momento</p>
-                                    <p className="text-slate-600 text-[10px] mt-2 font-black uppercase tracking-tight">Monitorizando el siguiente horario...</p>
+                            {/* Clases en curso */}
+                            <section>
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+                                    <h2 className="text-sm font-black text-white uppercase tracking-tight">Clases en Curso</h2>
                                 </div>
-                            ) : (
-                                <div className="space-y-4">
-                                    {activeClasses.map((cl) => {
-                                        const attendees = attendance.filter(a => a.class_id === cl.id)
-                                        const isExpanded = expandedClasses.includes(cl.id)
-                                        const emoji = getClassEmoji(cl.name)
-                                        return (
-                                            <motion.div
+
+                                {activeClasses.length === 0 ? (
+                                    <div className="p-8 text-center rounded-2xl border border-dashed border-white/10">
+                                        <AlertCircle className="w-8 h-8 text-slate-700 mx-auto mb-3" />
+                                        <p className="text-slate-500 font-bold text-xs uppercase tracking-widest italic">
+                                            No hay clases en este momento
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {activeClasses.map(cl => (
+                                            <MobileClassCard
                                                 key={cl.id}
-                                                layout
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="bg-slate-900/50 border border-white/10 backdrop-blur-xl rounded-[2rem] overflow-hidden shadow-xl"
+                                                cl={cl}
+                                                attendees={attendance.filter(a => a.class_id === cl.id)}
+                                                currentTime={currentTime}
+                                                onTap={() => setSheetClass(cl)}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </section>
+
+                            {/* Próximas clases */}
+                            {futureClasses.length > 0 && (
+                                <section>
+                                    <div className="flex items-center gap-2 mb-3">
+                                        <Calendar className="w-4 h-4 text-blue-500" />
+                                        <h2 className="text-sm font-black text-white uppercase tracking-widest">Próximas Clases</h2>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {futureClasses.map(fcl => (
+                                            <div
+                                                key={fcl.id}
+                                                className="flex items-center gap-3 p-3 rounded-2xl bg-slate-900/40 border border-white/5"
                                             >
-                                                <button
-                                                    onClick={() => toggleExpand(cl.id)}
-                                                    className="w-full text-left p-6 flex items-center justify-between gap-4 hover:bg-white/5 transition-all"
+                                                <div
+                                                    className="w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0"
+                                                    style={{ backgroundColor: fcl.color || '#3b82f6' }}
                                                 >
-                                                    <div className="flex items-center gap-4">
-                                                        <div
-                                                            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-lg"
-                                                            style={{ backgroundColor: cl.color || '#3b82f6' }}
-                                                        >
-                                                            {emoji}
-                                                        </div>
-                                                        <div className="min-w-0">
-                                                            <div className="flex items-center gap-2">
-                                                                <h3 className="text-xl font-black text-white tracking-tight uppercase italic truncate">{cl.name}</h3>
-                                                                {(() => {
-                                                                    const [sH, sM] = (cl.start_time || '00:00').split(':').map(Number)
-                                                                    const startMins = sH * 60 + sM
-                                                                    const currMins = currentTime.getHours() * 60 + currentTime.getMinutes()
-                                                                    if (currMins < startMins) {
-                                                                        return (
-                                                                            <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[8px] font-black uppercase tracking-widest whitespace-nowrap">
-                                                                                Por Iniciar
-                                                                            </span>
-                                                                        )
-                                                                    }
-                                                                    return null
-                                                                })()}
-                                                            </div>
-                                                            <div className="flex items-center gap-3 mt-1">
-                                                                <p className="text-slate-500 font-bold flex items-center gap-1 text-[9px] uppercase tracking-widest">
-                                                                    <UserIcon className="w-2.5 h-2.5" />
-                                                                    {cl.instructor || 'Sin Instructor'}
-                                                                </p>
-                                                                <span className="w-1 h-1 rounded-full bg-slate-700" />
-                                                                <p className="text-blue-500 font-bold flex items-center gap-1 text-[9px] uppercase tracking-widest">
-                                                                    <Clock className="w-2.5 h-2.5" />
-                                                                    {cl.start_time?.slice(0, 5)} - {cl.end_time?.slice(0, 5)}
-                                                                </p>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex items-center gap-4 shrink-0">
-                                                        <div className="flex flex-col items-center justify-center bg-white/5 w-14 h-14 rounded-2xl border border-white/5">
-                                                            <span className="text-lg font-black text-white leading-none">{attendees.length}</span>
-                                                            <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Pres.</span>
-                                                        </div>
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center border border-white/5 transition-transform duration-300 ${isExpanded ? 'rotate-180 bg-white/10' : ''}`}>
-                                                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                                            </svg>
-                                                        </div>
-                                                    </div>
-                                                </button>
-
-                                                <AnimatePresence>
-                                                    {isExpanded && (
-                                                        <motion.div
-                                                            initial={{ height: 0, opacity: 0 }}
-                                                            animate={{ height: 'auto', opacity: 1 }}
-                                                            exit={{ height: 0, opacity: 0 }}
-                                                            transition={{ duration: 0.3, ease: 'easeInOut' }}
-                                                            className="overflow-hidden"
-                                                        >
-                                                            <div className="p-6 pt-0 bg-black/20 border-t border-white/5">
-                                                                <div className="pt-6 space-y-4">
-                                                                    <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
-                                                                        <CheckCircle className="w-3 h-3 text-green-500" />
-                                                                        Listado de Alumnos
-                                                                    </p>
-
-                                                                    {attendees.length === 0 ? (
-                                                                        <p className="text-slate-600 font-bold italic text-sm py-4">Aún no hay ingresos para esta clase.</p>
-                                                                    ) : (
-                                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                                            {attendees.map((a, idx) => {
-                                                                                const tags = getMemberStatus(a)
-                                                                                return (
-                                                                                    <motion.div
-                                                                                        key={idx}
-                                                                                        initial={{ opacity: 0, x: -5 }}
-                                                                                        animate={{ opacity: 1, x: 0 }}
-                                                                                        transition={{ delay: idx * 0.05 }}
-                                                                                        className="flex items-center gap-3 p-3 bg-white/2 rounded-xl border border-white/5 hover:bg-white/5 transition-colors"
-                                                                                    >
-                                                                                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center font-black text-blue-500 text-[10px] uppercase border border-blue-500/20">
-                                                                                            {a.profiles?.first_name?.[0] || '?'}{a.profiles?.last_name?.[0] || ''}
-                                                                                        </div>
-                                                                                        <div className="min-w-0 flex-1">
-                                                                                            <p className="text-xs font-bold text-white uppercase tracking-tight truncate leading-tight">
-                                                                                                {a.profiles?.first_name} {a.profiles?.last_name}
-                                                                                            </p>
-                                                                                            <div className="flex flex-wrap items-center gap-2 mt-1">
-                                                                                                {tags.map((t, idx2) => (
-                                                                                                    <div key={idx2} className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${t.bg} ${t.color} border border-white/5 shadow-sm whitespace-nowrap`}>
-                                                                                                        {t.label}
-                                                                                                    </div>
-                                                                                                ))}
-                                                                                            </div>
-                                                                                        </div>
-                                                                                    </motion.div>
-                                                                                )
-                                                                            })}
-                                                                        </div>
-                                                                    )}
-                                                                </div>
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
-                                                </AnimatePresence>
-                                            </motion.div>
-                                        )
-                                    })}
-                                </div>
+                                                    {getClassEmoji(fcl.name)}
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-xs font-black text-white uppercase tracking-tight truncate">{fcl.name}</p>
+                                                    <p className="text-[10px] text-slate-500 font-bold flex items-center gap-1 mt-0.5">
+                                                        <Clock className="w-2.5 h-2.5" />
+                                                        {fcl.start_time?.slice(0, 5)}
+                                                    </p>
+                                                </div>
+                                                <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Hoy</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
                             )}
                         </div>
 
-                        {/* Próximas clases sidebar */}
-                        <aside className="space-y-6">
-                            <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-blue-500" />
-                                <h2 className="text-sm font-black text-white uppercase tracking-widest">Próximas Clases</h2>
+                        {/* ══ DESKTOP ══ */}
+                        <div className="hidden lg:grid lg:grid-cols-3 gap-8">
+
+                            <div className="lg:col-span-2 space-y-6">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
+                                    <h2 className="text-lg font-black text-white uppercase tracking-tight">Clases en Curso</h2>
+                                </div>
+
+                                {activeClasses.length === 0 ? (
+                                    <div className="p-12 text-center rounded-[2.5rem] border-2 border-dashed border-white/5 backdrop-blur-sm">
+                                        <AlertCircle className="w-12 h-12 text-slate-700 mx-auto mb-4" />
+                                        <p className="text-slate-400 font-bold uppercase tracking-widest text-sm italic">No hay clases programadas para este momento</p>
+                                        <p className="text-slate-600 text-[10px] mt-2 font-black uppercase tracking-tight">Monitorizando el siguiente horario...</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {activeClasses.map((cl) => {
+                                            const attendees = attendance.filter(a => a.class_id === cl.id)
+                                            const isExpanded = expandedClasses.includes(cl.id)
+                                            const emoji = getClassEmoji(cl.name)
+                                            return (
+                                                <motion.div
+                                                    key={cl.id}
+                                                    layout
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    className="bg-slate-900/50 border border-white/10 backdrop-blur-xl rounded-[2rem] overflow-hidden shadow-xl"
+                                                >
+                                                    <button
+                                                        onClick={() => toggleExpand(cl.id)}
+                                                        className="w-full text-left p-6 flex items-center justify-between gap-4 hover:bg-white/5 transition-all"
+                                                    >
+                                                        <div className="flex items-center gap-4">
+                                                            <div
+                                                                className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-lg"
+                                                                style={{ backgroundColor: cl.color || '#3b82f6' }}
+                                                            >
+                                                                {emoji}
+                                                            </div>
+                                                            <div className="min-w-0">
+                                                                <div className="flex items-center gap-2">
+                                                                    <h3 className="text-xl font-black text-white tracking-tight uppercase italic truncate">{cl.name}</h3>
+                                                                    {(() => {
+                                                                        const [sH, sM] = (cl.start_time || '00:00').split(':').map(Number)
+                                                                        const currMins = currentTime.getHours() * 60 + currentTime.getMinutes()
+                                                                        if (currMins < sH * 60 + sM) {
+                                                                            return (
+                                                                                <span className="px-2 py-0.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 text-[8px] font-black uppercase tracking-widest whitespace-nowrap">
+                                                                                    Por Iniciar
+                                                                                </span>
+                                                                            )
+                                                                        }
+                                                                        return null
+                                                                    })()}
+                                                                </div>
+                                                                <div className="flex items-center gap-3 mt-1">
+                                                                    <p className="text-slate-500 font-bold flex items-center gap-1 text-[9px] uppercase tracking-widest">
+                                                                        <UserIcon className="w-2.5 h-2.5" />
+                                                                        {cl.instructor || 'Sin Instructor'}
+                                                                    </p>
+                                                                    <span className="w-1 h-1 rounded-full bg-slate-700" />
+                                                                    <p className="text-blue-500 font-bold flex items-center gap-1 text-[9px] uppercase tracking-widest">
+                                                                        <Clock className="w-2.5 h-2.5" />
+                                                                        {cl.start_time?.slice(0, 5)} - {cl.end_time?.slice(0, 5)}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="flex items-center gap-4 shrink-0">
+                                                            <div className="flex flex-col items-center justify-center bg-white/5 w-14 h-14 rounded-2xl border border-white/5">
+                                                                <span className="text-lg font-black text-white leading-none">{attendees.length}</span>
+                                                                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Pres.</span>
+                                                            </div>
+                                                            <div className={`w-8 h-8 rounded-full flex items-center justify-center border border-white/5 transition-transform duration-300 ${isExpanded ? 'rotate-180 bg-white/10' : ''}`}>
+                                                                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                    </button>
+
+                                                    <AnimatePresence>
+                                                        {isExpanded && (
+                                                            <motion.div
+                                                                initial={{ height: 0, opacity: 0 }}
+                                                                animate={{ height: 'auto', opacity: 1 }}
+                                                                exit={{ height: 0, opacity: 0 }}
+                                                                transition={{ duration: 0.3, ease: 'easeInOut' }}
+                                                                className="overflow-hidden"
+                                                            >
+                                                                <div className="p-6 pt-0 bg-black/20 border-t border-white/5">
+                                                                    <div className="pt-6 space-y-4">
+                                                                        <p className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2 mb-4">
+                                                                            <CheckCircle className="w-3 h-3 text-green-500" />
+                                                                            Listado de Alumnos
+                                                                        </p>
+                                                                        {attendees.length === 0 ? (
+                                                                            <p className="text-slate-600 font-bold italic text-sm py-4">Aún no hay ingresos para esta clase.</p>
+                                                                        ) : (
+                                                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                                                                {attendees.map((a, idx) => {
+                                                                                    const tags = getMemberStatus(a)
+                                                                                    return (
+                                                                                        <motion.div
+                                                                                            key={idx}
+                                                                                            initial={{ opacity: 0, x: -5 }}
+                                                                                            animate={{ opacity: 1, x: 0 }}
+                                                                                            transition={{ delay: idx * 0.05 }}
+                                                                                            className="flex items-center gap-3 p-3 bg-white/2 rounded-xl border border-white/5 hover:bg-white/5 transition-colors"
+                                                                                        >
+                                                                                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center font-black text-blue-500 text-[10px] uppercase border border-blue-500/20">
+                                                                                                {a.profiles?.first_name?.[0] || '?'}{a.profiles?.last_name?.[0] || ''}
+                                                                                            </div>
+                                                                                            <div className="min-w-0 flex-1">
+                                                                                                <p className="text-xs font-bold text-white uppercase tracking-tight truncate leading-tight">
+                                                                                                    {a.profiles?.first_name} {a.profiles?.last_name}
+                                                                                                </p>
+                                                                                                <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                                                                    {tags.map((t, idx2) => (
+                                                                                                        <div key={idx2} className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest ${t.bg} ${t.color} border border-white/5 shadow-sm whitespace-nowrap`}>
+                                                                                                            {t.label}
+                                                                                                        </div>
+                                                                                                    ))}
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </motion.div>
+                                                                                    )
+                                                                                })}
+                                                                            </div>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            </motion.div>
+                                                        )}
+                                                    </AnimatePresence>
+                                                </motion.div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
                             </div>
 
-                            <div className="space-y-3">
-                                {futureClasses.length === 0 ? (
-                                    <p className="text-slate-600 text-xs font-bold italic">No hay más clases por hoy.</p>
-                                ) : (
-                                    futureClasses.map((fcl) => {
-                                        const emoji = getClassEmoji(fcl.name)
-                                        return (
+                            <aside className="space-y-6">
+                                <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-blue-500" />
+                                    <h2 className="text-sm font-black text-white uppercase tracking-widest">Próximas Clases</h2>
+                                </div>
+                                <div className="space-y-3">
+                                    {futureClasses.length === 0 ? (
+                                        <p className="text-slate-600 text-xs font-bold italic">No hay más clases por hoy.</p>
+                                    ) : (
+                                        futureClasses.map((fcl) => (
                                             <div
                                                 key={fcl.id}
                                                 className="p-5 rounded-3xl bg-slate-900/30 border border-white/5 flex items-center gap-4 group hover:bg-white/5 transition-all"
@@ -416,7 +637,7 @@ export default function AsistenciaVivoPage() {
                                                     className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shrink-0 shadow-lg"
                                                     style={{ backgroundColor: fcl.color || '#3b82f6' }}
                                                 >
-                                                    {emoji}
+                                                    {getClassEmoji(fcl.name)}
                                                 </div>
                                                 <div className="min-w-0 flex-1">
                                                     <p className="text-xs font-black text-white uppercase tracking-tight truncate">{fcl.name}</p>
@@ -427,25 +648,31 @@ export default function AsistenciaVivoPage() {
                                                 </div>
                                                 <div className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-blue-500 transition-colors">Hoy</div>
                                             </div>
-                                        )
-                                    })
-                                )}
-                            </div>
-
-                            <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-2xl relative overflow-hidden group">
-                                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform duration-700">
-                                    <Users className="w-24 h-24" />
+                                        ))
+                                    )}
                                 </div>
-                                <h3 className="text-lg font-black uppercase italic leading-none mb-2 relative z-10">Control Total</h3>
-                                <p className="text-blue-100 text-xs font-bold leading-relaxed relative z-10">
-                                    Este panel se actualiza automáticamente cuando un alumno valida su acceso en la entrada.
-                                </p>
-                            </div>
-                        </aside>
-
-                    </div>
+                                <div className="p-8 rounded-[2rem] bg-gradient-to-br from-blue-600 to-indigo-700 text-white shadow-2xl relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform duration-700">
+                                        <Users className="w-24 h-24" />
+                                    </div>
+                                    <h3 className="text-lg font-black uppercase italic leading-none mb-2 relative z-10">Control Total</h3>
+                                    <p className="text-blue-100 text-xs font-bold leading-relaxed relative z-10">
+                                        Este panel se actualiza automáticamente cuando un alumno valida su acceso en la entrada.
+                                    </p>
+                                </div>
+                            </aside>
+                        </div>
+                    </>
                 )}
             </div>
+
+            {/* Bottom sheet — solo mobile */}
+            <BottomSheet
+                open={!!sheetClass}
+                onClose={() => setSheetClass(null)}
+                cl={sheetClass}
+                attendees={sheetAttendees}
+            />
         </AdminLayout>
     )
 }
