@@ -11,6 +11,7 @@ import QRScannerHtml5 from '@/components/QRScannerHtml5'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { MemberRow as BaseMemberRow } from '@/types/member'
+import { getPaymentMultiplier, isMemberActive } from '@/lib/membership'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,10 +64,8 @@ function ValidateContent() {
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
   const multiplier = useMemo(() => {
-    if (member?.is_new_member) return 1.0
-    const day = new Date().getDate()
-    return day > 10 ? 1.2 : 1.0
-  }, [member?.is_new_member])
+    return getPaymentMultiplier(member?.next_payment_due ?? null, member?.is_new_member ?? false)
+  }, [member?.next_payment_due, member?.is_new_member])
 
   const [paused, setPaused] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
@@ -215,10 +214,12 @@ function ValidateContent() {
 
         setMember(m)
 
-        if (m.status !== 'activo') {
+        if (!isMemberActive(m)) {
           let reason = 'Cuenta pendiente de aprobación'
           if (m.status === 'suspendido') reason = 'Membresía suspendida'
-          else if (m.status === 'vencido' || m.status === 'inactivo') reason = 'Cuota vencida o cuenta inactiva'
+          else {
+            reason = 'Cuota vencida o cuenta inactiva'
+          }
 
           await finalizeAccess(m, false, reason)
           return

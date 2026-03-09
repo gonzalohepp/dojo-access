@@ -16,6 +16,7 @@ import {
     Info
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { isMemberActive, getPaymentMultiplier } from '@/lib/membership'
 
 type ClassRow = {
     id: number
@@ -187,45 +188,30 @@ export default function AsistenciaVivoPage() {
             return [{ label: 'Sin datos', color: 'text-slate-500', bg: 'bg-slate-500/10' }]
         }
 
-        const { next_payment_due, status } = m.member_data
+        const isActive = isMemberActive(m.member_data)
+        const multiplier = getPaymentMultiplier(m.member_data.next_payment_due, false)
 
-        // Determinar "Si está al día"
-        let isUpToDate = status === 'activo'
-        let isLate = false
+        if (isActive) {
+            tags.push({ label: 'Activo', color: 'text-green-500', bg: 'bg-green-500/10' })
 
-        // Chequear fecha manualmente
-        if (next_payment_due) {
-            const today = new Date()
-            today.setHours(0, 0, 0, 0)
-            const due = new Date(next_payment_due + 'T12:00:00')
-
-            if (due < today) {
-                isUpToDate = false // Vencido localmente
-                isLate = true
-
-                // Override visual Activo si estamos en los primeros 20 dias
-                const dayOfMonth = today.getDate()
-                if (dayOfMonth <= 20) {
-                    tags.push({ label: 'Activo', color: 'text-green-500', bg: 'bg-green-500/10' })
+            // Si está activo pero ya pasó su vencimiento, mostramos que no registra pago
+            if (m.member_data.next_payment_due) {
+                const today = new Date()
+                const due = new Date(m.member_data.next_payment_due + 'T12:00:00')
+                if (today > due) {
                     tags.push({ label: 'No registra pago', color: 'text-amber-500', bg: 'bg-amber-500/10' })
-
-                    if (dayOfMonth > 10) {
-                        tags.push({ label: '+20% Pago Tardío', color: 'text-red-500', bg: 'bg-red-500/10' })
-                    }
-                    return tags
                 }
             }
+        } else {
+            tags.push({ label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' })
         }
 
-        if (status !== 'activo' && !isLate) {
-            return [{ label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' }]
+        // Mostrar tag de recargo si corresponde (20%)
+        if (multiplier > 1) {
+            tags.push({ label: '+20% Pago Tardío', color: 'text-red-500', bg: 'bg-red-500/10' })
         }
 
-        if (isLate) {
-            return [{ label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' }]
-        }
-
-        return [{ label: 'Al Día', color: 'text-green-500', bg: 'bg-green-500/10' }]
+        return tags
     }
 
     return (

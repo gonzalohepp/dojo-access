@@ -35,6 +35,7 @@ import SubscriptionModal from '../components/profile/SubscriptionModal'
 import PhotoCropper from '../components/profile/PhotoCropper'
 import MemberGrades from '../components/profile/MemberGrades'
 import { fmtARS, fmtDate, fmtSchedule } from '@/lib/format'
+import { isMemberActive, getPaymentMultiplier } from '@/lib/membership'
 
 
 type MemberRow = {
@@ -345,15 +346,8 @@ export default function ProfilePage() {
 
   const fullName = useMemo(() => [member?.first_name, member?.last_name].filter(Boolean).join(' ').trim(), [member])
   const isActive = useMemo(() => {
-    if (member?.role && ['admin', 'instructor', 'becado'].includes(member.role)) return true
-    if (member?.status === 'activo') return true
-    if (member?.next_payment_due) {
-      const today = new Date()
-      const due = new Date(member.next_payment_due + 'T12:00:00')
-      if (due < today && today.getDate() <= 20) return true
-    }
-    return false
-  }, [member?.status, member?.role, member?.next_payment_due])
+    return isMemberActive(member || {})
+  }, [member])
 
   const daysLeft = useMemo(() =>
     member?.next_payment_due ? daysDiff(new Date(), new Date(`${member.next_payment_due}T00:00:00`)) : null,

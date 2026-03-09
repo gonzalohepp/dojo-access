@@ -17,6 +17,7 @@ import {
     Filter
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { isMemberActive } from '@/lib/membership'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { exportToExcel } from '@/lib/excelExport'
@@ -30,6 +31,8 @@ type Member = {
     email: string
     phone: string | null
     status: string
+    next_payment_due: string | null
+    role: string | null
     last_access?: string
 }
 
@@ -361,8 +364,7 @@ function AusenciaReport() {
             setLoading(true)
             const { data: membersData } = await supabase
                 .from('members_with_status')
-                .select('user_id, first_name, last_name, email, phone, status')
-                .eq('status', 'activo')
+                .select('user_id, first_name, last_name, email, phone, status, next_payment_due, role')
 
             if (!membersData) return
 
@@ -381,10 +383,12 @@ function AusenciaReport() {
                 }
             })
 
-            const enrichedMembers = (membersData as Member[]).map(m => ({
-                ...m,
-                last_access: lastAccessMap[m.user_id]
-            }))
+            const enrichedMembers = (membersData as any[])
+                .filter(m => isMemberActive(m))
+                .map(m => ({
+                    ...m,
+                    last_access: lastAccessMap[m.user_id]
+                }))
 
             setMembers(enrichedMembers)
             setLoading(false)

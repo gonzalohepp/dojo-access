@@ -4,6 +4,7 @@ import { Calendar, Mail, Phone, Pencil, Trash2, User as UserIcon, Shield, Hash, 
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { MemberRow } from '@/types/member'
+import { isMemberActive } from '@/lib/membership'
 
 export default function MemberList({
   members,
@@ -47,7 +48,7 @@ export default function MemberList({
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
       {members.map((m, idx) => {
         const fullName = [m.first_name, m.last_name].filter(Boolean).join(' ').trim()
-        const isActive = m.status === 'activo'
+        const isActive = isMemberActive(m)
 
         return (
           <motion.div

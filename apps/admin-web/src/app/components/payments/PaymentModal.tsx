@@ -5,11 +5,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Shield, Plus, Check, DollarSign, Loader2, User, ChevronDown, CreditCard } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
 import { lastDayOfMonth, addMonths, isAfter } from 'date-fns';
+import { getPaymentMultiplier } from '@/lib/membership';
 
 type MemberOpt = {
   user_id: string;
   name: string;
   is_new_member: boolean;
+  next_payment_due: string | null;
 };
 
 type ClassOption = {
@@ -54,7 +56,7 @@ export default function PaymentModal({
       // Load members
       const { data, error } = await supabase
         .from('members_with_status')
-        .select('user_id, first_name, last_name, is_new_member, membership_type')
+        .select('user_id, first_name, last_name, is_new_member, next_payment_due, role')
         .order('last_name', { ascending: true, nullsFirst: true });
 
       if (data) {
@@ -62,6 +64,7 @@ export default function PaymentModal({
           user_id: p.user_id,
           name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim(),
           is_new_member: p.is_new_member,
+          next_payment_due: (p as any).next_payment_due || null,
         }));
         setMembers(opts);
       }
@@ -110,9 +113,7 @@ export default function PaymentModal({
   const selectedMember = useMemo(() => members.find(m => m.user_id === userId), [members, userId]);
 
   const multiplier = useMemo(() => {
-    if (selectedMember?.is_new_member) return 1.0
-    const day = new Date().getDate()
-    return day > 10 ? 1.2 : 1.0
+    return getPaymentMultiplier(selectedMember?.next_payment_due ?? null, selectedMember?.is_new_member ?? false)
   }, [selectedMember])
 
   const total = useMemo(() => {
