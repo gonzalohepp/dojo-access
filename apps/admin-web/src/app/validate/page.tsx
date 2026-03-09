@@ -10,16 +10,17 @@ import { CheckCircle, XCircle, RefreshCw, Camera, ShieldCheck, Zap } from 'lucid
 import QRScannerHtml5 from '@/components/QRScannerHtml5'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import { toast } from 'sonner'
 import { MemberRow as BaseMemberRow } from '@/types/member'
-import { getPaymentMultiplier, isMemberActive } from '@/lib/membership'
+import { getPaymentMultiplier } from '@/lib/pricing'
 
 export const dynamic = 'force-dynamic'
 
-// Extend the base MemberRow with validate-specific fields
 type MemberRow = BaseMemberRow & {
   is_new_member?: boolean
 }
 
+// ClassCandidate ahora incluye campos de precio e is_principal
 type ClassCandidate = {
   id: number
   name: string
@@ -28,6 +29,9 @@ type ClassCandidate = {
   end_time: string | null
   color: string | null
   days: string[] | null
+  is_principal?: boolean
+  price_principal?: number | null
+  price_additional?: number | null
 }
 
 const DAY_MAP = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb']
@@ -44,16 +48,36 @@ function isTimeBefore(current: string, target: string, minusMinutes: number = 0)
   }
 }
 
+/**
+ * Calcula el precio mensual total desde las clases inscriptas.
+ * Retorna null si no hay información de precios disponible.
+ */
+function calcPriceFromClasses(classes: ClassCandidate[]): number | null {
+  if (classes.length === 0) return null
+  let total = 0
+  let hasPriceInfo = false
+
+  for (const cl of classes) {
+    const price = cl.is_principal
+      ? (cl.price_principal ?? null)
+      : (cl.price_additional ?? cl.price_principal ?? null)
+
+    if (price !== null && price !== undefined) {
+      total += price
+      hasPriceInfo = true
+    }
+  }
+
+  return hasPriceInfo ? total : null
+}
+
 const fullName = (m: MemberRow | null) =>
   m ? [m.first_name ?? '', m.last_name ?? ''].join(' ').trim() || 'Miembro' : 'Miembro'
-
-
 
 function ValidateContent() {
   const router = useRouter()
   const qp = useSearchParams()
 
-  // Datos usuario / miembro
   const [member, _setMember] = useState<MemberRow | null>(null)
   const memberRef = useRef<MemberRow | null>(null)
   const setMember = (m: MemberRow | null) => {
@@ -63,30 +87,36 @@ function ValidateContent() {
 
   const [userEmail, setUserEmail] = useState<string | null>(null)
 
-  const multiplier = useMemo(() => {
-    return getPaymentMultiplier(member?.next_payment_due ?? null, member?.is_new_member ?? false)
-  }, [member?.next_payment_due, member?.is_new_member])
+  // Multiplicador de precio por mora — calculado desde lib/pricing
+  const multiplier = useMemo(() =>
+    getPaymentMultiplier(
+      member?.next_payment_due,
+      member?.is_new_member ?? false,
+      member?.role
+    ),
+    [member?.next_payment_due, member?.is_new_member, member?.role]
+  )
+
+  // Todas las clases inscriptas del miembro (con precios) — se cargan en el denied flow
+  const [allEnrolledClasses, setAllEnrolledClasses] = useState<ClassCandidate[]>([])
 
   const [paused, setPaused] = useState(false)
   const [cameraError, setCameraError] = useState<string | null>(null)
 
-  // Resultado
   const [openResult, setOpenResult] = useState(false)
   const [allowed, setAllowed] = useState<boolean | null>(null)
   const [resultMsg, setResultMsg] = useState('')
 
-  // Multi-Class selection
   const [candidateClasses, setCandidateClasses] = useState<ClassCandidate[]>([])
   const [selectedClassIds, setSelectedClassIds] = useState<Set<number>>(new Set())
   const [showClassSelection, setShowClassSelection] = useState(false)
   const [isFinalizing, setIsFinalizing] = useState(false)
 
-  // Anti-loop
   const processingRef = useRef(false)
   const lastTextRef = useRef<string | null>(null)
   const lastAtRef = useRef<number>(0)
 
-  // ========= Sesión y preload del miembro ========
+  // ========= Sesión y preload del miembro =========
   useEffect(() => {
     ; (async () => {
       const { data } = await supabase.auth.getUser()
@@ -106,12 +136,38 @@ function ValidateContent() {
       setMember((rows?.[0] as MemberRow) ?? null)
     })()
   }, [router])
+
+  // ========= Cargar TODAS las clases con precios (para flujo de pago) =========
+  const loadEnrolledClassesWithPrices = useCallback(async (userId: string) => {
+    const { data, error } = await supabase
+      .from('class_enrollments')
+      .select(`
+        is_principal,
+        classes:class_id (
+          id, name, instructor, start_time, end_time, color, days,
+          price_principal, price_additional
+        )
+      `)
+      .eq('user_id', userId)
+
+    if (error) {
+      console.error('[validate] error fetching enrolled classes with prices', error)
+      return []
+    }
+
+    return (data ?? [])
+      .filter((e) => e.classes)
+      .map((e) => {
+        const cl = e.classes as unknown as ClassCandidate
+        return { ...cl, is_principal: e.is_principal }
+      })
+  }, [])
+
   // ========= Finalizar y Registrar =========
   const finalizeAccess = useCallback(
     async (m: MemberRow, success: boolean, reason: string, selectedIds: number[] = []) => {
       setIsFinalizing(true)
       try {
-        // 1) Registrar asistencia a clases si las hay
         if (selectedIds.length > 0) {
           const today = new Date().toISOString().slice(0, 10)
           const { error: attErr } = await supabase.from('class_attendance').insert(
@@ -124,7 +180,6 @@ function ValidateContent() {
           if (attErr) console.error('[validate] attendance error', attErr)
         }
 
-        // 2) Log de acceso
         await supabase.from('access_logs').insert({
           user_id: m.user_id,
           result: success ? 'autorizado' : 'denegado',
@@ -132,7 +187,6 @@ function ValidateContent() {
           scanned_at: new Date().toISOString(),
         })
 
-        // 3) Mostrar resultado
         setAllowed(success)
         setResultMsg(reason)
         setOpenResult(true)
@@ -150,14 +204,81 @@ function ValidateContent() {
     [router]
   )
 
-  // ========= Validación =========
+  // ========= Redirigir a Mercado Pago =========
+  const redirectToMP = useCallback(
+    async (m: MemberRow, selectedIds: number[]) => {
+      setIsFinalizing(true)
+      try {
+        // Usar clases completas con precios para calcular el monto
+        let enrolled = allEnrolledClasses
+        if (enrolled.length === 0) {
+          enrolled = await loadEnrolledClassesWithPrices(m.user_id)
+          setAllEnrolledClasses(enrolled)
+        }
+
+        // Calcular precio desde clases reales
+        const basePrice =
+          calcPriceFromClasses(enrolled) ??  // 1er opción: suma de precios de clases
+          m.estimated_monthly_fee ??          // 2do: campo precalculado en la view
+          null                                // 3ro: sin dato → error
+
+        if (basePrice === null || basePrice === 0) {
+          toast.error('No se pudo determinar el precio de la cuota', {
+            description: 'Contactá a recepción para regularizar tu situación.',
+          })
+          setIsFinalizing(false)
+          return
+        }
+
+        const finalPrice = Math.round(basePrice * multiplier)
+
+        const res = await fetch('/api/payments/mp/preference', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            items: [
+              {
+                id: 'cuota_mensual',
+                title: `Cuota Mensual - Beleza Dojo${multiplier > 1 ? ' (Recargo 20%)' : ''}`,
+                price: finalPrice,
+              },
+            ],
+            payer_email: m.email || userEmail,
+            user_id: m.user_id,
+            principal_id: enrolled.find((c) => c.is_principal)?.id,
+            additional_ids: selectedIds,
+          }),
+        })
+
+        const data = await res.json()
+
+        if (data.init_point) {
+          window.location.href = data.init_point
+        } else if (data.sandbox_init_point) {
+          window.location.href = data.sandbox_init_point
+        } else {
+          throw new Error('No se recibió link de pago')
+        }
+      } catch (e) {
+        console.error('[validate] payment error', e)
+        toast.error('Error al generar el pago', {
+          description: 'Intentá de nuevo o contactá a recepción.',
+        })
+      } finally {
+        setIsFinalizing(false)
+      }
+    },
+    [allEnrolledClasses, loadEnrolledClassesWithPrices, multiplier, userEmail]
+  )
+
+  // ========= Validación principal =========
   const validateAccess = useCallback(
     async (rawText: string) => {
       if (processingRef.current) return
       processingRef.current = true
 
       try {
-        // 1) Validar TOKEN contra la base de datos
+        // 1) Validar token QR
         let token = ''
         try {
           const u = new URL(rawText)
@@ -187,7 +308,6 @@ function ValidateContent() {
 
         // 2) Verificación de membresía
         const emailToCheck = userEmail || memberRef.current?.email || undefined
-
         if (!emailToCheck) {
           setAllowed(false)
           setResultMsg('Sesión inválida')
@@ -214,18 +334,16 @@ function ValidateContent() {
 
         setMember(m)
 
-        if (!isMemberActive(m)) {
+        if (m.status !== 'activo') {
           let reason = 'Cuenta pendiente de aprobación'
           if (m.status === 'suspendido') reason = 'Membresía suspendida'
-          else {
-            reason = 'Cuota vencida o cuenta inactiva'
-          }
+          else if (m.status === 'vencido' || m.status === 'inactivo') reason = 'Cuota vencida o cuenta inactiva'
 
           await finalizeAccess(m, false, reason)
           return
         }
 
-        // 3) COOLDOWN CHECK
+        // 3) Cooldown check
         const twoMinsAgo = new Date(Date.now() - 2 * 60 * 1000).toISOString()
         const { data: recentEntries } = await supabase
           .from('access_logs')
@@ -242,33 +360,48 @@ function ValidateContent() {
           return
         }
 
-        // 4) BUSCAR CLASES CANDIDATAS (Día y Horario)
+        // 4) Buscar clases candidatas (día y horario)
         const now = new Date()
         const dayName = DAY_MAP[now.getDay()]
-        const currentTime = now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hour12: false })
+        const currentTime = now.toLocaleTimeString('es-AR', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        })
 
-        // Buscamos clases en las que está inscrito y que son HOY
         const { data: enrollments, error: enrErr } = await supabase
           .from('class_enrollments')
-          .select('class_id, classes(*)')
+          .select(`
+            is_principal,
+            classes:class_id (
+              id, name, instructor, color, days, start_time, end_time,
+              price_principal, price_additional
+            )
+          `)
           .eq('user_id', m.user_id)
 
         if (enrErr) console.error('[validate] error fetching classes', enrErr)
 
-        const candidates = (enrollments || [])
-          .map((enr) => enr.classes as unknown as ClassCandidate)
-          .filter((cl) => {
-            if (!cl || !cl.days || !cl.end_time) return false
-            // Filtro de día
-            if (!cl.days.includes(dayName)) return false
-            // Filtro de horario: visible hasta 20 min antes del fin
-            return isTimeBefore(currentTime, cl.end_time, 20)
+        const allClasses = (enrollments ?? [])
+          .filter((e) => e.classes)
+          .map((e) => {
+            const cl = e.classes as unknown as ClassCandidate
+            return { ...cl, is_principal: e.is_principal }
           })
+
+        // Guardar todas las clases para uso en el flujo de pago
+        setAllEnrolledClasses(allClasses)
+
+        const candidates = allClasses.filter((cl) => {
+          if (!cl.days || !cl.end_time) return false
+          if (!cl.days.includes(dayName)) return false
+          return isTimeBefore(currentTime, cl.end_time, 20)
+        })
 
         if (candidates.length > 0) {
           setCandidateClasses(candidates)
           setSelectedClassIds(new Set())
-          setShowClassSelection(true) // Se abre el popup y se pausa el procesamiento
+          setShowClassSelection(true)
         } else {
           await finalizeAccess(m, true, 'Acceso autorizado - ¡Bienvenido!')
         }
@@ -291,20 +424,17 @@ function ValidateContent() {
       if (text === lastTextRef.current && now - lastAtRef.current < 2000) return
       lastTextRef.current = text
       lastAtRef.current = now
-
-      setPaused(true)           // pausa “soft”
+      setPaused(true)
       validateAccess(text)
     },
     [validateAccess]
   )
 
-  // ========= Reintentar cámara =========
   const retryCamera = () => {
     setCameraError(null)
     setPaused(false)
   }
 
-  // Si llegó ?t=... por URL, validamos directamente
   useEffect(() => {
     const t = qp.get('t')
     if (t) handleDecode(`${t}`)
@@ -314,7 +444,6 @@ function ValidateContent() {
   return (
     <AdminLayout active="/validate">
       <div className="relative min-h-[calc(100vh-4rem)] bg-slate-950 overflow-hidden">
-        {/* Decoración de fondo futurista */}
         <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none opacity-20">
           <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-blue-600 rounded-full blur-[120px]" />
           <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600 rounded-full blur-[120px]" />
@@ -342,9 +471,8 @@ function ValidateContent() {
             transition={{ delay: 0.1 }}
             className="w-full relative"
           >
-            {/* Contenedor del Scanner con brillo perimetral */}
             <div className="relative group">
-              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[2rem] blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-[2rem] blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200" />
               <div className="relative bg-slate-900 rounded-[2rem] overflow-hidden border border-white/10 shadow-2xl">
                 <div className="p-4">
                   {cameraError && (
@@ -360,10 +488,10 @@ function ValidateContent() {
 
                   <div className="flex items-center justify-center gap-3 mb-4">
                     <button
-                      onClick={() => setPaused(p => !p)}
+                      onClick={() => setPaused((p) => !p)}
                       className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border transition-all font-medium text-sm ${paused
-                        ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 active:scale-95'
-                        : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                          ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 active:scale-95'
+                          : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
                         }`}
                     >
                       {paused ? <Zap className="w-4 h-4 fill-current" /> : <Camera className="w-4 h-4" />}
@@ -388,7 +516,8 @@ function ValidateContent() {
                         msg.includes('scanner is not scanning') ||
                         msg.includes('NotFoundError') ||
                         msg.includes('AbortError')
-                      ) return
+                      )
+                        return
                       console.error('[QRScannerHtml5] Camera error:', msg)
                       setCameraError('Error de cámara. Por favor reintenta.')
                     }}
@@ -398,21 +527,24 @@ function ValidateContent() {
             </div>
           </motion.div>
 
-          {/* Footer decorativo */}
           <div className="mt-auto pt-12 text-center opacity-40">
             <p className="text-xs text-slate-500 font-medium tracking-widest uppercase">Beleza dojo</p>
           </div>
         </div>
       </div>
 
+      {/* ===== Dialog: Selección de clases ===== */}
       <AnimatePresence>
         {showClassSelection && (
-          <Dialog open={showClassSelection} onOpenChange={(o) => {
-            if (!o) {
-              setShowClassSelection(false)
-              setPaused(false)
-            }
-          }}>
+          <Dialog
+            open={showClassSelection}
+            onOpenChange={(o) => {
+              if (!o) {
+                setShowClassSelection(false)
+                setPaused(false)
+              }
+            }}
+          >
             <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white rounded-3xl overflow-hidden p-0">
               <div className="relative p-8">
                 <DialogHeader>
@@ -421,9 +553,11 @@ function ValidateContent() {
                   </DialogTitle>
                 </DialogHeader>
 
-                <div className="space-y-1 mb-6">
-                  <p className="text-slate-400 text-sm font-medium">Hemos detectado estas clases para ti hoy:</p>
-                </div>
+                <p className="text-slate-400 text-sm font-medium mb-6">
+                  {member?.status !== 'activo'
+                    ? 'Seleccioná las clases que querés pagar para regularizar tu acceso.'
+                    : 'Hemos detectado estas clases para ti hoy:'}
+                </p>
 
                 <div className="space-y-3 mb-8">
                   {candidateClasses.map((cl) => {
@@ -438,18 +572,24 @@ function ValidateContent() {
                           setSelectedClassIds(next)
                         }}
                         className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${isSelected
-                          ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/20'
-                          : 'bg-white/5 border-white/10 hover:bg-white/10'
+                            ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/20'
+                            : 'bg-white/5 border-white/10 hover:bg-white/10'
                           }`}
                       >
                         <div className="text-left">
                           <p className="font-bold text-white uppercase tracking-tight">{cl.name}</p>
-                          <p className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isSelected ? 'text-blue-100' : 'text-slate-500'}`}>
-                            {cl.start_time?.slice(0, 5)} - {cl.end_time?.slice(0, 5)} {cl.instructor && `• ${cl.instructor}`}
+                          <p
+                            className={`text-[10px] font-black uppercase tracking-widest mt-1 ${isSelected ? 'text-blue-100' : 'text-slate-500'
+                              }`}
+                          >
+                            {cl.start_time?.slice(0, 5)} - {cl.end_time?.slice(0, 5)}
+                            {cl.instructor && ` • ${cl.instructor}`}
                           </p>
                         </div>
-                        <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-white border-white text-blue-600' : 'border-white/20'
-                          }`}>
+                        <div
+                          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-white border-white text-blue-600' : 'border-white/20'
+                            }`}
+                        >
                           {isSelected && <CheckCircle className="w-4 h-4" />}
                         </div>
                       </button>
@@ -459,53 +599,30 @@ function ValidateContent() {
 
                 <Button
                   onClick={async () => {
-                    if (!member) return;
+                    if (!member) return
 
-                    // If member is not active, redirect to MP instead of finalizing access
                     if (member.status !== 'activo') {
-                      try {
-                        setIsFinalizing(true);
-                        const basePrice = member.estimated_monthly_fee || 15000;
-                        const finalPrice = Math.round(basePrice * multiplier);
-
-                        const res = await fetch('/api/payments/mp/preference', {
-                          method: 'POST',
-                          body: JSON.stringify({
-                            items: [{
-                              id: 'cuota_mensual',
-                              title: `Cuota Mensual - Beleza Dojo ${multiplier > 1 ? '(Recargo 20%)' : ''}`,
-                              price: finalPrice
-                            }],
-                            payer_email: member.email || userEmail,
-                            user_id: member.user_id,
-                            principal_id: candidateClasses.find(c => (c as any).is_principal || selectedClassIds.has(c.id))?.id,
-                            additional_ids: Array.from(selectedClassIds)
-                          })
-                        });
-
-                        const data = await res.json();
-                        if (data.init_point) {
-                          window.location.href = data.init_point;
-                        } else if (data.sandbox_init_point) {
-                          window.location.href = data.sandbox_init_point;
-                        }
-                      } catch (e) {
-                        console.error('Payment error', e);
-                      } finally {
-                        setIsFinalizing(false);
-                      }
-                      return;
+                      // Flujo de pago: redirigir a MP con precio calculado correctamente
+                      await redirectToMP(member, Array.from(selectedClassIds))
+                    } else {
+                      // Flujo normal: registrar ingreso
+                      await finalizeAccess(
+                        member,
+                        true,
+                        'Acceso autorizado - ¡Bienvenido!',
+                        Array.from(selectedClassIds)
+                      )
                     }
-
-                    finalizeAccess(member, true, 'Acceso autorizado - ¡Bienvenido!', Array.from(selectedClassIds))
                   }}
                   disabled={isFinalizing}
                   className="w-full py-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-sm shadow-xl shadow-blue-500/30 transition-all disabled:opacity-50"
                 >
                   {isFinalizing ? (
                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : member?.status !== 'activo' ? (
+                    'PAGAR Y ENTRAR'
                   ) : (
-                    member?.status !== 'activo' ? 'PAGAR Y ENTRAR' : 'CONFIRMAR INGRESO'
+                    'CONFIRMAR INGRESO'
                   )}
                 </Button>
               </div>
@@ -514,15 +631,21 @@ function ValidateContent() {
         )}
       </AnimatePresence>
 
+      {/* ===== Dialog: Resultado ===== */}
       <AnimatePresence>
         {openResult && (
-          <Dialog open={openResult} onOpenChange={(o) => {
-            setOpenResult(o)
-            if (!o && allowed === false) setPaused(false)
-          }}>
+          <Dialog
+            open={openResult}
+            onOpenChange={(o) => {
+              setOpenResult(o)
+              if (!o && allowed === false) setPaused(false)
+            }}
+          >
             <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white rounded-3xl overflow-hidden p-0">
               <div className="relative p-8 text-center bg-gradient-to-b from-transparent to-black/40">
-                <DialogHeader><DialogTitle className="sr-only">Resultado</DialogTitle></DialogHeader>
+                <DialogHeader>
+                  <DialogTitle className="sr-only">Resultado</DialogTitle>
+                </DialogHeader>
 
                 {allowed ? (
                   <motion.div
@@ -534,7 +657,9 @@ function ValidateContent() {
                       <div className="absolute inset-0 bg-green-500 blur-2xl opacity-20 animate-pulse" />
                       <CheckCircle className="w-14 h-14 text-green-500 relative z-10" />
                     </div>
-                    <h2 className="text-3xl font-black text-white tracking-tight uppercase">Acceso Autorizado</h2>
+                    <h2 className="text-3xl font-black text-white tracking-tight uppercase">
+                      Acceso Autorizado
+                    </h2>
                     <div className="space-y-1">
                       <p className="text-xl font-bold text-slate-200">{fullName(member)}</p>
                       <p className="text-green-500 font-semibold tracking-wide">{resultMsg}</p>
@@ -550,47 +675,45 @@ function ValidateContent() {
                       <div className="absolute inset-0 bg-red-500 blur-2xl opacity-20 animate-pulse" />
                       <XCircle className="w-14 h-14 text-red-500 relative z-10" />
                     </div>
-                    <h2 className="text-3xl font-black text-white tracking-tight uppercase">Acceso Denegado</h2>
+                    <h2 className="text-3xl font-black text-white tracking-tight uppercase">
+                      Acceso Denegado
+                    </h2>
                     <p className="text-red-400 font-medium text-lg">{resultMsg || 'No autorizado'}</p>
 
                     <div className="pt-6 flex flex-col gap-3">
-                      {(member?.status === 'vencido' || member?.status === 'inactivo' || resultMsg.includes('vencida') || resultMsg.includes('inactive')) && (
-                        <button
-                          onClick={async () => {
-                            // Cerrar resultado y mostrar selección de clases primero
-                            setOpenResult(false)
+                      {(member?.status === 'vencido' ||
+                        member?.status === 'inactivo' ||
+                        resultMsg.includes('vencida') ||
+                        resultMsg.includes('inactive')) && (
+                          <button
+                            onClick={async () => {
+                              setOpenResult(false)
 
-                            // Cargar las clases del miembro si no están cargadas
-                            if (candidateClasses.length === 0 && member) {
-                              const { data } = await supabase
-                                .from('class_enrollments')
-                                .select(`class_id, is_principal, classes(id, name, instructor, start_time, end_time, color, days)`)
-                                .eq('user_id', member.user_id)
-
-                              if (data) {
-                                const mapped = data
-                                  .filter(e => e.classes)
-                                  .map(e => e.classes as unknown as ClassCandidate)
-                                setCandidateClasses(mapped)
-                                setSelectedClassIds(new Set(mapped.map(c => c.id)))
+                              // Cargar clases con precios si no están cargadas aún
+                              if (member && allEnrolledClasses.length === 0) {
+                                const enrolled = await loadEnrolledClassesWithPrices(member.user_id)
+                                setAllEnrolledClasses(enrolled)
+                                setCandidateClasses(enrolled)
+                                setSelectedClassIds(new Set(enrolled.map((c) => c.id)))
+                              } else if (candidateClasses.length === 0) {
+                                setCandidateClasses(allEnrolledClasses)
+                                setSelectedClassIds(new Set(allEnrolledClasses.map((c) => c.id)))
                               }
-                            }
 
-                            // Mostrar selección de clases → desde ahí el usuario confirma → ahí sí va a MP
-                            setShowClassSelection(true)
-                          }}
-                          className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 disabled:opacity-50 border-none bg-[#009EE3] p-0 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20"
-                        >
-                          <div className="relative h-16 w-full">
-                            <Image
-                              src="/mp_button.png"
-                              alt="Pagar con Mercado Pago"
-                              fill
-                              className="object-contain"
-                            />
-                          </div>
-                        </button>
-                      )}
+                              setShowClassSelection(true)
+                            }}
+                            className="w-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 border-none bg-[#009EE3] p-0 rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20"
+                          >
+                            <div className="relative h-16 w-full">
+                              <Image
+                                src="/mp_button.png"
+                                alt="Pagar con Mercado Pago"
+                                fill
+                                className="object-contain"
+                              />
+                            </div>
+                          </button>
+                        )}
 
                       <Button
                         onClick={() => setOpenResult(false)}
@@ -612,14 +735,16 @@ function ValidateContent() {
 
 export default function ValidatePage() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
-        <div className="animate-pulse flex flex-col items-center">
-          <div className="w-12 h-12 bg-blue-600/20 rounded-full mb-4" />
-          <p className="text-xs uppercase tracking-widest text-slate-500">Cargando Validacón...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+          <div className="animate-pulse flex flex-col items-center">
+            <div className="w-12 h-12 bg-blue-600/20 rounded-full mb-4" />
+            <p className="text-xs uppercase tracking-widest text-slate-500">Cargando Validación...</p>
+          </div>
         </div>
-      </div>
-    }>
+      }
+    >
       <ValidateContent />
     </Suspense>
   )

@@ -24,7 +24,6 @@ import {
   X,
   ChevronRight,
   CreditCard,
-  Award,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
@@ -35,7 +34,7 @@ import SubscriptionModal from '../components/profile/SubscriptionModal'
 import PhotoCropper from '../components/profile/PhotoCropper'
 import MemberGrades from '../components/profile/MemberGrades'
 import { fmtARS, fmtDate, fmtSchedule } from '@/lib/format'
-import { isMemberActive, getPaymentMultiplier } from '@/lib/membership'
+import { getPaymentMultiplier, getPaymentStatusMessage } from '@/lib/pricing'
 
 
 type MemberRow = {
@@ -283,8 +282,8 @@ export default function ProfilePage() {
           const date = a.scanned_at.split('T')[0]
           const matches = (classAtt || [])
             .filter(ca => ca.date === date)
-            .flatMap(ca => (ca.classes as any) || [])
-          return { ...a, classes: matches as { name: string }[] }
+            .flatMap(ca => (Array.isArray(ca.classes) ? ca.classes : ca.classes ? [ca.classes] : []) as { name: string }[])
+          return { ...a, classes: matches }
         })
         setAttendance(merged)
       } else {
@@ -345,9 +344,9 @@ export default function ProfilePage() {
   }
 
   const fullName = useMemo(() => [member?.first_name, member?.last_name].filter(Boolean).join(' ').trim(), [member])
-  const isActive = useMemo(() => {
-    return isMemberActive(member || {})
-  }, [member])
+  // La view SQL ya calcula el status correcto incluyendo período de gracia
+  // No replicamos esa lógica aquí para evitar inconsistencias
+  const isActive = useMemo(() => member?.status === 'activo', [member?.status])
 
   const daysLeft = useMemo(() =>
     member?.next_payment_due ? daysDiff(new Date(), new Date(`${member.next_payment_due}T00:00:00`)) : null,
@@ -372,7 +371,7 @@ export default function ProfilePage() {
   /* ---- Render ---- */
   return (
     <AdminLayout active="/profile">
-      <div className="relative min-h-screen overflow-x-hidden">
+      <div className="relative min-h-screen">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
 
@@ -452,19 +451,26 @@ export default function ProfilePage() {
                   {/* Membresía card mobile */}
                   <div className="rounded-2xl bg-white dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700 shadow-sm p-4 mb-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex-1">
+                      <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1">
                           <Clock className="w-3 h-3" /> Próximo Vencimiento
                         </p>
                         <p className={`text-base font-black tracking-tight ${!isActive && !isSpecialRole && !isLifetime ? 'text-red-500' : 'text-slate-900 dark:text-white'}`}>
                           {vencimientoLabel}
-                          {daysLeft !== null && !isSpecialRole && !isLifetime && (
-                            <span className={`ml-2 text-xs font-bold ${daysLeft < 7 ? 'text-red-500' : 'text-slate-400'}`}>
-                              (Quedan {daysLeft > 0 ? daysLeft : 0} días)
-                            </span>
-                          )}
                         </p>
+                        {daysLeft !== null && daysLeft > 0 && !isSpecialRole && !isLifetime && (
+                          <p className={`text-xs font-bold mt-0.5 ${daysLeft < 7 ? 'text-red-400' : 'text-slate-400'}`}>
+                            Quedan {daysLeft} días
+                          </p>
+                        )}
                       </div>
+                      {daysLeft !== null && !isSpecialRole && !isLifetime && (
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${daysLeft < 7 ? 'bg-red-50 dark:bg-red-900/20' : 'bg-blue-50 dark:bg-blue-900/20'}`}>
+                          <p className={`text-2xl font-black tabular-nums ${daysLeft < 7 ? 'text-red-500' : 'text-blue-600 dark:text-blue-400'}`}>
+                            {daysLeft > 0 ? daysLeft : 0}
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Progress bar */}
@@ -479,16 +485,12 @@ export default function ProfilePage() {
                     )}
                   </div>
 
-                  {/* Pay button mobile — OCULTO POR AHORA
-                  {!isSpecialRole && !isLifetime && (
-                    <button
-                      onClick={() => setShowPayModal(true)}
-                      className="w-full h-14 rounded-2xl bg-[#009EE3] flex items-center justify-center gap-3 shadow-xl shadow-blue-500/20 active:scale-[0.98] transition-all mb-4 relative overflow-hidden"
-                    >
+                  {/* Botón MP oculto por ahora */}
+                  {/* {!isSpecialRole && !isLifetime && (
+                    <button onClick={() => setShowPayModal(true)} className="w-full h-14 rounded-2xl bg-[#009EE3] mb-4 relative overflow-hidden">
                       <Image src="/mp_button.png" alt="Pagar con Mercado Pago" fill className="object-contain" />
                     </button>
-                  )}
-                  */}
+                  )} */}
 
                   {/* Section buttons mobile */}
                   <div className="space-y-3">
@@ -507,7 +509,7 @@ export default function ProfilePage() {
                       accent="emerald"
                     />
                     <SectionButton
-                      icon={<Award className="w-5 h-5" />}
+                      icon={<Shield className="w-5 h-5" />}
                       label="Mis Graduaciones"
                       sublabel="Cinturones y logros"
                       onClick={() => setSheetGraduaciones(true)}
@@ -624,11 +626,8 @@ export default function ProfilePage() {
                             </div>
                           )}
                           <p className="text-xs font-bold text-slate-400 mt-2">
-                            {isSpecialRole || isLifetime ? 'Tu membresía es vitalicia' :
-                              daysLeft !== null && daysLeft > 0 ? `Quedan ${daysLeft} días de entrenamiento` :
-                                'Tu tiempo ha expirado'}
+                            {getPaymentStatusMessage(member?.next_payment_due, member?.role)}
                           </p>
-                          {/* BOTÓN OCULTO POR AHORA
                           {!isSpecialRole && !isLifetime && (
                             <div className="mt-4">
                               <button onClick={() => setShowPayModal(true)} className="w-full h-14 relative transition-all hover:scale-105 active:scale-95 rounded-2xl overflow-hidden shadow-lg bg-[#009EE3]">
@@ -636,7 +635,6 @@ export default function ProfilePage() {
                               </button>
                             </div>
                           )}
-                          */}
                         </motion.div>
                       </div>
 

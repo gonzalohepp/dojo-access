@@ -8,24 +8,22 @@ export async function POST(req: Request) {
         let topic = url.searchParams.get('topic') || url.searchParams.get('type')
         let id = url.searchParams.get('id') || url.searchParams.get('data.id')
 
-        // Si no están en la URL, buscamos en el body (Mercado Pago a veces manda JSON)
         try {
             const body = await req.json()
             if (!id) id = body.data?.id || body.id
             if (!topic) topic = body.type || body.topic || body.action
-        } catch (e) {
-            // No hay body JSON o no se pudo leer, seguimos con lo que hay en URL
+        } catch {
+            // No hay body JSON, seguimos con URL params
         }
 
-        console.log(`Webhook Received: topic=${topic}, id=${id}`)
+        console.log(`Webhook received: topic=${topic}, id=${id}`)
 
-        // Solo procesamos si es un pago
         if (topic !== 'payment' && topic !== 'payment_intent' && !String(topic).includes('payment')) {
             return NextResponse.json({ received: true })
         }
 
         if (!id || id === '123456') {
-            console.log('Test notification or missing ID received.')
+            console.log('Test notification or missing ID — ignoring.')
             return NextResponse.json({ received: true, message: 'Test ignore' })
         }
 
@@ -35,13 +33,11 @@ export async function POST(req: Request) {
         const client = new MercadoPagoConfig({ accessToken })
         const payment = new Payment(client)
 
-        // Obtener detalles del pago
-        let paymentData;
+        let paymentData
         try {
             paymentData = await payment.get({ id: String(id) })
         } catch (err) {
-            console.error('Error fetching payment from MP (might be a test ID):', err)
-            // Respondemos 200 igual para que MP no reintente eternamente con un ID falso
+            console.error('Error fetching payment from MP:', err)
             return NextResponse.json({ received: true, error: 'Payment not found' })
         }
 
@@ -57,70 +53,127 @@ export async function POST(req: Request) {
                 process.env.SUPABASE_SERVICE_ROLE_KEY!
             )
 
-            // 1. Calcular nueva fecha de vencimiento (Mes Calendario, igual que en /payments)
-            // Replicamos la lógica de PaymentModal.tsx: lastDayOfMonth(addMonths(today, 0))
-            const today = new Date(new Date().toLocaleString('en-US', {
-                timeZone: 'America/Argentina/Buenos_Aires'
-            }))
-            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0); // Último día del mes actual
+            // ── IDEMPOTENCIA ──────────────────────────────────────────────
+            // MP puede enviar el mismo webhook varias veces. Evitamos duplicados.
+            const { data: existing } = await supabase
+                .from('payments')
+                .select('id')
+                .eq('mp_payment_id', String(id))
+                .maybeSingle()
 
-            const fromStr = today.toISOString().slice(0, 10);
-            const toStr = lastDay.toISOString().slice(0, 10);
+            if (existing) {
+                console.log(`Payment ${id} already processed — skipping.`)
+                return NextResponse.json({ received: true, message: 'Already processed' })
+            }
 
-            // 2. Actualizar Membresía
+            // ── FECHA EN ART ──────────────────────────────────────────────
+            // Calculamos la fecha actual en ART (UTC-3) para evitar que
+            // un pago hecho a las 22hs ART se registre como día siguiente en UTC.
+            const nowART = new Date(
+                new Date().toLocaleString('en-US', {
+                    timeZone: 'America/Argentina/Buenos_Aires',
+                })
+            )
+
+            // Fecha de pago en ART: usamos date_approved de MP si está disponible,
+            // sino usamos nowART.
+            const mpApprovedAt = paymentData.date_approved
+                ? new Date(
+                    new Date(paymentData.date_approved).toLocaleString('en-US', {
+                        timeZone: 'America/Argentina/Buenos_Aires',
+                    })
+                )
+                : nowART
+
+            // Strings de fecha en ART (YYYY-MM-DD) — sin riesgo de flip de día por UTC
+            const paidDateStr = [
+                mpApprovedAt.getFullYear(),
+                String(mpApprovedAt.getMonth() + 1).padStart(2, '0'),
+                String(mpApprovedAt.getDate()).padStart(2, '0'),
+            ].join('-')
+
+            // Último día del mes en ART
+            const lastDayART = new Date(
+                mpApprovedAt.getFullYear(),
+                mpApprovedAt.getMonth() + 1,
+                0
+            )
+            const periodToStr = [
+                lastDayART.getFullYear(),
+                String(lastDayART.getMonth() + 1).padStart(2, '0'),
+                String(lastDayART.getDate()).padStart(2, '0'),
+            ].join('-')
+
+            console.log(`Processing payment ${id} for user ${user_id}. ART date: ${paidDateStr}, period_to: ${periodToStr}`)
+
+            // ── ACTUALIZAR MEMBRESÍA ──────────────────────────────────────
             const { error: memErr } = await supabase
                 .from('memberships')
-                .upsert({
-                    member_id: user_id,
-                    type: 'monthly',
-                    end_date: toStr,
-                    last_payment_date: fromStr,
-                    notes: `Pago automático via MP (ID: ${id})`
-                }, { onConflict: 'member_id' })
+                .upsert(
+                    {
+                        member_id: user_id,
+                        type: 'monthly',
+                        end_date: periodToStr,
+                        last_payment_date: paidDateStr,
+                        notes: `Pago automático via MP (ID: ${id})`,
+                    },
+                    { onConflict: 'member_id' }
+                )
 
             if (memErr) throw memErr
 
-            // 3. Registrar el pago en la tabla 'payments' para auditoría (con periodos)
-            await supabase.from('payments').insert({
-                user_id: user_id,
+            // ── REGISTRAR PAGO ────────────────────────────────────────────
+            // paid_at usa la fecha ART como timestamp de medianoche para que
+            // los EXTRACT(month) en la view SQL den el mes correcto.
+            // mp_payment_id se usa para la idempotencia.
+            const { error: payErr } = await supabase.from('payments').insert({
+                user_id,
                 amount: paymentData.transaction_amount,
                 method: 'mercadopago',
-                paid_at: fromStr,
-                period_from: fromStr,
-                period_to: toStr,
-                notes: `Pago automático via Webhook (MP: ${id})`
+                paid_at: paidDateStr,          // fecha ART como date string → mes correcto en la view
+                period_from: paidDateStr,
+                period_to: periodToStr,
+                mp_payment_id: String(id),      // ← campo para idempotencia (ver nota abajo)
+                notes: `Pago automático via Webhook (MP: ${id})`,
             })
 
-            // 3. Actualizar Clases (Inscripciones)
-            // Primero borramos las actuales
-            await supabase.from('class_enrollments').delete().eq('user_id', user_id)
+            if (payErr) throw payErr
 
-            // Insertamos las nuevas
-            const enrollments = []
+            // ── ACTUALIZAR INSCRIPCIONES ──────────────────────────────────
+            // Solo actualizamos si el pago trae clases definidas.
+            // Si no hay principal_id, mantenemos las inscripciones existentes
+            // para no dejar al miembro sin clases por un error de datos.
             if (principal_id) {
-                enrollments.push({ user_id, class_id: principal_id, is_principal: true })
-            }
-            if (additional_ids && Array.isArray(additional_ids)) {
-                additional_ids.forEach(id => {
-                    if (id !== principal_id) {
-                        enrollments.push({ user_id, class_id: id, is_principal: false })
-                    }
-                })
-            }
+                await supabase.from('class_enrollments').delete().eq('user_id', user_id)
 
-            if (enrollments.length > 0) {
+                const enrollments: { user_id: string; class_id: number; is_principal: boolean }[] = [
+                    { user_id, class_id: principal_id, is_principal: true },
+                ]
+
+                if (Array.isArray(additional_ids)) {
+                    additional_ids.forEach((classId: number) => {
+                        if (classId !== principal_id) {
+                            enrollments.push({ user_id, class_id: classId, is_principal: false })
+                        }
+                    })
+                }
+
                 const { error: enrollErr } = await supabase
                     .from('class_enrollments')
                     .insert(enrollments)
+
                 if (enrollErr) throw enrollErr
+            } else {
+                console.warn(`Payment ${id}: no principal_id in external_reference — class enrollments unchanged.`)
             }
 
-            console.log(`Payment processed for user ${user_id}. New due: ${toStr}`)
+            console.log(`Payment ${id} processed. User: ${user_id}, period: ${paidDateStr} → ${periodToStr}`)
         }
 
         return NextResponse.json({ received: true })
-    } catch (error: any) {
-        console.error('Webhook Error:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : 'Unknown error'
+        console.error('Webhook error:', msg)
+        return NextResponse.json({ error: msg }, { status: 500 })
     }
 }

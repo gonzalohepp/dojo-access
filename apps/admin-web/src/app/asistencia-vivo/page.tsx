@@ -13,10 +13,9 @@ import {
     Calendar,
     AlertCircle,
     RefreshCw,
-    Info
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { isMemberActive, getPaymentMultiplier } from '@/lib/membership'
+import { getPaymentMultiplier } from '@/lib/pricing'
 
 type ClassRow = {
     id: number
@@ -40,19 +39,19 @@ type AttendanceRecord = {
         status: string | null
         next_payment_due: string | null
         role: string | null
+        is_new_member?: boolean
     }
 }
 
 const DAY_MAP = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb']
 
-// Helper para iconos con Emojis según pedido
 function getClassEmoji(name: string) {
     const n = name.toLowerCase()
     if (n.includes('fisico') || n.includes('acondicionamiento')) return '💪'
     if (n.includes('mma')) return '🥊'
     if (n.includes('grappling')) return '🤼'
     if (n.includes('bjj') || n.includes('jiu') || n.includes('judo') || n.includes('kids')) return '🥋'
-    return '🥋' // Default
+    return '🥋'
 }
 
 export default function AsistenciaVivoPage() {
@@ -68,7 +67,6 @@ export default function AsistenciaVivoPage() {
         )
     }
 
-    // Actualizar la hora cada minuto
     useEffect(() => {
         const timer = setInterval(() => setCurrentTime(new Date()), 60000)
         return () => clearInterval(timer)
@@ -77,7 +75,6 @@ export default function AsistenciaVivoPage() {
     const fetchData = async () => {
         setLoading(true)
         try {
-            // 1. Fetch de todas las clases
             const { data: clsData } = await supabase
                 .from('classes')
                 .select('*')
@@ -85,45 +82,43 @@ export default function AsistenciaVivoPage() {
 
             setClasses(clsData || [])
 
-            // 2. Fetch de asistencia de HOY
             const today = new Date().toISOString().slice(0, 10)
             const { data: attData } = await supabase
                 .from('class_attendance')
                 .select(`
-          user_id,
-          class_id,
-          profiles:user_id (first_name, last_name, email)
-        `)
+                    user_id,
+                    class_id,
+                    profiles:user_id (first_name, last_name, email)
+                `)
                 .eq('date', today)
 
-            const rawAttendance = (attData as any) || []
+            const rawAttendance = ((attData as any[]) || []).map(r => ({
+                ...r,
+                profiles: Array.isArray(r.profiles) ? r.profiles[0] : r.profiles
+            })) as AttendanceRecord[]
 
-            // 3. Fetch de status de los alumnos presentes
             if (rawAttendance.length > 0) {
-                const userIds = Array.from(new Set(rawAttendance.map((r: any) => r.user_id)))
+                const userIds = Array.from(new Set(rawAttendance.map(r => r.user_id)))
 
-                // Traemos info de members_with_status para ver vencimientos
                 const { data: membersData } = await supabase
                     .from('members_with_status')
-                    .select('user_id, status, next_payment_due')
+                    .select('user_id, status, next_payment_due, role, is_new_member')
                     .in('user_id', userIds)
 
-                const memberMap = new Map()
-                membersData?.forEach((m: any) => {
+                const memberMap = new Map<string, AttendanceRecord['member_data']>()
+                membersData?.forEach(m => {
                     memberMap.set(m.user_id, m)
                 })
 
-                // Mezclamos la data
-                const enrichedAttendance = rawAttendance.map((r: any) => ({
+                const enrichedAttendance = rawAttendance.map(r => ({
                     ...r,
-                    member_data: memberMap.get(r.user_id) || null
+                    member_data: memberMap.get(r.user_id) ?? undefined
                 }))
 
                 setAttendance(enrichedAttendance)
             } else {
                 setAttendance([])
             }
-
         } catch (error) {
             console.error('Error fetching live data:', error)
         } finally {
@@ -134,7 +129,6 @@ export default function AsistenciaVivoPage() {
     useEffect(() => {
         fetchData()
 
-        // Suscribirse a cambios en tiempo real
         const channel = supabase
             .channel('live_attendance')
             .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'class_attendance' }, () => {
@@ -142,9 +136,7 @@ export default function AsistenciaVivoPage() {
             })
             .subscribe()
 
-        return () => {
-            supabase.removeChannel(channel)
-        }
+        return () => { supabase.removeChannel(channel) }
     }, [])
 
     const activeClasses = useMemo(() => {
@@ -155,14 +147,9 @@ export default function AsistenciaVivoPage() {
 
         return classes.filter(c => {
             if (!c.days?.includes(dayName) || !c.start_time || !c.end_time) return false
-
             const [sH, sM] = c.start_time.split(':').map(Number)
             const [eH, eM] = c.end_time.split(':').map(Number)
-
-            const startMinutes = sH * 60 + sM - 10 // 10 min antes
-            const endMinutes = eH * 60 + eM + 15   // 15 min despues
-
-            return currentMinutes >= startMinutes && currentMinutes <= endMinutes
+            return currentMinutes >= (sH * 60 + sM - 10) && currentMinutes <= (eH * 60 + eM + 15)
         })
     }, [classes, currentTime])
 
@@ -175,40 +162,41 @@ export default function AsistenciaVivoPage() {
         return classes.filter(c => {
             if (!c.days?.includes(dayName) || !c.start_time) return false
             const [sH, sM] = c.start_time.split(':').map(Number)
-            const startMinutes = sH * 60 + sM
-            return startMinutes > currentMinutes + 10
+            return (sH * 60 + sM) > currentMinutes + 10
         })
     }, [classes, currentTime])
 
-    // Helper para determinar estado de pago y recargo del alumno
-    const getMemberStatus = (m: any) => {
-        const tags: { label: string, color: string, bg: string }[] = []
+    // Usa status de la view (fuente de verdad) y getPaymentMultiplier de lib/pricing
+    const getMemberStatus = (a: AttendanceRecord) => {
+        const tags: { label: string; color: string; bg: string }[] = []
 
-        if (!m?.member_data) {
+        if (!a.member_data) {
             return [{ label: 'Sin datos', color: 'text-slate-500', bg: 'bg-slate-500/10' }]
         }
 
-        const isActive = isMemberActive(m.member_data)
-        const multiplier = getPaymentMultiplier(m.member_data.next_payment_due, false)
+        const { status, next_payment_due, role, is_new_member } = a.member_data
+
+        // Confiamos en el status de la view — no replicamos la lógica de gracia aquí
+        const isActive = status === 'activo'
 
         if (isActive) {
             tags.push({ label: 'Activo', color: 'text-green-500', bg: 'bg-green-500/10' })
 
-            // Si está activo pero ya pasó su vencimiento, mostramos que no registra pago
-            if (m.member_data.next_payment_due) {
-                const today = new Date()
-                const due = new Date(m.member_data.next_payment_due + 'T12:00:00')
-                if (today > due) {
-                    tags.push({ label: 'No registra pago', color: 'text-amber-500', bg: 'bg-amber-500/10' })
+            // Activo pero en período de gracia (venció pero aún puede ingresar)
+            if (next_payment_due) {
+                const due = new Date(next_payment_due + 'T12:00:00')
+                if (new Date() > due) {
+                    tags.push({ label: 'Sin pago del mes', color: 'text-amber-500', bg: 'bg-amber-500/10' })
                 }
             }
         } else {
             tags.push({ label: 'Vencido', color: 'text-red-500', bg: 'bg-red-500/10' })
         }
 
-        // Mostrar tag de recargo si corresponde (20%)
+        // Recargo — usa la función centralizada con los 3 parámetros correctos
+        const multiplier = getPaymentMultiplier(next_payment_due, is_new_member ?? false, role)
         if (multiplier > 1) {
-            tags.push({ label: '+20% Pago Tardío', color: 'text-red-500', bg: 'bg-red-500/10' })
+            tags.push({ label: '+20% Pago Tardío', color: 'text-orange-500', bg: 'bg-orange-500/10' })
         }
 
         return tags
@@ -218,7 +206,7 @@ export default function AsistenciaVivoPage() {
         <AdminLayout active="/asistencia-vivo">
             <div className="max-w-7xl mx-auto space-y-8 p-4 md:p-0">
 
-                {/* Header Section */}
+                {/* Header */}
                 <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                     <div className="space-y-1">
                         <div className="flex items-center gap-2 text-blue-500 font-bold text-xs uppercase tracking-widest">
@@ -226,7 +214,7 @@ export default function AsistenciaVivoPage() {
                             Monitor en Tiempo Real
                         </div>
                         <h1 className="text-4xl font-black tracking-tight text-white uppercase italic">
-                            Asistencia <span className="text-blue-500 text-glow">en Vivo</span>
+                            Asistencia <span className="text-blue-500">en Vivo</span>
                         </h1>
                         <p className="text-slate-400 font-medium italic">
                             Control de alumnos presentes por clase en este momento.
@@ -262,7 +250,7 @@ export default function AsistenciaVivoPage() {
                 ) : (
                     <div className="grid lg:grid-cols-3 gap-8">
 
-                        {/* Clases Activas (Main Column) */}
+                        {/* Clases Activas */}
                         <div className="lg:col-span-2 space-y-6">
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="w-2 h-2 rounded-full bg-green-500 animate-ping" />
@@ -289,7 +277,6 @@ export default function AsistenciaVivoPage() {
                                                 animate={{ opacity: 1, y: 0 }}
                                                 className="bg-slate-900/50 border border-white/10 backdrop-blur-xl rounded-[2rem] overflow-hidden shadow-xl"
                                             >
-                                                {/* Header / Trigger */}
                                                 <button
                                                     onClick={() => toggleExpand(cl.id)}
                                                     className="w-full text-left p-6 flex items-center justify-between gap-4 hover:bg-white/5 transition-all"
@@ -297,7 +284,7 @@ export default function AsistenciaVivoPage() {
                                                     <div className="flex items-center gap-4">
                                                         <div
                                                             className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-lg"
-                                                            style={{ backgroundColor: (cl.color as any) || '#3b82f6' }}
+                                                            style={{ backgroundColor: cl.color || '#3b82f6' }}
                                                         >
                                                             {emoji}
                                                         </div>
@@ -338,12 +325,13 @@ export default function AsistenciaVivoPage() {
                                                             <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Pres.</span>
                                                         </div>
                                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center border border-white/5 transition-transform duration-300 ${isExpanded ? 'rotate-180 bg-white/10' : ''}`}>
-                                                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+                                                            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                                            </svg>
                                                         </div>
                                                     </div>
                                                 </button>
 
-                                                {/* Expanded Content */}
                                                 <AnimatePresence>
                                                     {isExpanded && (
                                                         <motion.div
@@ -406,7 +394,7 @@ export default function AsistenciaVivoPage() {
                             )}
                         </div>
 
-                        {/* Next Classes (Sidebar) */}
+                        {/* Próximas clases sidebar */}
                         <aside className="space-y-6">
                             <div className="flex items-center gap-2">
                                 <Calendar className="w-4 h-4 text-blue-500" />
@@ -425,8 +413,8 @@ export default function AsistenciaVivoPage() {
                                                 className="p-5 rounded-3xl bg-slate-900/30 border border-white/5 flex items-center gap-4 group hover:bg-white/5 transition-all"
                                             >
                                                 <div
-                                                    className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-xl shrink-0 group-hover:bg-white/10 transition-colors shadow-lg"
-                                                    style={{ backgroundColor: (fcl.color as any) || '#3b82f6' }}
+                                                    className="w-10 h-10 rounded-2xl flex items-center justify-center text-xl shrink-0 shadow-lg"
+                                                    style={{ backgroundColor: fcl.color || '#3b82f6' }}
                                                 >
                                                     {emoji}
                                                 </div>
@@ -449,7 +437,9 @@ export default function AsistenciaVivoPage() {
                                     <Users className="w-24 h-24" />
                                 </div>
                                 <h3 className="text-lg font-black uppercase italic leading-none mb-2 relative z-10">Control Total</h3>
-                                <p className="text-blue-100 text-xs font-bold leading-relaxed relative z-10">Este panel se actualiza automáticamente cuando un alumno valida su acceso en la entrada.</p>
+                                <p className="text-blue-100 text-xs font-bold leading-relaxed relative z-10">
+                                    Este panel se actualiza automáticamente cuando un alumno valida su acceso en la entrada.
+                                </p>
                             </div>
                         </aside>
 

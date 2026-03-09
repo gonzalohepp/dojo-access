@@ -17,7 +17,6 @@ import {
     Filter
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { isMemberActive } from '@/lib/membership'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { exportToExcel } from '@/lib/excelExport'
@@ -384,7 +383,7 @@ function AusenciaReport() {
             })
 
             const enrichedMembers = (membersData as any[])
-                .filter(m => isMemberActive(m))
+                .filter(m => m.status === 'activo')
                 .map(m => ({
                     ...m,
                     last_access: lastAccessMap[m.user_id]

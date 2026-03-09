@@ -14,7 +14,6 @@ import {
   Activity, Receipt, ArrowUpRight, ArrowDownRight, Info, FileDown, Download, ArrowRight
 } from 'lucide-react'
 import { exportToExcel } from '@/lib/excelExport'
-import { isMemberActive } from '@/lib/membership'
 
 /* =============== helpers fecha / número =============== */
 const tzDate = (v: string | Date) => new Date(v)
@@ -112,7 +111,7 @@ export default function MetricasPage() {
       const allViewRows = (viewData || [])
       setTotalMembers(allViewRows.filter(r => r.role !== 'admin').length)
       const activeIds = allViewRows
-        .filter(r => isMemberActive(r) && r.role !== 'admin')
+        .filter(r => r.status === 'activo' && r.role !== 'admin')
         .map(r => r.user_id)
       setActiveMembers(activeIds.length)
       setActiveUserIds(new Set(activeIds))

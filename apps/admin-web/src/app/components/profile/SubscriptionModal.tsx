@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Shield, Plus, Check, DollarSign, Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabaseClient'
-import { getPaymentMultiplier } from '@/lib/membership'
+import { getPaymentMultiplier } from '@/lib/pricing'
 
 type ClassOption = {
     id: number
@@ -34,6 +34,7 @@ export default function SubscriptionModal({
     const [processing, setProcessing] = useState(false)
     const [isNewMember, setIsNewMember] = useState(false)
     const [nextPaymentDue, setNextPaymentDue] = useState<string | null>(null)
+    const [memberRole, setMemberRole] = useState<string | null>(null)
 
     useEffect(() => {
         if (open) {
@@ -58,13 +59,14 @@ export default function SubscriptionModal({
                 if (user) {
                     supabase
                         .from('members_with_status')
-                        .select('is_new_member, next_payment_due')
+                        .select('is_new_member, next_payment_due, role')
                         .eq('user_id', user.id)
                         .maybeSingle()
                         .then(({ data }) => {
                             if (data) {
                                 setIsNewMember(!!data.is_new_member)
                                 setNextPaymentDue((data as any).next_payment_due || null)
+                                setMemberRole((data as any).role || null)
                             }
                         })
                 }
@@ -87,8 +89,8 @@ export default function SubscriptionModal({
     }
 
     const multiplier = useMemo(() => {
-        return getPaymentMultiplier(nextPaymentDue, isNewMember)
-    }, [nextPaymentDue, isNewMember])
+        return getPaymentMultiplier(nextPaymentDue, isNewMember, memberRole)
+    }, [nextPaymentDue, isNewMember, memberRole])
 
     const total = useMemo(() => {
         let sum = 0
