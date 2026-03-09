@@ -281,7 +281,7 @@ export default function ProfilePage() {
           const date = a.scanned_at.split('T')[0]
           const matches = (classAtt || [])
             .filter(ca => ca.date === date)
-            .map(ca => ca.classes)
+            .flatMap(ca => (ca.classes as any) || [])
           return { ...a, classes: matches as { name: string }[] }
         })
         setAttendance(merged)
