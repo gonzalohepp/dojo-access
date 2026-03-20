@@ -402,7 +402,13 @@ function ValidateContent() {
           setCandidateClasses(candidates)
           setSelectedClassIds(new Set())
           setShowClassSelection(true)
+        } else if (allClasses.length > 0) {
+          // No hay candidatas por horario, pero sí clases inscriptas → dejar elegir
+          setCandidateClasses(allClasses)
+          setSelectedClassIds(new Set())
+          setShowClassSelection(true)
         } else {
+          // Sin clases inscriptas → acceso directo
           await finalizeAccess(m, true, 'Acceso autorizado - ¡Bienvenido!')
         }
       } catch (e) {
@@ -421,7 +427,7 @@ function ValidateContent() {
   const handleDecode = useCallback(
     (text: string) => {
       const now = Date.now()
-      if (text === lastTextRef.current && now - lastAtRef.current < 2000) return
+      if (text === lastTextRef.current && now - lastAtRef.current < 10000) return
       lastTextRef.current = text
       lastAtRef.current = now
       setPaused(true)
@@ -490,8 +496,8 @@ function ValidateContent() {
                     <button
                       onClick={() => setPaused((p) => !p)}
                       className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border transition-all font-medium text-sm ${paused
-                          ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 active:scale-95'
-                          : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                        ? 'bg-blue-600 border-blue-500 text-white shadow-lg shadow-blue-500/20 active:scale-95'
+                        : 'bg-white/5 border-white/10 text-white hover:bg-white/10'
                         }`}
                     >
                       {paused ? <Zap className="w-4 h-4 fill-current" /> : <Camera className="w-4 h-4" />}
@@ -572,8 +578,8 @@ function ValidateContent() {
                           setSelectedClassIds(next)
                         }}
                         className={`w-full flex items-center justify-between p-4 rounded-2xl border transition-all ${isSelected
-                            ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/20'
-                            : 'bg-white/5 border-white/10 hover:bg-white/10'
+                          ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-500/20'
+                          : 'bg-white/5 border-white/10 hover:bg-white/10'
                           }`}
                       >
                         <div className="text-left">
@@ -614,7 +620,7 @@ function ValidateContent() {
                       )
                     }
                   }}
-                  disabled={isFinalizing}
+                  disabled={isFinalizing || selectedClassIds.size === 0}
                   className="w-full py-6 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest text-sm shadow-xl shadow-blue-500/30 transition-all disabled:opacity-50"
                 >
                   {isFinalizing ? (
@@ -638,7 +644,7 @@ function ValidateContent() {
             open={openResult}
             onOpenChange={(o) => {
               setOpenResult(o)
-              if (!o && allowed === false) setPaused(false)
+              // El scanner solo se reanuda desde el botón Reintentar
             }}
           >
             <DialogContent className="sm:max-w-md bg-slate-900 border-white/10 text-white rounded-3xl overflow-hidden p-0">
@@ -716,7 +722,12 @@ function ValidateContent() {
                         )}
 
                       <Button
-                        onClick={() => setOpenResult(false)}
+                        onClick={() => {
+                          lastAtRef.current = 0
+                          lastTextRef.current = null
+                          setOpenResult(false)
+                          setPaused(false)
+                        }}
                         className="w-full py-6 rounded-2xl bg-white/10 border border-white/10 hover:bg-white/20 text-white font-bold"
                       >
                         REINTENTAR

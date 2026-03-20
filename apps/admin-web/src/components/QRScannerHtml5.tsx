@@ -101,8 +101,9 @@ export default function QRScannerHtml5({ onDecode, onError, paused = false }: Pr
     try {
       if (paused) qr.pause(true)
       else {
-        lockedRef.current = false
         qr.resume()
+        // Delay antes de aceptar nuevos scans para vaciar buffers internos
+        setTimeout(() => { lockedRef.current = false }, 500)
       }
     } catch (e) {
       onError?.(e)

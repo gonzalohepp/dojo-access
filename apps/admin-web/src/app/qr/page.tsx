@@ -61,6 +61,8 @@ export default function QRAcceso() {
   const [nextRefreshAt, setNextRefreshAt] = useState<Date | null>(null)
   const [now, setNow] = useState(Date.now())
   const [autoRefresh, setAutoRefresh] = useState(true)
+  const [userRole, setUserRole] = useState<string | null>(null)
+  const isAdmin = userRole === 'admin'
 
   // Load autoRefresh state from localStorage on mount and init token
   useEffect(() => {
@@ -92,6 +94,22 @@ export default function QRAcceso() {
       regenerate(true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Obtener rol del usuario actual
+  useEffect(() => {
+    ; (async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user?.email) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .ilike('email', user.email)
+          .limit(1)
+          .maybeSingle()
+        setUserRole(data?.role ?? 'member')
+      }
+    })()
   }, [])
 
   // UI State for Guest Access
@@ -334,55 +352,55 @@ export default function QRAcceso() {
               </p>
             </motion.div>
 
-            <motion.button
-              onClick={async () => {
-                const nextValue = !autoRefresh
-                setAutoRefresh(nextValue)
-                localStorage.setItem('qr_auto_refresh', JSON.stringify(nextValue))
+            {isAdmin && (
+              <motion.button
+                onClick={async () => {
+                  const nextValue = !autoRefresh
+                  setAutoRefresh(nextValue)
+                  localStorage.setItem('qr_auto_refresh', JSON.stringify(nextValue))
 
-                if (!nextValue) {
-                  // Cambiando a fijo: buscar si ya hay uno activo en Supabase
-                  const { data } = await supabase
-                    .from('qr_tokens')
-                    .select('token, expires_at')
-                    .eq('is_fixed', true)
-                    .gt('expires_at', new Date().toISOString())
-                    .order('expires_at', { ascending: false })
-                    .limit(1)
-                    .maybeSingle()
+                  if (!nextValue) {
+                    const { data } = await supabase
+                      .from('qr_tokens')
+                      .select('token, expires_at')
+                      .eq('is_fixed', true)
+                      .gt('expires_at', new Date().toISOString())
+                      .order('expires_at', { ascending: false })
+                      .limit(1)
+                      .maybeSingle()
 
-                  if (data) {
-                    setToken(data.token)
-                    setNextRefreshAt(new Date(data.expires_at))
+                    if (data) {
+                      setToken(data.token)
+                      setNextRefreshAt(new Date(data.expires_at))
+                    } else {
+                      regenerate(false)
+                    }
                   } else {
-                    regenerate(false)
+                    regenerate(true)
                   }
-                } else {
-                  // Cambiando a auto: generar token nuevo normal
-                  regenerate(true)
-                }
-              }}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className={`flex items-center gap-3 p-2 rounded-2xl border shadow-sm transition-all ${autoRefresh
-                ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
-                : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
-                }`}
-            >
-              <div className={`px-4 py-2 flex items-center gap-2 ${autoRefresh ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'
-                }`}>
-                {autoRefresh ? (
-                  <Unlock className="w-4 h-4 animate-pulse" />
-                ) : (
-                  <Lock className="w-4 h-4" />
-                )}
-                <span className="text-xs font-bold uppercase tracking-widest">
-                  {autoRefresh ? 'Auto-Renovación Activa' : 'QR Fijo para Imprimir'}
-                </span>
-              </div>
-            </motion.button>
+                }}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className={`flex items-center gap-3 p-2 rounded-2xl border shadow-sm transition-all ${autoRefresh
+                  ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800'
+                  : 'bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800'
+                  }`}
+              >
+                <div className={`px-4 py-2 flex items-center gap-2 ${autoRefresh ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'
+                  }`}>
+                  {autoRefresh ? (
+                    <Unlock className="w-4 h-4 animate-pulse" />
+                  ) : (
+                    <Lock className="w-4 h-4" />
+                  )}
+                  <span className="text-xs font-bold uppercase tracking-widest">
+                    {autoRefresh ? 'Auto-Renovación Activa' : 'QR Fijo para Imprimir'}
+                  </span>
+                </div>
+              </motion.button>
+            )}
           </header>
 
           <div className="grid lg:grid-cols-2 gap-8 items-start">
@@ -457,7 +475,7 @@ export default function QRAcceso() {
 
 
 
-                  {!autoRefresh && (
+                  {isAdmin && !autoRefresh && (
                     <div className="grid grid-cols-2 gap-3 w-full">
                       <button
                         onClick={downloadQR}
@@ -486,90 +504,94 @@ export default function QRAcceso() {
                     Registrar Acceso Invitado
                   </button>
 
-                  <button
-                    onClick={() => regenerate()}
-                    className="w-full py-3 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-widest hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    Generar Nuevo Token al Instante
-                  </button>
+                  {isAdmin && (
+                    <button
+                      onClick={() => regenerate()}
+                      className="w-full py-3 rounded-2xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-black uppercase tracking-widest hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      Generar Nuevo Token al Instante
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
 
             {/* Instructions */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="space-y-6"
-            >
-              <div className="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/20 backdrop-blur-xl p-8">
-                <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
-                  <ShieldCheck className="w-6 h-6 text-emerald-500" />
-                  Instrucciones de Instalación
-                </h3>
-                <div className="space-y-6">
-                  {[
-                    {
-                      icon: <Printer className="w-5 h-5" />,
-                      title: 'Imprime en Alta Calidad',
-                      desc: 'Descarga el código en formato PNG y utiliza una impresora láser para mayor nitidez. Tamaño recomendado: A4 o A5.'
-                    },
-                    {
-                      icon: <CheckCircle2 className="w-5 h-5" />,
-                      title: 'Colocación Estratégica',
-                      desc: 'Ubica el código en un soporte vertical a 1.5m de altura en la entrada del gimnasio, evitando reflejos directos.'
-                    },
-                    {
-                      icon: <Smartphone className="w-5 h-5" />,
-                      title: 'Validación de Miembros',
-                      desc: 'Los alumnos deberán escanear este código con su cámara. El sistema validará su estado de pago automáticamente.'
-                    },
-                  ].map((step, idx) => (
-                    <div key={idx} className="flex gap-4 group">
-                      <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:border-blue-200 dark:group-hover:border-blue-800 transition-colors">
-                        {step.icon}
+            {isAdmin && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+                className="space-y-6"
+              >
+                <div className="rounded-[32px] border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/20 backdrop-blur-xl p-8">
+                  <h3 className="text-lg font-black text-slate-900 dark:text-white mb-6 flex items-center gap-2">
+                    <ShieldCheck className="w-6 h-6 text-emerald-500" />
+                    Instrucciones de Instalación
+                  </h3>
+                  <div className="space-y-6">
+                    {[
+                      {
+                        icon: <Printer className="w-5 h-5" />,
+                        title: 'Imprime en Alta Calidad',
+                        desc: 'Descarga el código en formato PNG y utiliza una impresora láser para mayor nitidez. Tamaño recomendado: A4 o A5.'
+                      },
+                      {
+                        icon: <CheckCircle2 className="w-5 h-5" />,
+                        title: 'Colocación Estratégica',
+                        desc: 'Ubica el código en un soporte vertical a 1.5m de altura en la entrada del gimnasio, evitando reflejos directos.'
+                      },
+                      {
+                        icon: <Smartphone className="w-5 h-5" />,
+                        title: 'Validación de Miembros',
+                        desc: 'Los alumnos deberán escanear este código con su cámara. El sistema validará su estado de pago automáticamente.'
+                      },
+                    ].map((step, idx) => (
+                      <div key={idx} className="flex gap-4 group">
+                        <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-center text-slate-400 group-hover:text-blue-500 group-hover:border-blue-200 dark:group-hover:border-blue-800 transition-colors">
+                          {step.icon}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-slate-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                            {step.title}
+                          </h4>
+                          <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                            {step.desc}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h4 className="font-bold text-slate-900 dark:text-white mb-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                          {step.title}
-                        </h4>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
-                          {step.desc}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              <div className={`rounded-3xl border p-6 flex gap-4 ${autoRefresh
-                ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20'
-                : 'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20'
-                }`}>
-                <AlertCircle className={`w-6 h-6 flex-shrink-0 ${autoRefresh
-                  ? 'text-amber-600 dark:text-amber-500'
-                  : 'text-blue-600 dark:text-blue-500'
-                  }`} />
-                <div>
-                  <h5 className={`font-bold text-sm mb-1 ${autoRefresh
-                    ? 'text-amber-900 dark:text-amber-400'
-                    : 'text-blue-900 dark:text-blue-400'
-                    }`}>
-                    {autoRefresh ? 'Seguridad del Token' : 'Modo QR Fijo'}
-                  </h5>
-                  <p className={`text-xs font-medium leading-relaxed ${autoRefresh
-                    ? 'text-amber-800/70 dark:text-amber-500/70'
-                    : 'text-blue-800/70 dark:text-blue-500/70'
-                    }`}>
-                    {autoRefresh
-                      ? 'Este código QR contiene un token que expira automáticamente cada 30 segundos para mayor seguridad. Si sospechas que el código ha sido compartido digitalmente, usa el botón "Regenerar" para invalidarlo inmediatamente.'
-                      : 'El QR está configurado en modo FIJO, ideal para imprimir y colocar en la entrada. Este código NO expira y funcionará permanentemente. Podés imprimirlo con confianza. Click en el toggle arriba para volver al modo auto-renovación si lo necesitás.'}
-                  </p>
+                <div className={`rounded-3xl border p-6 flex gap-4 ${autoRefresh
+                  ? 'bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-900/20'
+                  : 'bg-blue-50 dark:bg-blue-900/10 border-blue-100 dark:border-blue-900/20'
+                  }`}>
+                  <AlertCircle className={`w-6 h-6 flex-shrink-0 ${autoRefresh
+                    ? 'text-amber-600 dark:text-amber-500'
+                    : 'text-blue-600 dark:text-blue-500'
+                    }`} />
+                  <div>
+                    <h5 className={`font-bold text-sm mb-1 ${autoRefresh
+                      ? 'text-amber-900 dark:text-amber-400'
+                      : 'text-blue-900 dark:text-blue-400'
+                      }`}>
+                      {autoRefresh ? 'Seguridad del Token' : 'Modo QR Fijo'}
+                    </h5>
+                    <p className={`text-xs font-medium leading-relaxed ${autoRefresh
+                      ? 'text-amber-800/70 dark:text-amber-500/70'
+                      : 'text-blue-800/70 dark:text-blue-500/70'
+                      }`}>
+                      {autoRefresh
+                        ? 'Este código QR contiene un token que expira automáticamente cada 30 segundos para mayor seguridad. Si sospechas que el código ha sido compartido digitalmente, usa el botón "Regenerar" para invalidarlo inmediatamente.'
+                        : 'El QR está configurado en modo FIJO, ideal para imprimir y colocar en la entrada. Este código NO expira y funcionará permanentemente. Podés imprimirlo con confianza. Click en el toggle arriba para volver al modo auto-renovación si lo necesitás.'}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
+              </motion.div>
+            )}
           </div>
         </div>
       </div>
