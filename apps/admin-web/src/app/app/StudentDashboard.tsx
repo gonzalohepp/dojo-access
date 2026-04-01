@@ -7,6 +7,7 @@ import {
     BookOpen, Activity, History, QrCode
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
+import { todayAR } from '@/lib/dateUtils'
 import { toast } from 'sonner'
 import MemberGrades from '@/app/components/profile/MemberGrades'
 
@@ -93,7 +94,7 @@ export default function StudentDashboard({ user }: { user: any }) {
         setCheckingIn(classId)
         try {
             // 1. Check if already checked in today
-            const today = new Date().toISOString().slice(0, 10)
+            const today = todayAR() // YYYY-MM-DD forzado Argentina
             const { data: existing } = await supabase
                 .from('class_attendance')
                 .select('*')

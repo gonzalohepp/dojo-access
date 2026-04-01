@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getPaymentMultiplier } from '@/lib/pricing'
+import { todayAR } from '@/lib/dateUtils'
 
 type ClassRow = {
     id: number
@@ -291,7 +292,7 @@ export default function AsistenciaVivoPage() {
 
             setClasses(clsData || [])
 
-            const today = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD local
+            const today = todayAR() // YYYY-MM-DD forzado Argentina
             const { data: attData } = await supabase
                 .from('class_attendance')
                 .select(`

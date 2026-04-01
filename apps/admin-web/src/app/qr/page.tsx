@@ -22,6 +22,7 @@ import AdminLayout from '../layouts/AdminLayout'
 import { supabase } from '@/lib/supabaseClient'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
+import { nowAR_ISO } from '@/lib/dateUtils'
 
 /* ================= HELPERS ================= */
 
@@ -624,7 +625,7 @@ export default function QRAcceso() {
                     user_id: null,
                     result: 'autorizado',
                     reason: 'Acceso invitado manual',
-                    scanned_at: new Date().toISOString(),
+                    scanned_at: nowAR_ISO(),
                   })
                   setShowGuestConfirm(false)
                   if (!error) setShowGuestSuccess(true)

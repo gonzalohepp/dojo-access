@@ -13,6 +13,7 @@ import Image from 'next/image'
 import { toast } from 'sonner'
 import { MemberRow as BaseMemberRow } from '@/types/member'
 import { getPaymentMultiplier } from '@/lib/pricing'
+import { todayAR, nowAR_ISO } from '@/lib/dateUtils'
 
 export const dynamic = 'force-dynamic'
 
@@ -169,7 +170,7 @@ function ValidateContent() {
       setIsFinalizing(true)
       try {
         if (selectedIds.length > 0) {
-          const today = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD local
+          const today = todayAR() // YYYY-MM-DD forzado Argentina
           const { error: attErr } = await supabase.from('class_attendance').insert(
             selectedIds.map((id) => ({
               user_id: m.user_id,
@@ -184,7 +185,7 @@ function ValidateContent() {
           user_id: m.user_id,
           result: success ? 'autorizado' : 'denegado',
           reason,
-          scanned_at: new Date().toISOString(),
+          scanned_at: nowAR_ISO(),
         })
 
         setAllowed(success)
