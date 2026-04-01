@@ -291,7 +291,7 @@ export default function AsistenciaVivoPage() {
 
             setClasses(clsData || [])
 
-            const today = new Date().toISOString().slice(0, 10)
+            const today = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD local
             const { data: attData } = await supabase
                 .from('class_attendance')
                 .select(`

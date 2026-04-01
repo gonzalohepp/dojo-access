@@ -169,7 +169,7 @@ function ValidateContent() {
       setIsFinalizing(true)
       try {
         if (selectedIds.length > 0) {
-          const today = new Date().toISOString().slice(0, 10)
+          const today = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD local
           const { error: attErr } = await supabase.from('class_attendance').insert(
             selectedIds.map((id) => ({
               user_id: m.user_id,

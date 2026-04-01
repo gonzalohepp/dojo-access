@@ -98,12 +98,12 @@ export default function MetricasPage() {
         .order('paid_at', { ascending: true })
       setPayments((pays || []) as Payment[])
 
-      const start = today().toISOString()
+      const todayLocal = new Date().toLocaleDateString('sv-SE') // YYYY-MM-DD local
       const { count: accCount } = await supabase
         .from('access_logs')
         .select('*', { count: 'exact', head: true })
         .eq('result', 'autorizado')
-        .gte('scanned_at', start)
+        .gte('scanned_at', todayLocal + 'T00:00:00')
       setAccessLogsToday(accCount || 0)
 
       const { data: recentAcc } = await supabase
@@ -291,17 +291,17 @@ export default function MetricasPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => exportToExcel(payments, `Pagos_${new Date().toISOString().slice(0, 10)}`)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold uppercase tracking-widest text-slate-300 hover:bg-slate-700 transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold uppercase tracking-widest text-slate-300 hover:bg-slate-700 transition-all"
               >
                 <Download className="w-3.5 h-3.5" />
-                Pagos
+                <span className="hidden sm:inline">Pagos</span>
               </button>
               <button
                 onClick={() => exportToExcel(recentAccesses, `Asistencia_${new Date().toISOString().slice(0, 10)}`)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold uppercase tracking-widest text-slate-300 hover:bg-slate-700 transition-all"
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 border border-slate-700 text-xs font-bold uppercase tracking-widest text-slate-300 hover:bg-slate-700 transition-all"
               >
                 <FileDown className="w-3.5 h-3.5" />
-                Asistencia
+                <span className="hidden sm:inline">Asistencia</span>
               </button>
             </div>
           </header>
@@ -347,7 +347,7 @@ export default function MetricasPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-6 rounded-2xl bg-slate-900 border border-slate-800"
+              className="p-4 md:p-6 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden"
             >
               <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2 uppercase tracking-widest">
                 <span className="p-1.5 rounded-lg bg-orange-900/30 text-orange-400">
@@ -355,7 +355,7 @@ export default function MetricasPage() {
                 </span>
                 Horarios Pico (30d)
               </h3>
-              <div className="h-[260px] w-full">
+              <div className="h-[200px] md:h-[260px] w-full -ml-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={peakHours}>
                     <defs>
@@ -378,7 +378,7 @@ export default function MetricasPage() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-6 rounded-2xl bg-slate-900 border border-slate-800"
+              className="p-4 md:p-6 rounded-2xl bg-slate-900 border border-slate-800"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <h3 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-widest">
@@ -430,7 +430,7 @@ export default function MetricasPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="p-6 rounded-2xl bg-slate-900 border border-slate-800"
+              className="p-4 md:p-6 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden"
             >
               <h3 className="text-sm font-black text-white mb-4 flex items-center gap-2 uppercase tracking-widest">
                 <span className="p-1.5 rounded-lg bg-indigo-900/30 text-indigo-400">
@@ -438,14 +438,14 @@ export default function MetricasPage() {
                 </span>
                 Alumnos Activos por Clase
               </h3>
-              <div className="h-[260px] w-full">
+              <div className="h-[200px] md:h-[260px] w-full -ml-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={attendanceByClass}>
                     <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#1e293b" />
                     <XAxis dataKey="className" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} dy={10} />
                     <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 10, fontWeight: 700 }} />
                     <Tooltip contentStyle={{ background: '#0f172a', border: '1px solid #1e293b', borderRadius: '12px', fontSize: '12px', fontWeight: 700 }} />
-                    <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={40}>
+                    <Bar dataKey="count" radius={[6, 6, 0, 0]} barSize={30}>
                       {attendanceByClass.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
@@ -460,20 +460,20 @@ export default function MetricasPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="p-6 rounded-2xl bg-slate-900 border border-slate-800"
+              className="p-4 md:p-6 rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden"
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <h3 className="text-sm font-black text-white flex items-center gap-2 uppercase tracking-widest">
                   <span className="p-1.5 rounded-lg bg-emerald-900/30 text-emerald-400">
                     <DollarSign className="w-4 h-4" />
                   </span>
                   Ingresos (30d)
                 </h3>
-                <span className={`text-xs font-black px-2 py-1 rounded-full ${growth >= 0 ? 'bg-emerald-900/30 text-emerald-400' : 'bg-red-900/30 text-red-400'}`}>
+                <span className={`text-[10px] font-black px-2 py-1 rounded-full self-start sm:self-auto ${growth >= 0 ? 'bg-emerald-900/30 text-emerald-400' : 'bg-red-900/30 text-red-400'}`}>
                   {growth > 0 ? '+' : ''}{growth.toFixed(1)}% vs mes ant.
                 </span>
               </div>
-              <div className="h-[260px] w-full">
+              <div className="h-[200px] md:h-[260px] w-full -ml-2">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={revenueTrend}>
                     <defs>
