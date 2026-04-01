@@ -321,26 +321,10 @@ export default function SubscriptionModal({
                                     </div>
                                 </div>
 
-                                <button
-                                    disabled={!principalClass || total === 0 || processing}
-                                    onClick={handlePayment}
-                                    className="w-full md:w-auto transition-all hover:scale-105 active:scale-95 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center"
-                                >
-                                    {processing ? (
-                                        <div className="h-16 px-8 rounded-2xl bg-[#009EE3] flex items-center justify-center text-white">
-                                            <Loader2 className="w-5 h-5 animate-spin" />
-                                        </div>
-                                    ) : (
-                                        <div className="rounded-2xl overflow-hidden shadow-lg shadow-blue-500/20 bg-[#009EE3] w-full h-16 relative flex justify-center">
-                                            <Image
-                                                src="/mp_button.png"
-                                                alt="Pagar con Mercado Pago"
-                                                fill
-                                                className="object-contain"
-                                            />
-                                        </div>
-                                    )}
-                                </button>
+                                {/* Botón MP oculto por ahora */}
+                                <div className="w-full md:w-auto px-8 h-16 rounded-2xl bg-slate-700 flex items-center justify-center text-slate-400 font-bold text-sm uppercase tracking-widest opacity-50 cursor-not-allowed">
+                                    Pago online próximamente
+                                </div>
                             </div>
                         </div>
 

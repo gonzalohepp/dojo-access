@@ -687,7 +687,8 @@ function ValidateContent() {
                     <p className="text-red-400 font-medium text-lg">{resultMsg || 'No autorizado'}</p>
 
                     <div className="pt-6 flex flex-col gap-3">
-                      {(member?.status === 'vencido' ||
+                      {/* Botón MP oculto por ahora */}
+                      {/* {(member?.status === 'vencido' ||
                         member?.status === 'inactivo' ||
                         resultMsg.includes('vencida') ||
                         resultMsg.includes('inactive')) && (
@@ -719,7 +720,7 @@ function ValidateContent() {
                               />
                             </div>
                           </button>
-                        )}
+                        )} */}
 
                       <Button
                         onClick={() => {

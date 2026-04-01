@@ -397,7 +397,8 @@ export default function PaymentModal({
                     >
                       <option value="efectivo" className="text-slate-900">Efectivo 💵</option>
                       <option value="transferencia" className="text-slate-900">Transferencia 🏦</option>
-                      <option value="mercadopago" className="text-slate-900">Mercado Pago 📱</option>
+                      {/* Mercado Pago oculto por ahora */}
+                      {/* <option value="mercadopago" className="text-slate-900">Mercado Pago 📱</option> */}
                     </select>
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                   </div>

@@ -628,13 +628,14 @@ export default function ProfilePage() {
                           <p className="text-xs font-bold text-slate-400 mt-2">
                             {getPaymentStatusMessage(member?.next_payment_due, member?.role)}
                           </p>
-                          {!isSpecialRole && !isLifetime && (
+                          {/* Botón MP oculto por ahora */}
+                          {/* {!isSpecialRole && !isLifetime && (
                             <div className="mt-4">
                               <button onClick={() => setShowPayModal(true)} className="w-full h-14 relative transition-all hover:scale-105 active:scale-95 rounded-2xl overflow-hidden shadow-lg bg-[#009EE3]">
                                 <Image src="/mp_button.png" alt="Pagar Suscripción" fill className="object-contain" />
                               </button>
                             </div>
-                          )}
+                          )} */}
                         </motion.div>
                       </div>
 

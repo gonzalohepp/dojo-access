@@ -78,7 +78,7 @@ export default function ReportesPage() {
                     <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10 self-start md:self-center">
                         <button
                             onClick={() => setActiveTab('asistencia')}
-                            className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'asistencia'
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'asistencia'
                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                                 : 'text-slate-500 hover:text-slate-300'
                                 }`}
@@ -87,7 +87,7 @@ export default function ReportesPage() {
                         </button>
                         <button
                             onClick={() => setActiveTab('ausencia')}
-                            className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'ausencia'
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'ausencia'
                                 ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                                 : 'text-slate-500 hover:text-slate-300'
                                 }`}
@@ -256,38 +256,38 @@ function AsistenciaReport() {
                     <button
                         key={p}
                         onClick={() => { setPeriod(p); setVisibleCount(50) }}
-                        className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${period === p
+                        className={`px-3 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${period === p
                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                             : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-600'
                             }`}
                     >
-                        {p === 'today' ? 'Hoy' : p === 'week' ? 'Semana' : p === 'month' ? 'Mes' : 'Personalizado'}
+                        {p === 'today' ? 'Hoy' : p === 'week' ? 'Semana' : p === 'month' ? 'Mes' : 'Rango'}
                     </button>
                 ))}
                 {period === 'custom' && (
-                    <div className="flex items-center gap-2 ml-2">
+                    <div className="flex items-center gap-2 w-full sm:w-auto mt-1 sm:mt-0">
                         <input type="date" value={customFrom} onChange={e => setCustomFrom(e.target.value)}
-                            className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                            className="flex-1 sm:flex-none px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
                         <span className="text-slate-600 text-xs font-bold">→</span>
                         <input type="date" value={customTo} onChange={e => setCustomTo(e.target.value)}
-                            className="px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
+                            className="flex-1 sm:flex-none px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/50" />
                     </div>
                 )}
                 <div className="ml-auto">
                     <Button
                         onClick={handleExport}
                         disabled={filteredRecords.length === 0}
-                        className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-4 py-5 font-bold text-xs uppercase tracking-widest transition-all gap-2 shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                        className="bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-3 sm:px-4 py-5 font-bold text-xs uppercase tracking-widest transition-all gap-1.5 shadow-lg shadow-blue-500/20 disabled:opacity-50"
                     >
                         <FileDown className="w-4 h-4" />
-                        Excel
+                        <span className="hidden sm:inline">Excel</span>
                     </Button>
                 </div>
             </div>
 
             {/* Filters row */}
-            <div className="rounded-xl bg-slate-900 border border-slate-800 p-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="rounded-xl bg-slate-900 border border-slate-800 p-3 md:p-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
                     <div className="relative">
                         <Layers className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 z-10" />
                         <select
@@ -310,7 +310,7 @@ function AsistenciaReport() {
                             {memberOptions.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                         </select>
                     </div>
-                    <div className="relative">
+                    <div className="relative sm:col-span-2 md:col-span-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600 z-10" />
                         <input
                             type="text"
@@ -338,17 +338,18 @@ function AsistenciaReport() {
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead>
+                            <thead className="hidden sm:table-header-group">
                                 <tr className="border-b border-slate-800 bg-slate-800/50">
-                                    <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Fecha / Hora</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Alumno</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Clase</th>
+                                    <th className="px-3 md:px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Fecha / Hora</th>
+                                    <th className="px-3 md:px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Alumno</th>
+                                    <th className="px-3 md:px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Clase</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800/50">
                                 {visibleRecords.map((r) => (
-                                    <tr key={r.id} className="hover:bg-slate-800/30 transition-colors">
-                                        <td className="px-4 py-3">
+                                    <tr key={r.id} className="hover:bg-slate-800/30 transition-colors block sm:table-row border-b border-slate-800/50 sm:border-0 py-2 sm:py-0">
+                                        <td className="px-3 md:px-4 py-2 sm:py-3 block sm:table-cell">
+                                            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest sm:hidden">Fecha</span>
                                             <div className="flex flex-col">
                                                 <span className="text-white font-bold text-sm">{new Date(r.date + 'T12:00:00').toLocaleDateString('es-AR', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
                                                 <span className="text-[10px] text-slate-600 flex items-center gap-1 font-bold">
@@ -357,7 +358,7 @@ function AsistenciaReport() {
                                                 </span>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-3 md:px-4 py-2 sm:py-3 block sm:table-cell">
                                             <div className="flex items-center gap-2">
                                                 <div className="w-7 h-7 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center font-bold text-blue-400 text-[10px] uppercase">{r.member_name?.[0]}</div>
                                                 <div className="flex flex-col min-w-0">
@@ -366,7 +367,7 @@ function AsistenciaReport() {
                                                 </div>
                                             </div>
                                         </td>
-                                        <td className="px-4 py-3">
+                                        <td className="px-3 md:px-4 py-2 sm:py-3 block sm:table-cell">
                                             <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 text-[10px] font-black uppercase tracking-widest border border-slate-700">{r.class_name}</span>
                                         </td>
                                     </tr>
@@ -466,20 +467,20 @@ function AusenciaReport() {
     return (
         <div className="space-y-5">
             {/* Controls */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
                 <Button
                     onClick={() => exportToExcel(absentMembers, `Ausencias_${new Date().toISOString().slice(0, 10)}`)}
-                    className="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-xl px-4 py-5 font-bold text-xs uppercase tracking-widest transition-all gap-2"
+                    className="bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 rounded-xl px-3 py-5 font-bold text-xs uppercase tracking-widest transition-all gap-1.5"
                 >
                     <FileDown className="w-4 h-4 text-blue-400" />
-                    Excel
+                    <span className="hidden sm:inline">Excel</span>
                 </Button>
 
-                <div className="relative flex-1 min-w-[220px]">
+                <div className="relative flex-1 min-w-[180px]">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-600" />
                     <input
                         type="text"
-                        placeholder="Buscar por nombre o email..."
+                        placeholder="Buscar..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="w-full pl-10 pr-4 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-medium text-sm"
@@ -521,22 +522,22 @@ function AusenciaReport() {
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left">
-                            <thead>
+                            <thead className="hidden sm:table-header-group">
                                 <tr className="border-b border-slate-800 bg-slate-800/50">
-                                    <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Alumno</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Última Asistencia</th>
-                                    <th className="px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Acciones</th>
+                                    <th className="px-3 md:px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Alumno</th>
+                                    <th className="px-3 md:px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest">Última Asistencia</th>
+                                    <th className="px-3 md:px-4 py-3 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Acciones</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-800/50">
                                 {absentMembers.map((m) => (
-                                    <tr key={m.user_id} className="hover:bg-slate-800/30 transition-colors group">
-                                        <td className="px-4 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-blue-400 text-xs group-hover:scale-110 transition-transform">{m.first_name?.[0]}{m.last_name?.[0]}</div>
-                                                <div>
-                                                    <div className="font-bold text-white leading-tight uppercase tracking-tight">{m.first_name} {m.last_name}</div>
-                                                    <div className="text-slate-600 text-[10px] font-medium">{m.email}</div>
+                                    <tr key={m.user_id} className="hover:bg-slate-800/30 transition-colors group block sm:table-row border-b border-slate-800/50 sm:border-0 py-2 sm:py-0">
+                                        <td className="px-3 md:px-4 py-2 sm:py-4 block sm:table-cell">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center font-bold text-blue-400 text-xs flex-shrink-0">{m.first_name?.[0]}{m.last_name?.[0]}</div>
+                                                <div className="min-w-0">
+                                                    <div className="font-bold text-white leading-tight uppercase tracking-tight text-sm truncate">{m.first_name} {m.last_name}</div>
+                                                    <div className="text-slate-600 text-[10px] font-medium truncate">{m.email}</div>
                                                 </div>
                                             </div>
                                         </td>
@@ -550,10 +551,10 @@ function AusenciaReport() {
                                                 <div className="text-red-500 font-black text-xs uppercase tracking-widest">Sin registros</div>
                                             )}
                                         </td>
-                                        <td className="px-4 py-4 text-right">
+                                        <td className="px-3 md:px-4 py-2 sm:py-4 block sm:table-cell text-right sm:text-right">
                                             <Button
                                                 variant="ghost"
-                                                className="bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/20 rounded-xl px-4 py-4 font-bold text-xs uppercase tracking-widest transition-all gap-2"
+                                                className="bg-blue-500/10 hover:bg-blue-500 text-blue-400 hover:text-white border border-blue-500/20 rounded-xl px-3 sm:px-4 py-3 sm:py-4 font-bold text-xs uppercase tracking-widest transition-all gap-1.5"
                                                 onClick={() => {
                                                     const msg = encodeURIComponent(`Hola ${m.first_name}, te extrañamos en Beleza Dojo! 🥋 Notamos que hace unos días no vienes a entrenar. ¿Todo bien?`)
                                                     const phone = m.phone?.replace(/\D/g, '') || ''
