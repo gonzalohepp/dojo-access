@@ -50,7 +50,7 @@ export default function MemberForm({
         // These will be corrected in the class_enrollments fetch below
         principal_class: member.class_ids?.[0] ?? null,
         additional_classes: member.class_ids?.slice(1) ?? [],
-        next_payment_due: member.end_date ? new Date(member.end_date).toISOString().slice(0, 10) : new Date(addMonths(new Date(), 1)).toISOString().slice(0, 10),
+        next_payment_due: (member.next_payment_due || member.end_date) ? new Date((member.next_payment_due || member.end_date) + 'T12:00:00').toISOString().slice(0, 10) : lastDayOfMonth(new Date()).toISOString().slice(0, 10),
         emergency_contact: member.emergency_phone ?? '',
         notes: member.notes ?? '',
         role: member.role ?? 'member',
