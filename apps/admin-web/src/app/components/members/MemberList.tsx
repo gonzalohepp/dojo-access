@@ -1,6 +1,6 @@
 'use client'
 
-import { Calendar, Mail, Phone, Pencil, Trash2, User as UserIcon, Hash, Clock, MessageCircle, X } from 'lucide-react'
+import { Calendar, Mail, Phone, Pencil, Trash2, User as UserIcon, Hash, Clock, MessageCircle, X, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { useState, useEffect, useCallback } from 'react'
@@ -22,12 +22,14 @@ function ActionSheet({
   onClose,
   onEdit,
   onDelete,
+  onQuickRenew,
 }: {
   open: boolean
   member: MemberRow | null
   onClose: () => void
   onEdit: (m: MemberRow) => void
   onDelete: (id: string) => void
+  onQuickRenew: (m: MemberRow) => void
 }) {
   useEffect(() => {
     if (!open) return
@@ -101,6 +103,13 @@ function ActionSheet({
 
             {/* Acciones */}
             <div className="p-4 space-y-2">
+              <button
+                onClick={() => { onQuickRenew(member); onClose() }}
+                className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl bg-emerald-600 text-white font-bold text-sm active:scale-95 transition-all"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Renovar vencimiento
+              </button>
               <button
                 onClick={() => { onEdit(member); onClose() }}
                 className="w-full flex items-center gap-3 px-5 py-4 rounded-2xl bg-slate-900 dark:bg-blue-600 text-white font-bold text-sm active:scale-95 transition-all"
@@ -227,11 +236,13 @@ function DesktopCard({
   idx,
   onEdit,
   onDelete,
+  onQuickRenew,
 }: {
   m: MemberRow
   idx: number
   onEdit: (m: MemberRow) => void
   onDelete: (id: string) => void
+  onQuickRenew: (m: MemberRow) => void
 }) {
   const fullName = [m.first_name, m.last_name].filter(Boolean).join(' ').trim()
   const isActive = m.status === 'activo'
@@ -334,31 +345,40 @@ function DesktopCard({
           </div>
         </div>
 
-        <div className="mt-8 flex gap-2">
+        <div className="mt-8 space-y-2">
           <button
-            onClick={() => onEdit(m)}
-            className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-blue-600 transition-colors shadow-lg shadow-slate-900/10"
+            onClick={() => onQuickRenew(m)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-600 text-white font-black uppercase tracking-wider text-xs hover:bg-emerald-700 active:scale-95 transition-all shadow-md shadow-emerald-600/10"
           >
-            <Pencil className="w-3 h-3" />
-            EDITAR
+            <RefreshCw className="w-3.5 h-3.5" />
+            RENOVAR VENCIMIENTO
           </button>
-          <button
-            onClick={() => {
-              const name = fullName || 'Alumno'
-              const msg = `Hola ${name}! Te escribimos de Beleza Dojo. 🥋`
-              const phone = m.phone?.replace(/\D/g, '') || ''
-              window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
-            }}
-            className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-emerald-500 hover:border-emerald-200 hover:bg-emerald-50 transition-all"
-          >
-            <MessageCircle className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => onDelete(m.user_id)}
-            className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => onEdit(m)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-blue-600 transition-colors shadow-lg shadow-slate-900/10"
+            >
+              <Pencil className="w-3 h-3" />
+              EDITAR
+            </button>
+            <button
+              onClick={() => {
+                const name = fullName || 'Alumno'
+                const msg = `Hola ${name}! Te escribimos de Beleza Dojo. 🥋`
+                const phone = m.phone?.replace(/\D/g, '') || ''
+                window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank')
+              }}
+              className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-emerald-500 hover:border-emerald-200 hover:bg-emerald-50 transition-all"
+            >
+              <MessageCircle className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => onDelete(m.user_id)}
+              className="p-2.5 rounded-xl border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition-all"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>
@@ -371,11 +391,13 @@ export default function MemberList({
   loading,
   onEdit,
   onDelete,
+  onQuickRenew,
 }: {
   members: MemberRow[]
   loading: boolean
   onEdit: (m: MemberRow) => void
   onDelete: (id: string) => void
+  onQuickRenew: (m: MemberRow) => void
 }) {
   const [sheetMember, setSheetMember] = useState<MemberRow | null>(null)
 
@@ -419,6 +441,7 @@ export default function MemberList({
             idx={idx}
             onEdit={onEdit}
             onDelete={onDelete}
+            onQuickRenew={onQuickRenew}
           />
         ))}
       </div>
@@ -430,6 +453,7 @@ export default function MemberList({
         onClose={() => setSheetMember(null)}
         onEdit={onEdit}
         onDelete={onDelete}
+        onQuickRenew={onQuickRenew}
       />
     </>
   )

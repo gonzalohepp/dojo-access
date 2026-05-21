@@ -15,6 +15,8 @@ import { toast } from 'sonner'
 import MemberFilters from '../components/members/MemberFilters'
 import MemberList from '../components/members/MemberList'
 import MemberModal from '../components/members/MemberModal'
+import { todayAR } from '@/lib/dateUtils'
+import { addMonths, lastDayOfMonth } from 'date-fns'
 
 import { MemberRow as Row, ClassRow, MemberPayload } from '@/types/member'
 
@@ -161,6 +163,59 @@ function MembersContent() {
   const onCreate = () => { setEditing(null); setOpen(true) }
   const onEdit = (m: Row) => { setEditing(m); setOpen(true) }
   const onDelete = async (user_id: string) => { setConfirmingId(user_id) }
+
+  const onQuickRenew = async (m: Row) => {
+    const fullName = [m.first_name, m.last_name].filter(Boolean).join(' ').trim() || 'Socio'
+    const confirm = window.confirm(`¿Confirmar renovación rápida de vencimiento para ${fullName}?`)
+    if (!confirm) return
+
+    try {
+      setLoading(true)
+      const todayStr = todayAR()
+      const todayDate = new Date(todayStr + 'T12:00:00')
+      let baseDate: Date
+
+      if (m.next_payment_due) {
+        const currentExpiry = new Date(m.next_payment_due + 'T12:00:00')
+        if (currentExpiry < todayDate) {
+          baseDate = todayDate
+        } else {
+          baseDate = currentExpiry
+        }
+      } else {
+        baseDate = todayDate
+      }
+
+      const newExpirationStr = lastDayOfMonth(addMonths(baseDate, 1)).toISOString().slice(0, 10)
+
+      const { data: existingMem } = await supabase
+        .from('memberships')
+        .select('start_date')
+        .eq('member_id', m.user_id)
+        .maybeSingle()
+
+      const finalStartDate = existingMem?.start_date || todayStr
+
+      const { error: memErr } = await supabase.from('memberships').upsert({
+        member_id: m.user_id,
+        type: 'monthly',
+        start_date: finalStartDate,
+        last_payment_date: todayStr,
+        end_date: newExpirationStr,
+        notes: 'Renovación rápida manual desde administración',
+      }, { onConflict: 'member_id' })
+
+      if (memErr) throw memErr
+
+      toast.success('Vencimiento renovado correctamente')
+      await load()
+    } catch (error: any) {
+      console.error('[Members] onQuickRenew error:', error)
+      toast.error('Error al renovar vencimiento: ' + error.message)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const actuallyDelete = async () => {
     if (!confirmingId) return
@@ -365,7 +420,7 @@ function MembersContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
           >
-            <MemberList members={paginatedMembers} loading={loading} onEdit={onEdit} onDelete={onDelete} />
+            <MemberList members={paginatedMembers} loading={loading} onEdit={onEdit} onDelete={onDelete} onQuickRenew={onQuickRenew} />
           </motion.div>
 
           {/* Paginación */}
