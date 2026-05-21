@@ -137,16 +137,7 @@ export default function MemberForm({
     }
   }, [form.full_name, manualCode, member?.user_id])
 
-  // Auto-calculate expiration when last_payment_date changes (Fixed to 1 month)
-  useEffect(() => {
-    if (!form.last_payment_date) return
-    const baseDate = new Date(form.last_payment_date + 'T12:00:00')
-    const expiration = lastDayOfMonth(baseDate)
-    setForm(s => ({
-      ...s,
-      next_payment_due: expiration.toISOString().slice(0, 10)
-    }))
-  }, [form.last_payment_date])
+
 
   const setPrincipalClass = (id: number) => {
     setForm(s => ({
@@ -313,7 +304,16 @@ export default function MemberForm({
               type="date"
               lang="es"
               value={form.last_payment_date}
-              onChange={(e) => setForm({ ...form, last_payment_date: e.target.value })}
+              onChange={(e) => {
+                const val = e.target.value
+                const baseDate = new Date(val + 'T12:00:00')
+                const expiration = lastDayOfMonth(baseDate).toISOString().slice(0, 10)
+                setForm(prev => ({
+                  ...prev,
+                  last_payment_date: val,
+                  next_payment_due: expiration
+                }))
+              }}
             />
             <div className="absolute -top-6 left-0 text-[10px] font-black text-slate-400 uppercase tracking-widest">Último Pago / Renovación</div>
           </div>
