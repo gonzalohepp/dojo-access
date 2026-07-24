@@ -65,8 +65,8 @@ export default function SubscriptionModal({
                         .then(({ data }) => {
                             if (data) {
                                 setIsNewMember(!!data.is_new_member)
-                                setNextPaymentDue((data as any).next_payment_due || null)
-                                setMemberRole((data as any).role || null)
+                                setNextPaymentDue(data.next_payment_due || null)
+                                setMemberRole(data.role || null)
                             }
                         })
                 }
@@ -109,43 +109,14 @@ export default function SubscriptionModal({
         try {
             setProcessing(true)
 
-            // Prepare items
-            const items = []
+            if (!principalClass) return
 
-            // Principal
-            const p = classes.find(c => c.id === principalClass)
-            if (p) {
-                items.push({
-                    id: p.id,
-                    title: `Clase Principal: ${p.name} ${multiplier > 1 ? '(Con Recargo)' : ''}`,
-                    price: Math.round(Number(p.price_principal || 0) * multiplier)
-                })
-            }
-
-            // Additional
-            additionalClasses.forEach(id => {
-                const a = classes.find(c => c.id === id)
-                if (a) {
-                    items.push({
-                        id: a.id,
-                        title: `Adicional: ${a.name} ${multiplier > 1 ? '(Con Recargo)' : ''}`,
-                        price: Math.round(Number(a.price_additional || a.price_principal || 0) * multiplier)
-                    })
-                }
-            })
-
-            if (items.length === 0) return
-
-            // Get user info for payer email (best effort, or auth user)
-            const { data: { user } } = await supabase.auth.getUser()
-
+            // El precio final lo calcula el servidor (classes + estado de mora).
+            // Acá solo mandamos qué clases se eligieron.
             const res = await fetch('/api/payments/mp/preference', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    items,
-                    payer_email: user?.email,
-                    user_id: user?.id,
                     principal_id: principalClass,
                     additional_ids: additionalClasses
                 })

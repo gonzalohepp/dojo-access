@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export async function POST(req: Request) {
+    const auth = await requireAdmin()
+    if (auth.error) return auth.error
+
     try {
         const body = await req.json()
         const {
@@ -12,7 +16,6 @@ export async function POST(req: Request) {
             emergency_phone,
             notes,
             access_code,
-            membership_type,
             last_payment_date,
             next_payment_due,
             classes,
@@ -28,22 +31,16 @@ export async function POST(req: Request) {
             process.env.SUPABASE_SERVICE_ROLE_KEY!
         )
 
-        // 1. Create Auth User (or retrieve if exists)
         let userId: string
 
-        // Check if user exists by email first (to avoid invite spam if we just want to link)
-        // Note: admin.createUser will return error if exists, which is fine, we handle it.
         const { data: createdUser, error: createError } = await supabase.auth.admin.createUser({
             email,
-            email_confirm: true, // Auto confirm so they can login immediately if they reset password
+            email_confirm: true,
             user_metadata: { first_name, last_name }
         })
 
         if (createError) {
-            // If user already exists, try to find them
             if (createError.message.includes('already has been registered') || createError.status === 422) {
-                // There isn't a direct "getUserByEmail" in admin api easily exposed without listUsers filtering, 
-                // which is slow? actually listUsers can filter.
                 const { data: listData } = await supabase.auth.admin.listUsers()
                 const found = listData.users.find(u => u.email?.toLowerCase() === email.toLowerCase())
                 if (found) {
@@ -58,7 +55,6 @@ export async function POST(req: Request) {
             userId = createdUser.user.id
         }
 
-        // 2. Create Profile
         const { error: profileError } = await supabase
             .from('profiles')
             .upsert({
@@ -74,13 +70,9 @@ export async function POST(req: Request) {
             }, { onConflict: 'user_id' })
 
         if (profileError) {
-            // If profile already exists (unique constraint), maybe update it? 
-            // For now, let's throw if we can't create the profile as it implies data inconsistency if user existed but profile didn't?
-            // Or if user existed AND profile existed, we probably shouldn't be in "CREATE" flow.
             throw new Error('Error creating profile: ' + profileError.message)
         }
 
-        // 3. Create Membership
         const { error: memErr } = await supabase
             .from('memberships')
             .upsert({
@@ -94,11 +86,10 @@ export async function POST(req: Request) {
 
         if (memErr) throw new Error('Error creating membership: ' + memErr.message)
 
-        // 4. Create Class Enrollments
         if (classes && classes.length > 0) {
             const { error: classErr } = await supabase
                 .from('class_enrollments')
-                .insert(classes.map((c: any) => ({
+                .insert(classes.map((c: { class_id: number; is_principal: boolean }) => ({
                     user_id: userId,
                     class_id: c.class_id,
                     is_principal: c.is_principal
@@ -108,8 +99,9 @@ export async function POST(req: Request) {
         }
 
         return NextResponse.json({ ok: true, userId })
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Unknown error'
         console.error('Create Member Error:', e)
-        return NextResponse.json({ error: e.message }, { status: 500 })
+        return NextResponse.json({ error: message }, { status: 500 })
     }
 }

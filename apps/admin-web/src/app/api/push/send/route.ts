@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
-import webpush from 'web-push'
+import webpush, { WebPushError, type PushSubscription } from 'web-push'
 import { createClient } from '@supabase/supabase-js'
+import { requireCronSecret } from '@/lib/requireCronSecret'
 
 export async function POST(req: Request) {
+    const guard = requireCronSecret(req)
+    if (guard.error) return guard.error
+
     try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -73,8 +77,9 @@ export async function POST(req: Request) {
 
         try {
             webpush.setVapidDetails(subject, publicKey, privateKey)
-        } catch (setErr: any) {
-            console.error('[PushAPI] setVapidDetails failed:', setErr.message)
+        } catch (setErr: unknown) {
+            const message = setErr instanceof Error ? setErr.message : 'Unknown error'
+            console.error('[PushAPI] setVapidDetails failed:', message)
             throw setErr
         }
 
@@ -84,12 +89,12 @@ export async function POST(req: Request) {
             url: url || '/'
         })
 
-        const sendPromises = subs.map((s: any) =>
-            webpush.sendNotification(s.subscription, payload)
+        const sendPromises = subs.map((s: { subscription: unknown }) =>
+            webpush.sendNotification(s.subscription as unknown as PushSubscription, payload)
                 .then(() => console.log('[PushAPI] Notification sent successfully'))
-                .catch(async (err) => {
+                .catch(async (err: unknown) => {
                     console.error('[PushAPI] Error sending notification:', err)
-                    if (err.statusCode === 410 || err.statusCode === 404) {
+                    if (err instanceof WebPushError && (err.statusCode === 410 || err.statusCode === 404)) {
                         console.log('[PushAPI] Cleaning up expired subscription')
                         // Cleanup expired subscription
                         await supabase
@@ -103,8 +108,9 @@ export async function POST(req: Request) {
         await Promise.all(sendPromises)
 
         return NextResponse.json({ success: true, count: subs.length })
-    } catch (error: any) {
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Unknown error'
         console.error('Push Error:', error)
-        return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json({ error: message }, { status: 500 })
     }
 }

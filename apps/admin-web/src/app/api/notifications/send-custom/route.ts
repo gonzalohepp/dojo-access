@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
-import webpush from 'web-push'
+import webpush, { WebPushError, type PushSubscription } from 'web-push'
 import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/requireAdmin'
 
 export async function POST(req: Request) {
+    const auth = await requireAdmin()
+    if (auth.error) return auth.error
+
     try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -17,7 +21,6 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Title and message are required' }, { status: 400 })
         }
 
-        // 1. Determine target user IDs based on selection
         let targetUserIds: string[] = []
 
         if (target === 'custom') {
@@ -26,7 +29,6 @@ export async function POST(req: Request) {
             }
             targetUserIds = [customUserId]
         } else if (target === 'all') {
-            // Target only regular members for "TODOS" to avoid spamming admins/teachers
             const { data, error } = await supabase
                 .from('profiles')
                 .select('user_id')
@@ -35,7 +37,6 @@ export async function POST(req: Request) {
             console.log('[Custom Notification] "all" query (members only) result:', { count: data?.length, error })
             targetUserIds = (data || []).map(p => p.user_id)
         } else if (target === 'active') {
-            // Get active members (exclude admins/teachers to avoid spamming them with member news)
             const { data } = await supabase
                 .from('members_with_status')
                 .select('user_id')
@@ -66,7 +67,6 @@ export async function POST(req: Request) {
             })
         }
 
-        // 3. Send Notifications using Web-Push
         const PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY
         const PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY
         const SUBS_SUBJECT = process.env.VAPID_SUBJECT || 'mailto:admin@beleza-dojo.com'
@@ -80,7 +80,7 @@ export async function POST(req: Request) {
         let devicesReached = 0
         const usersReached = new Set<string>()
 
-        const results = await Promise.all(targetUserIds.map(async (uid) => {
+        await Promise.all(targetUserIds.map(async (uid) => {
             const { data: subs } = await supabase
                 .from('push_subscriptions')
                 .select('subscription')
@@ -97,13 +97,13 @@ export async function POST(req: Request) {
 
             for (const s of subs) {
                 try {
-                    await webpush.sendNotification(s.subscription as any, payload)
+                    await webpush.sendNotification(s.subscription as unknown as PushSubscription, payload)
                     userDevices++
                     devicesReached++
                     usersReached.add(uid)
-                } catch (e: any) {
+                } catch (e: unknown) {
                     console.error(`Error sending to ${uid}:`, e)
-                    if (e.statusCode === 410 || e.statusCode === 404) {
+                    if (e instanceof WebPushError && (e.statusCode === 410 || e.statusCode === 404)) {
                         await supabase.from('push_subscriptions').delete().match({ subscription: s.subscription })
                     }
                 }
@@ -111,14 +111,13 @@ export async function POST(req: Request) {
             return userDevices
         }))
 
-        // Save to History
         try {
             await supabase.from('notification_history').insert({
                 title,
                 message,
                 target,
                 status: 'sent',
-                count: usersReached.size // We log unique users in history
+                count: usersReached.size
             })
         } catch (err) {
             console.error('Error saving history:', err)
@@ -128,11 +127,12 @@ export async function POST(req: Request) {
             success: true,
             userCount: usersReached.size,
             deviceCount: devicesReached,
-            count: usersReached.size // fallback for existing UI
+            count: usersReached.size
         })
 
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Unknown error'
         console.error('[Custom Notification] Error:', e)
-        return NextResponse.json({ error: e.message }, { status: 500 })
+        return NextResponse.json({ error: message }, { status: 500 })
     }
 }

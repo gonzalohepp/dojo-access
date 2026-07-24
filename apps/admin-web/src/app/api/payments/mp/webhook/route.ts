@@ -1,6 +1,43 @@
 import { NextResponse } from 'next/server'
 import MercadoPagoConfig, { Payment } from 'mercadopago'
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
+
+// Verifica el header x-signature que manda Mercado Pago según su esquema
+// documentado: https://www.mercadopago.com.ar/developers/es/docs/your-integrations/notifications/webhooks
+// Manifest: "id:{data.id};request-id:{x-request-id};ts:{ts};" firmado con HMAC-SHA256.
+function verifyMpSignature(req: Request, dataId: string): boolean {
+    const secret = process.env.MP_WEBHOOK_SECRET
+    if (!secret) {
+        // Sin secreto configurado no podemos validar; se deja pasar para no
+        // romper pagos reales, pero se loguea para que se configure pronto.
+        console.warn('[MP Webhook] MP_WEBHOOK_SECRET no configurado — firma no verificada')
+        return true
+    }
+
+    const signatureHeader = req.headers.get('x-signature')
+    const requestId = req.headers.get('x-request-id')
+    if (!signatureHeader || !requestId) return false
+
+    const parts = Object.fromEntries(
+        signatureHeader.split(',').map((p) => {
+            const [k, v] = p.split('=')
+            return [k?.trim(), v?.trim()]
+        })
+    )
+    const ts = parts.ts
+    const v1 = parts.v1
+    if (!ts || !v1) return false
+
+    const manifest = `id:${dataId.toLowerCase()};request-id:${requestId};ts:${ts};`
+    const expected = crypto.createHmac('sha256', secret).update(manifest).digest('hex')
+
+    try {
+        return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(v1))
+    } catch {
+        return false
+    }
+}
 
 export async function POST(req: Request) {
     try {
@@ -25,6 +62,11 @@ export async function POST(req: Request) {
         if (!id || id === '123456') {
             console.log('Test notification or missing ID — ignoring.')
             return NextResponse.json({ received: true, message: 'Test ignore' })
+        }
+
+        if (!verifyMpSignature(req, String(id))) {
+            console.warn(`[MP Webhook] Invalid signature for payment id=${id}`)
+            return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
         }
 
         const accessToken = process.env.MP_ACCESS_TOKEN

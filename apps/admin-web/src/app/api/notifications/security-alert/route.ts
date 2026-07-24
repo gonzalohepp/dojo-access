@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
-import webpush from 'web-push'
+import webpush, { WebPushError, type PushSubscription } from 'web-push'
 import { createClient } from '@supabase/supabase-js'
+import { requireCronSecret } from '@/lib/requireCronSecret'
 
 export async function POST(req: Request) {
+    const guard = requireCronSecret(req)
+    if (guard.error) return guard.error
+
     try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -81,10 +85,10 @@ export async function POST(req: Request) {
             if (subs) {
                 for (const s of subs) {
                     try {
-                        await webpush.sendNotification(s.subscription as any, payload)
+                        await webpush.sendNotification(s.subscription as unknown as PushSubscription, payload)
                         totalSent++
-                    } catch (e: any) {
-                        if (e.statusCode === 410 || e.statusCode === 404) {
+                    } catch (e: unknown) {
+                        if (e instanceof WebPushError && (e.statusCode === 410 || e.statusCode === 404)) {
                             await supabase.from('push_subscriptions').delete().match({ subscription: s.subscription })
                         }
                     }
@@ -94,8 +98,9 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true, admins_notified: adminIds.length, push_sent: totalSent })
 
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Unknown error'
         console.error('[Security Alert API] Error:', e)
-        return NextResponse.json({ error: e.message }, { status: 500 })
+        return NextResponse.json({ error: message }, { status: 500 })
     }
 }

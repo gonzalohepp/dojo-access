@@ -1,8 +1,20 @@
 import { NextResponse } from 'next/server'
-import webpush from 'web-push'
+import webpush, { WebPushError, type PushSubscription } from 'web-push'
 import { createClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/requireAdmin'
+import { requireCronSecret } from '@/lib/requireCronSecret'
 
 export async function POST(req: Request) {
+    // Este endpoint lo puede disparar un admin logueado desde el panel (botón
+    // "probar recordatorios") o un cron externo diario con el CRON_SECRET.
+    const admin = await requireAdmin()
+    if (admin.error) {
+        const cron = requireCronSecret(req)
+        if (cron.error) {
+            return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+        }
+    }
+
     try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
         const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -95,8 +107,6 @@ export async function POST(req: Request) {
 
         webpush.setVapidDetails(SUBS_SUBJECT, PUBLIC_KEY, PRIVATE_KEY)
 
-        let sentCount = 0
-
         // Batch processing
         const results = await Promise.all(targets.map(async (user) => {
             // Get sub
@@ -116,11 +126,11 @@ export async function POST(req: Request) {
             let userSent = 0
             for (const s of subs) {
                 try {
-                    await webpush.sendNotification(s.subscription as any, payload)
+                    await webpush.sendNotification(s.subscription as unknown as PushSubscription, payload)
                     userSent++
-                } catch (e: any) {
+                } catch (e: unknown) {
                     console.error(`Failed to send to ${user.user_id}:`, e)
-                    if (e.statusCode === 410 || e.statusCode === 404) {
+                    if (e instanceof WebPushError && (e.statusCode === 410 || e.statusCode === 404)) {
                         await supabase.from('push_subscriptions').delete().match({ subscription: s.subscription })
                     }
                 }
@@ -137,8 +147,9 @@ export async function POST(req: Request) {
             notifications_sent: totalSent
         })
 
-    } catch (e: any) {
+    } catch (e: unknown) {
+        const message = e instanceof Error ? e.message : 'Unknown error'
         console.error('[Reminders] Error:', e)
-        return NextResponse.json({ error: e.message }, { status: 500 })
+        return NextResponse.json({ error: message }, { status: 500 })
     }
 }
