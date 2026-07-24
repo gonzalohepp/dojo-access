@@ -56,6 +56,7 @@ export default function QRScannerHtml5({ onDecode, onError, paused = false }: Pr
           hostRef.current.appendChild(inner)
 
           const qr = new Html5Qrcode(innerId, { verbose: false })
+          if (disposed) return
           qrRef.current = qr
 
           await qr.start(
@@ -68,15 +69,22 @@ export default function QRScannerHtml5({ onDecode, onError, paused = false }: Pr
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
             } as any,
             (decodedText) => {
-              if (lockedRef.current) return
+              if (disposed || lockedRef.current) return
               lockedRef.current = true
               try { qr.pause(true) } catch { }
               onDecode(decodedText)
             },
             () => { }
           )
+
+          // El componente se desmontó mientras `start` estaba en curso:
+          // el cleanup ya corrió sobre una qrRef vacía, así que paramos esta instancia.
+          if (disposed) {
+            try { await qr.stop() } catch { }
+            try { await qr.clear() } catch { }
+          }
         } catch (e) {
-          onError?.(e)
+          if (!disposed) onError?.(e)
         }
       })()
 

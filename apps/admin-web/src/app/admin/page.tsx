@@ -10,8 +10,6 @@ import RecentAccess from '../components/dashboard/RecentAccess'
 import { Users, UserCheck, UserX, DollarSign, ClipboardCheck, Plus, Clock, ArrowRight, Activity } from 'lucide-react'
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 
 
 type Stats = {
@@ -56,26 +54,6 @@ export default function AdminDashboard() {
   const [access, setAccess] = useState<AccessRow[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
-
-  const handleNotify = async () => {
-    const loadingToast = toast.loading('Verificando recordatorios...')
-    try {
-      const res = await fetch('/api/notifications/reminders', { method: 'POST' })
-      const data = await res.json()
-      if (data.success) {
-        if (data.notifications_sent > 0) {
-          toast.success(`Se enviaron ${data.notifications_sent} notificaciones`, { id: loadingToast })
-        } else {
-          toast.info('No hay recordatorios pendientes para hoy', { id: loadingToast })
-        }
-      } else {
-        toast.info(data.message || 'Sin acciones para hoy', { id: loadingToast })
-      }
-    } catch (e) {
-      toast.error('Error al verificar recordatorios', { id: loadingToast })
-    }
-  }
 
   const fetchData = async () => {
     try {
@@ -183,35 +161,27 @@ export default function AdminDashboard() {
   return (
     <AdminLayout active="/admin">
       <div className="relative min-h-screen">
-        {/* Decorative Background */}
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
-
-        <div className="relative z-10 p-6 md:p-8">
-          <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+        <div>
+          <header className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10 pb-8 border-b border-slate-200 dark:border-white/10">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-600 dark:text-blue-400 text-xs font-bold tracking-widest uppercase mb-4">
-                <Activity className="w-3 h-3" />
-                CENTRO DE CONTROL
-              </div>
-              <h1 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-none mb-3">
-                Dashboard general - <span className="text-blue-600 dark:text-blue-400">Beleza Dojo</span>
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white tracking-tight leading-none mb-2">
+                Dashboard general
               </h1>
-              <p className="text-slate-500 text-lg font-medium flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-500" />
+              <p className="text-slate-500 dark:text-slate-400 font-medium flex items-center gap-2 text-sm">
+                <Clock className="w-4 h-4" />
                 Actualizado en tiempo real • {new Date().toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-2">
               <Link href="/members" className="flex-1 md:flex-none">
-                <button className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20 active:scale-95 transition-all hover:bg-blue-700">
+                <button className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand text-white font-semibold active:scale-95 transition-all hover:bg-brand-dark">
                   <Plus className="w-5 h-5" />
                   Nuevo Miembro
                 </button>
               </Link>
               <Link href="/payments" className="flex-1 md:flex-none">
-                <button className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-white border border-slate-200 text-slate-900 font-bold hover:bg-slate-50 transition-all active:scale-95">
+                <button className="w-full flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-white/5 border border-slate-200 dark:border-white/10 text-slate-900 dark:text-white font-semibold hover:bg-slate-50 dark:hover:bg-white/10 transition-all active:scale-95">
                   <DollarSign className="w-4 h-4" />
                   Pago
                 </button>
@@ -280,11 +250,11 @@ export default function AdminDashboard() {
               className="lg:col-span-2 space-y-6"
             >
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
-                  <Activity className="w-5 h-5 text-blue-500" />
-                  Pagos Recientes
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                  <Activity className="w-5 h-5 text-brand" />
+                  Pagos recientes
                 </h2>
-                <Link href="/payments" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                <Link href="/payments" className="text-sm font-semibold text-brand-dark dark:text-brand hover:underline flex items-center gap-1">
                   Ver todos <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
@@ -299,9 +269,9 @@ export default function AdminDashboard() {
               transition={{ delay: 0.3 }}
               className="space-y-6"
             >
-              <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2 text-red-500">
+              <h2 className="text-lg font-bold text-rose-500 tracking-tight flex items-center gap-2">
                 <UserX className="w-5 h-5" />
-                Próximos Vencimientos
+                Próximos vencimientos
               </h2>
               <ExpiringMembers rows={stats?.expiring_next_7d ?? []} loading={loading} />
             </motion.div>
@@ -314,11 +284,11 @@ export default function AdminDashboard() {
             className="space-y-6"
           >
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
-                <ClipboardCheck className="w-5 h-5 text-blue-500" />
-                Historial de Accesos
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                <ClipboardCheck className="w-5 h-5 text-brand" />
+                Historial de accesos
               </h2>
-              <Link href="/access-log" className="text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+              <Link href="/access-log" className="text-sm font-semibold text-brand-dark dark:text-brand hover:underline flex items-center gap-1">
                 Ver historial completo <ArrowRight className="w-4 h-4" />
               </Link>
             </div>

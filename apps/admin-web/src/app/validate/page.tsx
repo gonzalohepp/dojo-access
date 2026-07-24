@@ -9,7 +9,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { CheckCircle, XCircle, RefreshCw, Camera, ShieldCheck, Zap } from 'lucide-react'
 import QRScannerHtml5 from '@/components/QRScannerHtml5'
 import { motion, AnimatePresence } from 'framer-motion'
-import Image from 'next/image'
 import { toast } from 'sonner'
 import { MemberRow as BaseMemberRow } from '@/types/member'
 import { getPaymentMultiplier } from '@/lib/pricing'

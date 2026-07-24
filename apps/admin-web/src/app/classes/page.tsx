@@ -22,18 +22,30 @@ export default function ClassesPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const ITEMS_PER_PAGE = 6
 
-  const load = useCallback(async () => {
-    const { data, error } = await supabase
+  const fetchClasses = useCallback(() => {
+    return supabase
       .from('classes')
       .select('id,name,instructor,days,start_time,end_time,capacity,max_students,color,category,description,price,price_principal,price_additional,created_at')
       .order('name', { ascending: true })
-    if (!error && data) setItems(data as ClassRow[])
-    setLoading(false)
   }, [])
 
+  const load = useCallback(async () => {
+    const { data, error } = await fetchClasses()
+    if (!error && data) setItems(data as ClassRow[])
+    setLoading(false)
+  }, [fetchClasses])
+
+  // Fetch inline (en vez de llamar a `load`) para que el setState quede
+  // dentro del .then(), no colgando directo del cuerpo del effect.
   useEffect(() => {
-    load()
-  }, [load])
+    let ignore = false
+    fetchClasses().then(({ data, error }) => {
+      if (ignore) return
+      if (!error && data) setItems(data as ClassRow[])
+      setLoading(false)
+    })
+    return () => { ignore = true }
+  }, [fetchClasses])
 
   const filtered = useMemo(() => {
     return items.filter((c) => {
@@ -80,7 +92,7 @@ export default function ClassesPage() {
         <div className="absolute -right-[5%] bottom-[5%] h-[30%] w-[30%] rounded-full bg-indigo-500/5 blur-[100px]" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl p-6 md:p-8">
+      <div className="relative">
         {/* Header Section */}
         <header className="mb-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <motion.div
@@ -138,7 +150,7 @@ export default function ClassesPage() {
               <Layers className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
               <select
                 value={categoryFilter}
-                onChange={(e) => { setCategoryFilter(e.target.value as any); setCurrentPage(1); }}
+                onChange={(e) => { setCategoryFilter(e.target.value as 'all' | 'artes-marciales' | 'acondicionamiento-fisico'); setCurrentPage(1); }}
                 className="h-14 w-full appearance-none rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 pl-11 pr-10 text-sm font-bold text-slate-700 dark:text-slate-200 outline-none ring-blue-500/10 transition-all focus:border-blue-500/50 focus:ring-4"
               >
                 <option value="all">Todas las Categorías</option>

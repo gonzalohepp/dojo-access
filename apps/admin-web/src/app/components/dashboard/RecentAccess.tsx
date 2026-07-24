@@ -45,7 +45,7 @@ export default function RecentAccess({ rows, loading }: { rows: AccessRow[]; loa
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 max-h-[480px] overflow-y-auto custom-scrollbar pr-1">
       {rows.map((r, i) => {
         const ok = isAllowed(r)
         const name =

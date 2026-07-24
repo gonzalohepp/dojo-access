@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { addMonths, lastDayOfMonth } from 'date-fns'
+import { lastDayOfMonth } from 'date-fns'
 import { motion } from 'framer-motion'
 import { User, Mail, Phone, Hash, Shield, Calendar, BookOpen, AlertCircle, Save, Plus, Award, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
@@ -135,6 +135,10 @@ export default function MemberForm({
       active = false
       clearTimeout(timeout)
     }
+    // form.access_code y member (más allá de user_id) se leen a propósito sin ser
+    // dependencias: este mismo efecto es quien escribe form.access_code, así que
+    // incluirlo reengancharía el efecto en loop contra su propio setForm.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.full_name, manualCode, member?.user_id])
 
 

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, UserPlus, UserCircle2, Award } from 'lucide-react'
+import { X, UserPlus, UserCircle2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import MemberForm from './MemberForm'
 import MemberGrades from '../profile/MemberGrades'

@@ -33,7 +33,7 @@ export default function ThemeToggle() {
     return (
         <button
             onClick={toggleTheme}
-            className="relative h-10 w-10 overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center transition-colors hover:ring-2 hover:ring-blue-500/20"
+            className="relative h-10 w-10 overflow-hidden rounded-xl flex items-center justify-center transition-colors hover:bg-white dark:hover:bg-slate-800"
             aria-label="Cambiar tema"
         >
             <AnimatePresence mode="wait">

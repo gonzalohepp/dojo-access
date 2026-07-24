@@ -1,6 +1,6 @@
 'use client'
 import { motion } from 'framer-motion'
-import { UserPlus, Clock, Mail, User } from 'lucide-react'
+import { UserPlus, Mail, User } from 'lucide-react'
 
 type PendingUser = {
     user_id: string

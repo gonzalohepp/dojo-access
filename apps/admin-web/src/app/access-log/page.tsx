@@ -22,6 +22,17 @@ type LogRow = {
   member_id: string
 }
 
+type ProfileNameFields = { first_name: string | null; last_name: string | null }
+
+type AccessLogRaw = {
+  id: string | number
+  scanned_at: string
+  result: string
+  reason?: string | null
+  user_id: string
+  profiles: ProfileNameFields | ProfileNameFields[] | null
+}
+
 export default function AccessLogPage() {
   const [logs, setLogs] = useState<LogRow[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -59,7 +70,7 @@ export default function AccessLogPage() {
         console.error('Error fetching logs:', error)
         setLogs([])
       } else {
-        const mapped: LogRow[] = (data || []).map((l: any) => ({
+        const mapped: LogRow[] = (data || []).map((l: AccessLogRaw) => ({
           id: l.id,
           scanned_at: l.scanned_at,
           member_name: l.profiles && !Array.isArray(l.profiles) ? `${l.profiles.first_name || ''} ${l.profiles.last_name || ''}`.trim() : 'Desconocido',
@@ -145,7 +156,7 @@ export default function AccessLogPage() {
         <div className="absolute -right-[5%] bottom-[10%] h-[35%] w-[35%] rounded-full bg-emerald-500/5 blur-[100px]" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl p-6 md:p-8">
+      <div className="relative">
         {/* Header */}
         <header className="mb-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <motion.div

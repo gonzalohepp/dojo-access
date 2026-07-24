@@ -1,14 +1,11 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
-  QrCode,
   Download,
   Smartphone,
-  ExternalLink,
   RefreshCw,
-  Clock,
   CheckCircle2,
   AlertCircle,
   ShieldCheck,
@@ -47,13 +44,6 @@ function formatTimeLeft(target: Date | null, now: number) {
   return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
 }
 
-type PersistedQR = {
-  token: string
-  nextRefreshAt: string
-  ttlHours: number
-  autoRefresh: boolean
-}
-
 /* ================= COMPONENT ================= */
 
 /* ================= COMPONENT ================= */
@@ -64,6 +54,31 @@ export default function QRAcceso() {
   const [autoRefresh, setAutoRefresh] = useState(true)
   const [userRole, setUserRole] = useState<string | null>(null)
   const isAdmin = userRole === 'admin'
+
+  // ================= ACTIONS =================
+  const regenerate = useCallback(async (isAutoOverride?: boolean) => {
+    const t = genToken()
+    // Use the override value if provided (for state transition), otherwise use current state
+    const currentAuto = isAutoOverride !== undefined ? isAutoOverride : autoRefresh
+
+    // If autoRefresh is disabled, use a very long expiry (1 year)
+    const durationMs = currentAuto ? 30 * 1000 : 365 * 24 * 60 * 60 * 1000
+    const expiry = new Date(Date.now() + durationMs)
+
+    const { error } = await supabase.from('qr_tokens').insert({
+      token: t,
+      expires_at: expiry.toISOString(),
+      is_fixed: !currentAuto
+    })
+
+    if (error) {
+      console.error('Error creating QR token:', error)
+      return
+    }
+
+    setToken(t)
+    setNextRefreshAt(expiry)
+  }, [autoRefresh])
 
   // Load autoRefresh state from localStorage on mount and init token
   useEffect(() => {
@@ -154,19 +169,20 @@ export default function QRAcceso() {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current)
     }
-  }, [nextRefreshAt, autoRefresh])
+  }, [nextRefreshAt, autoRefresh, regenerate])
 
   // Wake Lock for Kiosk Mode
   useEffect(() => {
-    let wakeLock: any = null
+    let wakeLock: WakeLockSentinel | null = null
     const requestWakeLock = async () => {
       try {
         if ('wakeLock' in navigator) {
-          wakeLock = await (navigator as any).wakeLock.request('screen')
+          wakeLock = await navigator.wakeLock.request('screen')
           console.log('Wake Lock active')
         }
-      } catch (err: any) {
-        console.error(`${err.name}, ${err.message}`)
+      } catch (err: unknown) {
+        const message = err instanceof Error ? `${err.name}, ${err.message}` : 'Unknown error'
+        console.error(message)
       }
     }
 
@@ -186,33 +202,6 @@ export default function QRAcceso() {
     }
   }, [])
 
-
-  // ================= ACTIONS =================
-
-  // ================= ACTIONS =================
-  const regenerate = async (isAutoOverride?: boolean) => {
-    const t = genToken()
-    // Use the override value if provided (for state transition), otherwise use current state
-    const currentAuto = isAutoOverride !== undefined ? isAutoOverride : autoRefresh
-
-    // If autoRefresh is disabled, use a very long expiry (1 year)
-    const durationMs = currentAuto ? 30 * 1000 : 365 * 24 * 60 * 60 * 1000
-    const expiry = new Date(Date.now() + durationMs)
-
-    const { error } = await supabase.from('qr_tokens').insert({
-      token: t,
-      expires_at: expiry.toISOString(),
-      is_fixed: !currentAuto
-    })
-
-    if (error) {
-      console.error('Error creating QR token:', error)
-      return
-    }
-
-    setToken(t)
-    setNextRefreshAt(expiry)
-  }
 
   const downloadQR = async () => {
     if (!qrApiUrl) return
@@ -331,7 +320,7 @@ export default function QRAcceso() {
           <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-indigo-500/10 rounded-full blur-[120px] opacity-40 dark:opacity-20" />
         </div>
 
-        <div className="relative mx-auto max-w-7xl p-6 md:p-8">
+        <div className="relative">
 
           {/* Header */}
           <header className="mb-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">

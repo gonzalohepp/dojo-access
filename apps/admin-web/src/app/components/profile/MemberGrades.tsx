@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { supabase } from '@/lib/supabaseClient'
 import { Plus, Trash, Award, Calendar, User, Save, X } from 'lucide-react'
@@ -53,7 +53,7 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
     const [newNotes, setNewNotes] = useState('')
     const [submitting, setSubmitting] = useState(false)
 
-    const fetchGrades = async () => {
+    const fetchGrades = useCallback(async () => {
         setLoading(true)
         try {
             const { data, error } = await supabase
@@ -73,11 +73,11 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
         } finally {
             setLoading(false)
         }
-    }
+    }, [userId])
 
     useEffect(() => {
         fetchGrades()
-    }, [userId])
+    }, [fetchGrades])
 
     const getBeltStyle = (name: string) => {
         const lower = (name || '').toLowerCase()
@@ -308,7 +308,7 @@ export default function MemberGrades({ userId, readOnly = false }: { userId: str
                                         {g.notes && (
                                             <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800">
                                                 <p className="text-sm md:text-base font-medium text-slate-600 dark:text-slate-400 italic bg-blue-50/30 dark:bg-blue-900/10 p-4 md:p-6 rounded-2xl border-l-4 border-blue-500/50">
-                                                    "{g.notes}"
+                                                    &quot;{g.notes}&quot;
                                                 </p>
                                             </div>
                                         )}

@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { supabase } from '@/lib/supabaseClient'
 import AdminLayout from '../../layouts/AdminLayout'
-import { CheckCircle, AlertTriangle, XCircle, DollarSign, Filter, Users } from 'lucide-react'
+import { CheckCircle, AlertTriangle, XCircle, Filter, Users } from 'lucide-react'
+import type { ReactNode } from 'react'
 
 type PaymentUser = {
     user_id: string
@@ -48,14 +49,24 @@ export default function PaymentTimingPage() {
                 return
             }
 
-            const mapped: PaymentUser[] = (data || []).map((p: any) => ({
-                user_id: p.user_id,
-                first_name: p.profiles?.first_name || null,
-                last_name: p.profiles?.last_name || null,
-                amount: p.amount,
-                paid_at: p.paid_at,
-                day: new Date(p.paid_at).getDate()
-            }))
+            type PaymentRaw = {
+                user_id: string
+                amount: number
+                paid_at: string
+                profiles: { first_name: string | null; last_name: string | null } | { first_name: string | null; last_name: string | null }[] | null
+            }
+
+            const mapped: PaymentUser[] = ((data || []) as PaymentRaw[]).map((p) => {
+                const profile = Array.isArray(p.profiles) ? p.profiles[0] : p.profiles
+                return {
+                    user_id: p.user_id,
+                    first_name: profile?.first_name || null,
+                    last_name: profile?.last_name || null,
+                    amount: p.amount,
+                    paid_at: p.paid_at,
+                    day: new Date(p.paid_at).getDate()
+                }
+            })
 
             setUsers(mapped)
             setLoading(false)
@@ -82,8 +93,8 @@ export default function PaymentTimingPage() {
 
     return (
         <AdminLayout active="/metricas">
-            <div className="relative min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800 p-6 md:p-8">
-                <div className="max-w-7xl mx-auto">
+            <div className="relative min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-800">
+                <div>
                     {/* Header */}
                     <header className="mb-10">
                         <div className="flex items-center gap-2 mb-4">
@@ -231,7 +242,7 @@ export default function PaymentTimingPage() {
     )
 }
 
-function KpiCard({ title, count, icon, color, loading }: { title: string; count: number; icon: any; color: 'green' | 'yellow' | 'red'; loading: boolean }) {
+function KpiCard({ title, count, icon, color, loading }: { title: string; count: number; icon: ReactNode; color: 'green' | 'yellow' | 'red'; loading: boolean }) {
     const colors: Record<'green' | 'yellow' | 'red', string> = {
         green: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800',
         yellow: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
@@ -258,8 +269,16 @@ function KpiCard({ title, count, icon, color, loading }: { title: string; count:
     )
 }
 
-function FilterButton({ active, onClick, label, count, color = 'blue' }: any) {
-    const colorMap: any = {
+type FilterButtonColor = 'green' | 'yellow' | 'red' | 'blue'
+
+function FilterButton({ active, onClick, label, count, color = 'blue' }: {
+    active: boolean
+    onClick: () => void
+    label: string
+    count?: number
+    color?: FilterButtonColor
+}) {
+    const colorMap: Record<FilterButtonColor, string> = {
         green: active ? 'bg-green-500 text-white' : 'text-green-600 dark:text-green-400',
         yellow: active ? 'bg-yellow-500 text-white' : 'text-yellow-600 dark:text-yellow-400',
         red: active ? 'bg-red-500 text-white' : 'text-red-600 dark:text-red-400',

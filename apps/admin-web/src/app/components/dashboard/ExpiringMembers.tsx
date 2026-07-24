@@ -29,7 +29,7 @@ export default function ExpiringMembers({ rows, loading }: { rows: Expiring[]; l
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 max-h-[420px] overflow-y-auto custom-scrollbar pr-1">
       {rows.map((m, i) => (
         <motion.div
           key={m.user_id}

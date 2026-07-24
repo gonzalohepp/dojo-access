@@ -7,28 +7,26 @@ import {
     Share,
     PlusSquare,
     Smartphone,
-    ChevronRight,
     CheckCircle2,
-    ArrowRight,
     Info
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePWAInstall } from '@/hooks/usePWAInstall'
-import Link from 'next/link'
 
 export default function InstallPage() {
     const { canInstall, isInstalled, promptInstall } = usePWAInstall()
     const [os, setOs] = useState<'ios' | 'android' | 'desktop' | 'unknown'>('unknown')
 
     useEffect(() => {
+        // Detección de OS: depende de `window`, solo puede resolverse en el cliente.
         const ua = window.navigator.userAgent.toLowerCase()
-        if (/iphone|ipad|ipod/.test(ua)) {
-            setOs('ios')
-        } else if (/android/.test(ua)) {
-            setOs('android')
-        } else {
-            setOs('desktop')
-        }
+        const detected = /iphone|ipad|ipod/.test(ua)
+            ? 'ios'
+            : /android/.test(ua)
+                ? 'android'
+                : 'desktop'
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setOs(detected)
     }, [])
 
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent('https://belezadojo.com.ar/instalar')}`

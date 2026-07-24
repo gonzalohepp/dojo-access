@@ -45,6 +45,12 @@ type AttendanceRecord = {
     }
 }
 
+type AttendanceRaw = {
+    user_id: string
+    class_id: number
+    profiles: AttendanceRecord['profiles'] | AttendanceRecord['profiles'][] | null
+}
+
 const DAY_MAP = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sáb']
 
 function getClassEmoji(name: string) {
@@ -302,7 +308,7 @@ export default function AsistenciaVivoPage() {
                 `)
                 .eq('date', today)
 
-            const rawAttendance = ((attData as any[]) || []).map(r => ({
+            const rawAttendance = ((attData as AttendanceRaw[]) || []).map(r => ({
                 ...r,
                 profiles: Array.isArray(r.profiles) ? r.profiles[0] : r.profiles
             })) as AttendanceRecord[]
@@ -368,7 +374,7 @@ export default function AsistenciaVivoPage() {
 
     return (
         <AdminLayout active="/asistencia-vivo">
-            <div className="max-w-7xl mx-auto p-4 md:p-0 space-y-6 md:space-y-8">
+            <div className="space-y-6 md:space-y-8">
 
                 {/* Header */}
                 <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 md:gap-6">

@@ -5,8 +5,6 @@ import { supabase } from '@/lib/supabaseClient'
 import AdminLayout from '../layouts/AdminLayout'
 import {
   User as UserIcon,
-  Mail,
-  Phone,
   Calendar,
   GraduationCap,
   AlertCircle,
@@ -23,18 +21,16 @@ import {
   Save as SaveIcon,
   X,
   ChevronRight,
-  CreditCard,
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import Image from 'next/image'
 import SubscriptionModal from '../components/profile/SubscriptionModal'
 import PhotoCropper from '../components/profile/PhotoCropper'
 import MemberGrades from '../components/profile/MemberGrades'
 import { fmtARS, fmtDate, fmtSchedule } from '@/lib/format'
-import { getPaymentMultiplier, getPaymentStatusMessage } from '@/lib/pricing'
+import { getPaymentStatusMessage } from '@/lib/pricing'
 
 
 type MemberRow = {
@@ -375,8 +371,8 @@ export default function ProfilePage() {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-        <div className="relative z-10 p-4 md:p-8">
-          <div className="max-w-6xl mx-auto">
+        <div className="relative z-10">
+          <div>
 
             {/* Loading */}
             {loading ? (

@@ -1,9 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import {
   ChevronRight,
   Menu,
@@ -36,10 +34,8 @@ const navItems: NavItem[] = [
 ]
 
 export default function HomeLandingPage() {
-  const router = useRouter()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
-  const [activeTab, setActiveTab] = useState("infantil")
   const [showScrollTop, setShowScrollTop] = useState(false)
 
   const scrollToSection = (sectionId: string) => {
@@ -67,10 +63,6 @@ export default function HomeLandingPage() {
     }
   }
 
-  const handleAccess = () => {
-    router.push("/app")
-  }
-
   const trackEvent = async (eventType: string, metadata?: Record<string, unknown>) => {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -83,13 +75,13 @@ export default function HomeLandingPage() {
         const ipRes = await fetch('https://api.ipify.org?format=json')
         const ipData = await ipRes.json()
         ip = ipData.ip
-      } catch (e) { /* ignore */ }
+      } catch { /* ignore */ }
 
       await _supabase.from('landing_events').insert({
         event_type: eventType,
         metadata: { ...metadata, ip }
       })
-    } catch (e) {
+    } catch {
       // ignore
     }
   }
@@ -300,16 +292,16 @@ export default function HomeLandingPage() {
                 <span className="text-white font-bold">Beleza Dojo</span> nace en 2011 con un objetivo claro: formar practicantes y competidores con un enfoque técnico, físico y mental sólido.
               </p>
               <p>
-                <span className="text-white font-black text-xl">"BELEZA"</span> — expresión brasileña para decir que "está todo bien". Elegimos este nombre para reflejar el ambiente de camaradería y respeto que se respira en cada entrenamiento, sin perder la intensidad.
+                <span className="text-white font-black text-xl">&quot;BELEZA&quot;</span> — expresión brasileña para decir que &quot;está todo bien&quot;. Elegimos este nombre para reflejar el ambiente de camaradería y respeto que se respira en cada entrenamiento, sin perder la intensidad.
               </p>
               <p>
-                Nuestro símbolo es el <span className="text-white font-black text-xl">"SHAKA"</span> 🤙. Representa amistad, comprensión y solidaridad. Valores innegociables dentro y fuera del tatami.
+                Nuestro símbolo es el <span className="text-white font-black text-xl">&quot;SHAKA&quot;</span> 🤙. Representa amistad, comprensión y solidaridad. Valores innegociables dentro y fuera del tatami.
               </p>
               <p>
                 Nuestro método prioriza el progreso real, la comprensión profunda del combate y el desarrollo sostenido en el tiempo.
               </p>
               <div className="pl-6 border-l-4 border-blue-500 py-2 italic text-slate-400 font-medium">
-                "Entrenar en Beleza Dojo significa asumir un compromiso con tu evolución, dentro y fuera del tatami."
+                &quot;Entrenar en Beleza Dojo significa asumir un compromiso con tu evolución, dentro y fuera del tatami.&quot;
               </div>
             </div>
           </motion.div>

@@ -9,8 +9,6 @@ import {
     X,
     Home,
     User,
-    Award,
-    Calendar,
     Dumbbell
 } from 'lucide-react'
 import { supabase } from '@/lib/supabaseClient'
@@ -23,9 +21,16 @@ const studentNav = [
     // { href: '#', label: 'Mis Clases', icon: Calendar }, // Future
 ]
 
+type StudentProfile = {
+    avatar_url: string | null
+    first_name: string | null
+    last_name: string | null
+    email: string | null
+}
+
 export default function StudentLayout({ children }: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(false)
-    const [profile, setProfile] = useState<any>(null)
+    const [profile, setProfile] = useState<StudentProfile | null>(null)
     const [loading, setLoading] = useState(true)
     const router = useRouter()
     const pathname = usePathname()
@@ -117,7 +122,7 @@ export default function StudentLayout({ children }: { children: React.ReactNode 
                 <div className="p-4 border-t border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-3 px-4 py-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl mb-3">
                         {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} className="w-8 h-8 rounded-full object-cover" />
+                            <img src={profile.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
                         ) : (
                             <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500 text-xs font-bold">
                                 {profile?.first_name?.[0]}

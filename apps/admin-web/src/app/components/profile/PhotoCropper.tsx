@@ -2,8 +2,8 @@
 
 import React, { useState, useCallback } from 'react'
 import Cropper, { Point, Area } from 'react-easy-crop'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Check, ZoomIn, ZoomOut, RotateCcw } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { X, Check, ZoomOut, RotateCcw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import getCroppedImg from '@/lib/cropUtils'
 

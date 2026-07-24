@@ -37,6 +37,14 @@ type Notification = {
   read: boolean
 }
 
+type AccessLogRow = {
+  id: string | number
+  user_id: string | null
+  result: string
+  reason: string | null
+  scanned_at: string
+}
+
 type Role = 'admin' | 'member' | 'instructor' | 'becado'
 type Profile = {
   user_id: string
@@ -125,6 +133,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
         .select('user_id,email,first_name,last_name,role,avatar_url')
         .eq('user_id', user.id)
         .maybeSingle()
+      if (error) console.error('[AdminLayout] load profile error:', error)
       if (data) {
         setProfile(data as Profile)
         // Ensure push sync happens for the current user session
@@ -148,7 +157,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
       fetchInitialNotifs()
     }
     load()
-  }, [router, subscription, VAPID_PUBLIC_KEY])
+  }, [router, subscription, VAPID_PUBLIC_KEY, subscribeUser])
 
   // ========= Real-time Security Alerts =========
   useEffect(() => {
@@ -163,7 +172,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'access_logs' },
         async (payload) => {
-          const newLog = payload.new as any
+          const newLog = payload.new as AccessLogRow
           if (newLog.result === 'denegado') {
             // Access Denied detected
 
@@ -237,7 +246,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
       // Cleanup security alerts
       supabase.removeChannel(channel)
     }
-  }, [profile?.user_id, profile?.role])
+  }, [profile])
 
   /* State and Hooks for Navigation & Protection */
   const role = profile?.role || 'member'
@@ -301,7 +310,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
       {/* Sidebar */}
       <aside
         className={`
-          fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-border flex flex-col transition-transform duration-300 md:translate-x-0 md:static md:inset-auto md:flex
+          fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-slate-900 border-r border-border flex flex-col transition-transform duration-300 md:translate-x-0 md:sticky md:top-0 md:h-screen
           ${sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'}
         `}
       >
@@ -310,7 +319,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
           <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
             <div>
-              <h2 className="font-black text-lg text-foreground tracking-tight leading-tight">Beleza <span className="text-blue-600">Dojo</span></h2>
+              <h2 className="font-bold text-lg text-foreground tracking-tight leading-tight">Beleza <span className="text-brand">Dojo</span></h2>
               <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest">
                 {role === 'admin' ? 'Admin Panel' : role === 'instructor' ? 'Instructor Panel' : 'Portal de Alumno'}
               </p>
@@ -331,7 +340,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
             {isAdmin ? 'Principal' : 'Menú'}
           </div>
           <nav className="space-y-1">
-            {nav.map((item: any) => {
+            {nav.map((item) => {
               const isActive = active === item.href || pathname === item.href
               const Icon = item.icon
               return (
@@ -340,13 +349,13 @@ export default function AdminLayout({ children, active }: { children: React.Reac
                   href={item.href}
                   onClick={() => setSidebarOpen(false)} // Close on navigate
                   className={[
-                    'flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-200 group',
+                    'flex items-center gap-3 px-4 py-3 rounded-xl transition-colors duration-200 group',
                     isActive
-                      ? 'bg-blue-600 text-white font-bold shadow-lg shadow-blue-500/20'
+                      ? 'bg-brand text-white font-semibold'
                       : 'text-muted-foreground hover:bg-slate-100 dark:hover:bg-white/5 hover:text-foreground',
                   ].join(' ')}
                 >
-                  <Icon className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-blue-500'}`} />
+                  <Icon className={`w-5 h-5 transition-transform duration-200 group-hover:scale-110 ${isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-brand'}`} />
                   <span className="text-sm">{item.label}</span>
                 </Link>
               )
@@ -360,12 +369,12 @@ export default function AdminLayout({ children, active }: { children: React.Reac
             {profile?.avatar_url ? (
               <img src={profile.avatar_url} alt="Profile" className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm" />
             ) : (
-              <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+              <div className="w-10 h-10 rounded-full bg-brand-light dark:bg-brand/20 flex items-center justify-center text-brand-dark dark:text-brand">
                 <UserIcon className="w-5 h-5" />
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-black text-foreground truncate">{displayName}</p>
+              <p className="text-xs font-bold text-foreground truncate">{displayName}</p>
               <p className="text-[10px] text-muted-foreground truncate leading-none">{profile?.email}</p>
             </div>
           </div>
@@ -382,11 +391,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
 
       {/* Main content wrapper */}
       <main className="flex-1 flex flex-col relative overflow-hidden min-w-0">
-        {/* Background glow effects */}
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-background transition-colors duration-300">
-          <div className="absolute top-[10%] -left-[10%] w-[40%] h-[40%] bg-blue-600/5 blur-[120px] dark:bg-blue-600/10" />
-          <div className="absolute bottom-[10%] -right-[10%] w-[40%] h-[40%] bg-purple-600/5 blur-[120px] dark:bg-purple-600/10" />
-        </div>
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-background transition-colors duration-300" />
 
         {/* Desktop & Mobile Top Bar */}
         <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border-b border-border px-6 py-4 sticky top-0 z-40 flex items-center justify-between">
@@ -400,28 +405,17 @@ export default function AdminLayout({ children, active }: { children: React.Reac
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <div className="flex flex-col">
-              <h1 className="text-lg font-black text-foreground tracking-tight leading-none">
-                {pathname === '/admin' ? 'Dashboard' :
-                  pathname === '/members' ? 'Gestión de Miembros' :
-                    pathname === '/profile' ? 'Mi Perfil' :
-                      'Beleza Dojo'}
-              </h1>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase tracking-widest mt-1 hidden md:block">
-                Bienvenido, {profile?.first_name || 'Alunmo'}
-              </p>
-            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 rounded-2xl border border-border bg-slate-50/80 dark:bg-white/5 p-1.5">
             {isAdmin && (
-              <div className="relative">
+              <div className="relative flex items-center gap-1">
                 <button
                   onClick={() => {
                     setShowNotifs(!showNotifs)
                     if (!showNotifs) setNotifications(prev => prev.map(n => ({ ...n, read: true })))
                   }}
-                  className="p-2.5 rounded-xl text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors relative group"
+                  className="p-2.5 rounded-xl text-muted-foreground hover:bg-white dark:hover:bg-slate-800 transition-colors relative group"
                 >
                   <Bell className="w-5 h-5 group-hover:scale-110 transition-transform" />
                   {notifications.some(n => !n.read) && (
@@ -434,7 +428,7 @@ export default function AdminLayout({ children, active }: { children: React.Reac
                     onClick={handleTogglePush}
                     className={`p-2.5 rounded-xl transition-colors relative group ${subscription
                       ? 'text-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-500/10'
-                      : 'text-muted-foreground hover:bg-slate-100 dark:hover:bg-slate-800'
+                      : 'text-muted-foreground hover:bg-white dark:hover:bg-slate-800'
                       }`}
                     title={subscription ? 'Notificaciones activas' : 'Activar notificaciones push'}
                   >
@@ -526,12 +520,16 @@ export default function AdminLayout({ children, active }: { children: React.Reac
                 </AnimatePresence>
               </div>
             )}
+            {isAdmin && <div className="w-px h-5 bg-border mx-0.5" />}
             <ThemeToggle />
           </div>
         </header>
 
-        <div className="flex-1 overflow-auto custom-scrollbar relative p-6">
-          {children}
+        <div className="flex-1 overflow-auto custom-scrollbar relative">
+          {/* Ancho y padding únicos para toda la app — no lo dupliques en cada página */}
+          <div className="max-w-[1800px] mx-auto p-6 md:p-8">
+            {children}
+          </div>
         </div>
         <Toaster position="top-right" richColors closeButton />
       </main>

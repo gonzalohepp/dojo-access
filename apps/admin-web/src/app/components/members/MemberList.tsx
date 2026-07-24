@@ -3,7 +3,7 @@
 import { Calendar, Mail, Phone, Pencil, Trash2, User as UserIcon, Hash, Clock, MessageCircle, X, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { MemberRow } from '@/types/member'
 
 const fmtDate = (d?: string | null) =>

@@ -3,14 +3,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import AdminLayout from '../layouts/AdminLayout'
-import { Plus, Search, Check, Users, UserPlus, Filter, X, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Search, Check, Users, UserPlus, Filter, X, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 
-import { Button } from '@/components/ui/button'
-import Image from 'next/image'
 import { toast } from 'sonner'
 import MemberFilters from '../components/members/MemberFilters'
 import MemberList from '../components/members/MemberList'
@@ -77,9 +75,9 @@ function MembersContent() {
 
     if (error) console.error('[members] load error:', error)
 
-    const rawMembers = data ?? []
-    const userIds = rawMembers.map((m: any) => m.user_id).filter(Boolean)
-    let avatarMap: Record<string, string | null> = {}
+    const rawMembers = (data ?? []) as Row[]
+    const userIds = rawMembers.map((m) => m.user_id).filter(Boolean)
+    const avatarMap: Record<string, string | null> = {}
 
     if (userIds.length > 0) {
       const { data: profiles } = await supabase
@@ -88,11 +86,11 @@ function MembersContent() {
         .in('user_id', userIds)
 
       if (profiles) {
-        profiles.forEach((p: any) => { avatarMap[p.user_id] = p.avatar_url })
+        profiles.forEach((p: { user_id: string; avatar_url: string | null }) => { avatarMap[p.user_id] = p.avatar_url })
       }
     }
 
-    const membersWithAvatars = rawMembers.map((member: any) => ({
+    const membersWithAvatars = rawMembers.map((member) => ({
       ...member,
       avatar_url: avatarMap[member.user_id] || null
     }))
@@ -209,9 +207,10 @@ function MembersContent() {
 
       toast.success('Vencimiento renovado correctamente')
       await load()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[Members] onQuickRenew error:', error)
-      toast.error('Error al renovar vencimiento: ' + error.message)
+      const message = error instanceof Error ? error.message : 'Error desconocido'
+      toast.error('Error al renovar vencimiento: ' + message)
     } finally {
       setLoading(false)
     }
@@ -233,9 +232,10 @@ function MembersContent() {
       await load()
       setSuccessMsg('Miembro eliminado correctamente')
       toast.success('Miembro eliminado correctamente')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[Members] onDelete error:', error)
-      toast.error('Error eliminando miembro: ' + error.message)
+      const message = error instanceof Error ? error.message : 'Error desconocido'
+      toast.error('Error eliminando miembro: ' + message)
     } finally {
       setDeletingId(null)
     }
@@ -273,7 +273,7 @@ function MembersContent() {
             emergency_phone: payload.emergency_contact ?? null,
             notes: payload.notes ?? null,
             access_code: payload.access_code?.trim() || null,
-            role: (payload as any).role || 'member'
+            role: payload.role || 'member'
           })
           .eq('user_id', userId)
         if (upErr) throw upErr
@@ -325,7 +325,7 @@ function MembersContent() {
             last_payment_date: payload.last_payment_date,
             next_payment_due: payload.next_payment_due,
             classes: payload.classes,
-            role: (payload as any).role || 'member'
+            role: payload.role || 'member'
           })
         })
         if (!res.ok) {
@@ -337,9 +337,10 @@ function MembersContent() {
 
       setOpen(false)
       load()
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[Members] onSubmit error:', error)
-      toast.error('Error: ' + error.message)
+      const message = error instanceof Error ? error.message : 'Error desconocido'
+      toast.error('Error: ' + message)
     }
   }
 
@@ -350,7 +351,7 @@ function MembersContent() {
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[120px] pointer-events-none" />
 
-        <div className="relative z-10 p-4 md:p-8">
+        <div className="relative z-10">
 
           {/* Header */}
           <header className="mb-6 md:mb-10 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">

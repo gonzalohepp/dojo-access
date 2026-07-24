@@ -14,17 +14,20 @@ export function usePWAInstall() {
     const [isInstalled, setIsInstalled] = useState(false);
 
     useEffect(() => {
+        // Solo se puede saber si ya está instalada consultando `window` en el cliente.
         if (typeof window !== 'undefined' && window.matchMedia('(display-mode: standalone)').matches) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setIsInstalled(true);
         }
     }, []);
 
     useEffect(() => {
-        const handleBeforeInstallPrompt = (e: any) => {
+        const handleBeforeInstallPrompt = (e: Event) => {
+            const promptEvent = e as BeforeInstallPromptEvent;
             // Prevent the mini-infobar from appearing on mobile
-            e.preventDefault();
+            promptEvent.preventDefault();
             // Stash the event so it can be triggered later.
-            setInstallPrompt(e);
+            setInstallPrompt(promptEvent);
         };
 
         const handleAppInstalled = () => {

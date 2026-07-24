@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Shield, Plus, Check, DollarSign, Loader2, User, ChevronDown, CreditCard } from 'lucide-react';
 import { supabase } from '@/lib/supabaseClient';
-import { lastDayOfMonth, addMonths, isAfter } from 'date-fns';
+import { lastDayOfMonth, addMonths } from 'date-fns';
 import { getPaymentMultiplier } from '@/lib/pricing';
 
 type MemberOpt = {
@@ -60,12 +60,14 @@ export default function PaymentModal({
         .select('user_id, first_name, last_name, is_new_member, next_payment_due, role')
         .order('last_name', { ascending: true, nullsFirst: true });
 
+      if (error) console.error('[PaymentModal] load members error:', error)
+
       if (data) {
         const opts: MemberOpt[] = data.map(p => ({
           user_id: p.user_id,
           name: [p.first_name, p.last_name].filter(Boolean).join(' ').trim(),
           is_new_member: p.is_new_member,
-          next_payment_due: (p as any).next_payment_due || null,
+          next_payment_due: p.next_payment_due || null,
           role: p.role || null,
         }));
         setMembers(opts);
@@ -76,6 +78,8 @@ export default function PaymentModal({
   // When User Selected -> Load Current Enrollments
   useEffect(() => {
     if (!userId) {
+      // Reset de selección al deseleccionar el alumno.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPrincipalClass(null)
       setAdditionalClasses([])
       return

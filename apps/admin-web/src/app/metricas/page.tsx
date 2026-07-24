@@ -271,7 +271,7 @@ export default function MetricasPage() {
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[100px] opacity-20" />
         </div>
 
-        <div className="relative mx-auto max-w-7xl p-4 md:p-8">
+        <div className="relative">
           {/* Header */}
           <header className="mb-8 flex flex-col items-start justify-between gap-4 md:flex-row md:items-center">
             <div className="space-y-1">

@@ -150,7 +150,7 @@ export function InstructorCarousel() {
                       className="absolute inset-0 bg-cover transform transition-transform duration-1000 group-hover:scale-105"
                       style={{
                         backgroundImage: `url(${current.photo})`,
-                        backgroundPosition: (current as any).position || 'center top'
+                        backgroundPosition: current.position || 'center top'
                       }}
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80" />

@@ -58,7 +58,7 @@ export default function ReportesPage() {
 
     return (
         <AdminLayout active="/reportes">
-            <div className="p-4 md:p-8 space-y-6 max-w-7xl mx-auto">
+            <div className="space-y-6">
 
                 {/* Header */}
                 <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -1,4 +1,4 @@
-import { Pencil, Trash2, CalendarDays, DollarSign, Users, User, Clock, ChevronRight } from 'lucide-react'
+import { Pencil, Trash2, CalendarDays, DollarSign, User, Clock } from 'lucide-react'
 import { motion } from 'framer-motion'
 import type { ClassRow } from './ClassForm'
 import React from 'react'

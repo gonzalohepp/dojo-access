@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import MapSelector from './MapSelector'
 import Image from 'next/image'
 
-type Academy = {
+export type Academy = {
     id?: number
     name: string
     city: string

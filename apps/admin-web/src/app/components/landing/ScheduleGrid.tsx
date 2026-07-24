@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { createPortal } from "react-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { Clock, Dumbbell, Swords, Trophy, Sparkles, X } from "lucide-react"
+import { Clock, Sparkles, X } from "lucide-react"
 
 type TimeSlot = {
   time: string
@@ -125,6 +125,8 @@ export function ScheduleGrid() {
   const [isMounted, setIsMounted] = useState(false)
 
   useEffect(() => {
+    // Flag de "ya montado en el cliente", necesario para createPortal (no existe document en SSR).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsMounted(true)
   }, [])
 

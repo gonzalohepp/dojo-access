@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabaseClient';
 import AdminLayout from '../layouts/AdminLayout';
@@ -75,7 +75,7 @@ export default function PaymentsPage() {
     return `${y}-${m}`;
   };
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
 
     const { data: pays, error: payErr } = await supabase
@@ -135,9 +135,14 @@ export default function PaymentsPage() {
     );
 
     setLoading(false);
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    // `load` reusa código ya cubierto por otros call-sites (ver onSaved del modal);
+    // no vale la pena duplicar sus ~60 líneas solo para este fetch-on-mount.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    load();
+  }, [load]);
 
   const filtered = useMemo(() => {
     const mk = (d: string | null) => monthKey(d);
@@ -187,7 +192,7 @@ export default function PaymentsPage() {
         <div className="absolute -right-[5%] bottom-[5%] h-[30%] w-[30%] rounded-full bg-blue-500/5 blur-[100px]" />
       </div>
 
-      <div className="relative mx-auto max-w-7xl p-6 md:p-8">
+      <div className="relative">
         {/* Header Section */}
         <header className="mb-10 flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
           <motion.div

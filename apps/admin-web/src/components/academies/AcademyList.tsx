@@ -4,10 +4,11 @@ import { supabase } from '@/lib/supabaseClient'
 import { MapPin, Edit2, Trash2, ChevronLeft, ChevronRight, Info } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import type { Academy } from './AcademyModal'
 
 const ITEMS_PER_PAGE = 6
 
-export default function AcademyList({ search, onEdit }: { search: string, onEdit: (academy: any) => void }) {
+export default function AcademyList({ search, onEdit }: { search: string, onEdit: (academy: Academy) => void }) {
     const queryClient = useQueryClient()
     const [currentPage, setCurrentPage] = useState(1)
 

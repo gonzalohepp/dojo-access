@@ -3,14 +3,13 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import AdminLayout from '../layouts/AdminLayout'
-import { fmtDate, fmtDateTime } from '@/lib/format'
+import { fmtDateTime } from '@/lib/format'
 import {
     Bell,
     Send,
     Users,
     Calendar,
     CheckCircle,
-    AlertCircle,
     Smartphone,
     History as HistoryIcon, // Renamed to avoid conflict with state variable
     Info,
@@ -19,10 +18,7 @@ import {
     Clock,
     Check,
     ChevronDown,
-    ChevronUp,
-    Settings, // Added from instruction
-    ChevronRight, // Added from instruction
-    Trash // Added from instruction
+    ChevronUp
 } from 'lucide-react'
 import { toast } from 'sonner'
 import UserSearch from '../components/notifications/UserSearch'
@@ -37,13 +33,30 @@ interface NotificationHistoryItem {
     count: number
 }
 
+type SubscriptionDevice = { id: string; subscription: { endpoint: string } }
+
+type SubscribedUser = {
+    user_id: string
+    first_name: string | null
+    last_name: string | null
+    email: string | null
+    avatar_url: string | null
+    role?: string | null
+    subscriptions?: SubscriptionDevice[]
+}
+
 export default function NotificationsPage() {
     const [loading, setLoading] = useState(false)
     const [activeTab, setActiveTab] = useState<'send' | 'history' | 'config' | 'subscribed'>('send')
-    const [selectedUser, setSelectedUser] = useState<any>(null)
+    const [selectedUser, setSelectedUser] = useState<SubscribedUser | null>(null)
     const [expandedUserId, setExpandedUserId] = useState<string | null>(null)
-    const [form, setForm] = useState({
-        target: 'all' as 'all' | 'active' | 'expiring' | 'custom',
+    const [form, setForm] = useState<{
+        target: 'all' | 'active' | 'expiring' | 'custom'
+        title: string
+        message: string
+        url: string
+    }>({
+        target: 'all',
         title: '',
         message: '',
         url: '/'
@@ -51,7 +64,7 @@ export default function NotificationsPage() {
 
     const [history, setHistory] = useState<NotificationHistoryItem[]>([])
     const [subscribedCount, setSubscribedCount] = useState(0)
-    const [subscribedUsers, setSubscribedUsers] = useState<any[]>([])
+    const [subscribedUsers, setSubscribedUsers] = useState<SubscribedUser[]>([])
     const [settings, setSettings] = useState({
         day10Enabled: true,
         day10Days: '8, 9, 10',
@@ -143,7 +156,7 @@ export default function NotificationsPage() {
 
             if (error) throw error
             toast.success('Configuración guardada correctamente', { id: loadingToast })
-        } catch (e) {
+        } catch {
             toast.error('Error al guardar configuración', { id: loadingToast })
         }
     }
@@ -167,13 +180,13 @@ export default function NotificationsPage() {
                 if (u.user_id === userId) {
                     return {
                         ...u,
-                        subscriptions: u.subscriptions.filter((s: any) => s.id !== id)
+                        subscriptions: (u.subscriptions ?? []).filter((s) => s.id !== id)
                     }
                 }
                 return u
-            }).filter(u => u.subscriptions.length > 0))
+            }).filter(u => (u.subscriptions?.length ?? 0) > 0))
 
-        } catch (e) {
+        } catch {
             toast.error('Error al eliminar dispositivo', { id: loadingToast })
         }
     }
@@ -232,7 +245,7 @@ export default function NotificationsPage() {
             } else {
                 toast.error(data.error || 'Error al enviar', { id: loadingToast })
             }
-        } catch (e) {
+        } catch {
             toast.error('Error de conexión', { id: loadingToast })
         } finally {
             setLoading(false)
@@ -253,7 +266,7 @@ export default function NotificationsPage() {
             } else {
                 toast.info(data.message || 'Sin acciones para hoy', { id: loadingToast })
             }
-        } catch (e) {
+        } catch {
             toast.error('Error al verificar recordatorios', { id: loadingToast })
         }
     }
@@ -265,7 +278,7 @@ export default function NotificationsPage() {
                 <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-[600px] h-[600px] bg-blue-500/5 blur-[120px] rounded-full pointer-events-none" />
                 <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none" />
 
-                <div className="relative max-w-7xl mx-auto p-4 md:p-8">
+                <div className="relative">
                     {/* Header */}
                     <header className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-6">
                         <div>
@@ -344,15 +357,15 @@ export default function NotificationsPage() {
                                                 <div>
                                                     <label className="block text-xs font-black uppercase tracking-widest text-slate-500 mb-3">Segmento</label>
                                                     <div className="grid grid-cols-2 gap-3">
-                                                        {[
+                                                        {([
                                                             { id: 'all', label: 'Todos (Socios)', icon: Users },
                                                             { id: 'active', label: 'Socios Activos', icon: CheckCircle },
                                                             { id: 'expiring', label: 'Vencen Pronto', icon: Clock },
                                                             { id: 'custom', label: 'Manual/Individual', icon: Search }
-                                                        ].map((opt) => (
+                                                        ] as const).map((opt) => (
                                                             <button
                                                                 key={opt.id}
-                                                                onClick={() => setForm({ ...form, target: opt.id as any })}
+                                                                onClick={() => setForm({ ...form, target: opt.id })}
                                                                 className={`flex items-center gap-3 p-4 rounded-2xl border transition-all text-left ${form.target === opt.id
                                                                     ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-500/20'
                                                                     : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-blue-400'}`}
@@ -751,7 +764,7 @@ export default function NotificationsPage() {
                                                             className="mx-6 overflow-hidden"
                                                         >
                                                             <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 p-4 space-y-3 mt-1 shadow-inner">
-                                                                {user.subscriptions?.map((sub: any, idx: number) => (
+                                                                {user.subscriptions?.map((sub, idx: number) => (
                                                                     <div key={sub.id} className="flex items-center justify-between gap-3 bg-white dark:bg-slate-800 p-3 rounded-xl border border-slate-100 dark:border-slate-700">
                                                                         <div className="flex items-center gap-3 min-w-0">
                                                                             <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center shrink-0">

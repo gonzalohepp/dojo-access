@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 
 export function usePushNotifications() {
@@ -26,7 +26,7 @@ export function usePushNotifications() {
         return () => { mounted = false }
     }, [isSupported])
 
-    const subscribeUser = async (vapidPublicKey: string) => {
+    const subscribeUser = useCallback(async (vapidPublicKey: string) => {
         try {
             const registration = await navigator.serviceWorker.ready
             const sub = await registration.pushManager.subscribe({
@@ -51,9 +51,9 @@ export function usePushNotifications() {
             console.error('Failed to subscribe:', err)
             return null
         }
-    }
+    }, [])
 
-    const unsubscribeUser = async () => {
+    const unsubscribeUser = useCallback(async () => {
         try {
             if (subscription) {
                 await subscription.unsubscribe()
@@ -66,7 +66,7 @@ export function usePushNotifications() {
             console.error('Failed to unsubscribe:', err)
             return false
         }
-    }
+    }, [subscription])
 
     return { isSupported, subscription, subscribeUser, unsubscribeUser }
 }

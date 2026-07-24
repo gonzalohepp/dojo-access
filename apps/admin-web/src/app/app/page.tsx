@@ -30,11 +30,13 @@ export default async function HomePage() {
   }
 
   // 🔹 Primero intentamos por user_id
-  let { data: profile, error: profileErr } = await supabase
+  const { data: initialProfile, error: profileErr } = await supabase
     .from('profiles')
     .select('user_id, role, email')
     .eq('user_id', user.id)
     .maybeSingle()
+
+  let profile = initialProfile
 
   // 🔹 Si no hay perfil con ese user_id, probamos por email
   if (!profile && !profileErr) {
