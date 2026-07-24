@@ -58,9 +58,12 @@ coverage/
 *.db
 *.sqlite
 *.sqlite3
-database/scripts/
 
 # Misc
 .cache/
 .turbo/
 *.tsbuildinfo
+
+# Supabase CLI local state
+supabase/.temp/
+supabase/.branches/
